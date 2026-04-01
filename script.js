@@ -71,7 +71,7 @@
   };
 
   var PACKAGE_PRICE_HINTS = {
-    simple: "$10",
+    simple: "$1",
     advanced: "$20",
     professional: "$50",
   };
