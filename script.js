@@ -1,0 +1,1605 @@
+(function () {
+  var pages = document.querySelectorAll(".wizard-page");
+  var FLOW_PAGE_ORDER = [0, 5, 1, 2, 3, 4, 6, 7];
+  var totalSteps = FLOW_PAGE_ORDER.length || pages.length || 8;
+  var backBtn = document.getElementById("wizard-back");
+  var progressLabel = document.getElementById("progress-label");
+  var progressFill = document.getElementById("progress-fill");
+  var homeBtn = document.getElementById("wizard-home");
+  var summaryEl = document.getElementById("wizard-summary");
+  var summaryCheckoutCta = document.getElementById("summary-checkout-cta");
+  var drawer = document.getElementById("mobile-drawer");
+  var backdrop = document.getElementById("drawer-backdrop");
+  var navToggle = document.querySelector(".nav-toggle");
+  var header = document.querySelector(".site-header");
+
+  var state = {
+    step: 0,
+    serverMode: null,
+    layoutType: null,
+    hasFollowers: null,
+    size: null,
+    packageTier: null,
+    channelPattern: null,
+    channelPatternLabel: null,
+    checkoutReady: false,
+  };
+
+  var patternPickLabelEl = document.getElementById("pattern-pick-label");
+  var styleTierNoteEl = document.getElementById("style-tier-note");
+  var patternSelectButtons = document.querySelectorAll(".pattern-select[data-pattern]");
+  var checkoutPanel = document.getElementById("checkout-panel");
+  var checkoutFlash = document.getElementById("checkout-flash");
+  var checkoutTierLabel = document.getElementById("checkout-tier-label");
+  var checkoutAmount = document.getElementById("checkout-amount");
+  var checkoutApiNote = document.getElementById("checkout-api-note");
+  var checkoutTierWarning = document.getElementById("checkout-tier-warning");
+  var checkoutEmailInp = document.getElementById("checkout-email");
+  var checkoutSubmit = document.getElementById("checkout-submit");
+  var flashCheckoutTimer = null;
+
+  var SERVER_MODE_LABELS = {
+    update: "Update current server (in progress—not available)",
+    fresh: "New server template (new or reset server)",
+  };
+
+  var LAYOUT_TYPE_LABELS = {
+    content_creator: "Content creator",
+    business: "Businesses",
+    education: "Education",
+    startup: "Startup workspace",
+    coaching: "Coaching",
+    private: "Private servers",
+  };
+
+  function normalizeServerMode(mode) {
+    if (mode === "update") return "fresh";
+    return mode;
+  }
+
+  var SIZE_LABELS = {
+    small: "Under 500 (following / reach)",
+    medium: "500 – 5,000",
+    large: "5,000+",
+    "not-yet": "Other / Rather not say",
+  };
+
+  var PACKAGE_LABELS = {
+    simple: "Simple",
+    advanced: "Advanced",
+    professional: "Professional",
+  };
+
+  var PACKAGE_PRICE_HINTS = {
+    simple: "$10",
+    advanced: "$20",
+    professional: "$50",
+  };
+
+  var TIER_TITLES = {
+    simple: "Simple — gets the job done",
+    advanced: "Advanced — Simple + presets & polish",
+    professional: "Professional — coming soon",
+  };
+
+  function sizeNote(size) {
+    if (size === "small") return "Lean layout for a small team.";
+    if (size === "medium") return "Room to grow.";
+    if (size === "large") return "Scaled for traffic and support.";
+    if (size === "not-yet") return "We’ll keep the layout flexible—no fixed audience size needed.";
+    return "";
+  }
+
+  function serverModeNote(mode) {
+    var m = normalizeServerMode(mode);
+    if (m === "fresh")
+      return "You’ll receive a full server layout for a new or reset server. Live server tune-ups are in progress and not bookable yet.";
+    return "";
+  }
+
+  function tierLeadNote(tier) {
+    if (tier === "advanced")
+      return "Advanced adds presets, patterns, VIP roles, and announce/ticket lanes.";
+    return "";
+  }
+
+  function includesForTier(tier, serverMode) {
+    var base = {
+      simple: [
+        "Full functional Discord layout",
+        "Custom channel names",
+        "Basic roles",
+        "Basic text & voice setup",
+        "Welcome and rules channel starter",
+        "Simple setup notes",
+      ],
+      advanced: [
+        "Everything in Simple",
+        "Growth-focused channel architecture",
+        "Advanced role hierarchy and permissions map",
+        "Announcement, ticket, and conversion lanes",
+        "VIP/private room strategy",
+        "Creator/business optimization by layout type",
+        "Monetization-ready server flow ideas",
+        "Priority polish and delivery",
+      ],
+      professional: [
+        "Everything in Advanced",
+        "Staff vs public maps",
+        "VIP & paid-access flows",
+        "Events & bot mapping",
+        "Full consistency pass",
+        "Timeline TBD",
+      ],
+    };
+    var list = base[tier] || base.simple;
+    if (normalizeServerMode(serverMode) === "fresh") {
+      list = list.slice();
+      list.push("Delivered as an implementable layout (template-style + notes)");
+    }
+    return list;
+  }
+
+  function syncPackagePickUI() {
+    document.querySelectorAll("[data-package-tier]").forEach(function (b) {
+      var card = b.closest(".price-card");
+      if (!card) return;
+      var t = b.getAttribute("data-package-tier");
+      card.classList.toggle("is-picked", !!state.packageTier && t === state.packageTier);
+    });
+  }
+
+  function flowPosForPage(pageIdx) {
+    var i = FLOW_PAGE_ORDER.indexOf(pageIdx);
+    return i >= 0 ? i : 0;
+  }
+
+  function pageForFlowPos(pos) {
+    if (pos < 0 || pos >= FLOW_PAGE_ORDER.length) return null;
+    return FLOW_PAGE_ORDER[pos];
+  }
+
+  function syncPatternTierGate() {
+    var simple = state.packageTier === "simple";
+    patternSelectButtons.forEach(function (btn) {
+      var id = btn.getAttribute("data-pattern");
+      var locked = simple && id !== "regular-text";
+      btn.classList.toggle("pattern-select--locked", locked);
+      btn.setAttribute("aria-disabled", locked ? "true" : "false");
+    });
+    if (styleTierNoteEl) {
+      styleTierNoteEl.textContent = simple
+        ? "Simple includes Regular text only. Other styles are visible but available in Advanced ($20)."
+        : "Advanced unlocks all channel naming styles.";
+    }
+  }
+
+  function setStep(n) {
+    if (n < 0 || n >= pages.length) return;
+    var prevStep = state.step;
+    var lastIdx = pages.length - 1;
+    state.step = n;
+    if (prevStep === lastIdx && n !== lastIdx) {
+      state.checkoutReady = false;
+    }
+    pages.forEach(function (page, i) {
+      page.classList.toggle("is-active", i === n);
+    });
+    var flowPos = flowPosForPage(n);
+    if (backBtn) backBtn.hidden = flowPos === 0;
+    if (progressLabel) progressLabel.textContent = "Step " + (flowPos + 1) + " of " + totalSteps;
+    if (progressFill) {
+      progressFill.style.width = ((flowPos + 1) / totalSteps) * 100 + "%";
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (n === 6) renderSummary();
+    if (n === 3) syncAudienceStepUI();
+    if (n === 4) syncPatternSelectionUI();
+    if (n === 4) syncPatternTierGate();
+    if (n === 5) syncPackagePickUI();
+    if (n === 6) {
+      syncPackagePickUI();
+      syncPatternSelectionUI();
+      syncPatternTierGate();
+    }
+    if (n === 7) {
+      state.checkoutReady = true;
+      syncCheckoutPanel();
+    }
+    closeDrawer();
+  }
+
+  function syncPatternSelectionUI() {
+    patternSelectButtons.forEach(function (btn) {
+      var id = btn.getAttribute("data-pattern");
+      var on = state.channelPattern && id === state.channelPattern;
+      btn.classList.toggle("is-selected", !!on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    if (patternPickLabelEl) {
+      patternPickLabelEl.textContent = state.channelPatternLabel || "none selected (optional)";
+    }
+  }
+
+  function syncAudienceStepUI() {
+    var page = document.getElementById("step-audience");
+    if (!page) return;
+    var pFollow = document.getElementById("audience-followers-panel");
+    var pSize = document.getElementById("audience-size-panel");
+    if (!pFollow || !pSize) return;
+    if (state.hasFollowers === true) {
+      pFollow.hidden = true;
+      pSize.hidden = false;
+    } else {
+      pFollow.hidden = false;
+      pSize.hidden = true;
+    }
+  }
+
+  function nextStep() {
+    var flowPos = flowPosForPage(state.step);
+    var nextPage = pageForFlowPos(flowPos + 1);
+    if (typeof nextPage === "number") setStep(nextPage);
+  }
+
+  function prevStep() {
+    var flowPos = flowPosForPage(state.step);
+    var prevPage = pageForFlowPos(flowPos - 1);
+    if (typeof prevPage === "number") setStep(prevPage);
+  }
+
+  function escapeHtml(s) {
+    if (s == null || s === "") return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /** Full server layout: categories and channels (single source for summary list + Discord demo). */
+  var CHANNEL_TREE = [
+    {
+      title: "New",
+      locked: false,
+      channels: [
+        { name: "Welcome", voice: false, locked: false },
+        { name: "Rules", voice: false, locked: false },
+        { name: "Roles", voice: false, locked: false },
+      ],
+    },
+    {
+      title: "Information",
+      locked: false,
+      channels: [
+        { name: "Announcements", voice: false, locked: false },
+        { name: "Giveaway", voice: false, locked: false },
+        { name: "Useful-Links", voice: false, locked: false },
+        { name: "Polls", voice: false, locked: false },
+        { name: "New-Posts", voice: false, locked: false },
+        { name: "Partnerships", voice: false, locked: false },
+      ],
+    },
+    {
+      title: "General",
+      locked: false,
+      channels: [
+        { name: "General", voice: false, locked: false },
+        { name: "Off-Topic", voice: false, locked: false },
+        { name: "Game-Chat", voice: false, locked: false },
+        { name: "Clips", voice: false, locked: false },
+        { name: "Tech", voice: false, locked: false },
+        { name: "Art", voice: false, locked: false },
+        { name: "Questions", voice: false, locked: false },
+      ],
+    },
+    {
+      title: "Bot",
+      locked: false,
+      channels: [
+        { name: "Bots", voice: false, locked: false },
+        { name: "CMD", voice: false, locked: false },
+      ],
+    },
+    {
+      title: "Voice Chat",
+      locked: false,
+      channels: [
+        { name: "Lounge", voice: true, locked: false },
+        { name: "Duo #1", voice: true, locked: false },
+        { name: "Duo #2", voice: true, locked: false },
+        { name: "Squad #1", voice: true, locked: false },
+        { name: "Squad #2", voice: true, locked: false },
+        { name: "Crew Lounge", voice: true, locked: false },
+        { name: "Music", voice: true, locked: false },
+        { name: "Stream", voice: true, locked: false },
+        { name: "AFK", voice: true, locked: false },
+      ],
+    },
+    {
+      title: "Advisory",
+      locked: true,
+      channels: [
+        { name: "Restricted Users", voice: false, locked: true },
+        { name: "Muted Users", voice: false, locked: true },
+        { name: "Judgement VC", voice: true, locked: true },
+      ],
+    },
+    {
+      title: "Staff",
+      locked: true,
+      channels: [
+        { name: "Admin Server-Ideas", voice: false, locked: true },
+        { name: "Staff Information", voice: false, locked: true },
+        { name: "Test Bot", voice: false, locked: true },
+        { name: "Bye Bye", voice: false, locked: true },
+        { name: "Recording", voice: true, locked: true },
+        { name: "Streaming", voice: true, locked: true },
+        { name: "Friends", voice: true, locked: true },
+      ],
+    },
+  ];
+
+  function demoEmojiForName(name) {
+    var m = {
+      Welcome: "👋",
+      Rules: "📜",
+      Roles: "🔑",
+      Announcements: "📢",
+      Giveaway: "🎉",
+      "Useful-Links": "🚀",
+      Polls: "❓",
+      "New-Posts": "🔔",
+      Partnerships: "🔥",
+      General: "💬",
+      "Off-Topic": "🗣️",
+      "Game-Chat": "✅",
+      Clips: "⌨️",
+      Tech: "🛠️",
+      Art: "🎨",
+      Questions: "❔",
+      Bots: "🤖",
+      CMD: "⚡",
+      Lounge: "🔊",
+      "Duo #1": "1️⃣",
+      "Duo #2": "2️⃣",
+      "Squad #1": "🎮",
+      "Squad #2": "🎯",
+      "Crew Lounge": "🛋️",
+      Music: "🎵",
+      Stream: "📺",
+      AFK: "💤",
+      "Restricted Users": "🚫",
+      "Muted Users": "🔇",
+      "Judgement VC": "⚖️",
+      "Admin Server-Ideas": "💡",
+      "Staff Information": "📋",
+      "Test Bot": "🧪",
+      "Bye Bye": "👋",
+      Recording: "⏺️",
+      Streaming: "📡",
+      Friends: "👥",
+    };
+    return m[name] || "📌";
+  }
+
+  function toMathBoldText(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z0-9]/g, function (ch) {
+      var code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1d400 + (code - 65));
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1d41a + (code - 97));
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0x1d7ce + (code - 48));
+      return ch;
+    });
+  }
+
+  function formatChannelDemoLabel(patternId, rawName, isVoice, laneIndex) {
+    var n = rawName;
+    var e = demoEmojiForName(n);
+    var lower = n.toLowerCase();
+    var idx = typeof laneIndex === "number" ? laneIndex : 0;
+    if (!patternId) {
+      return isVoice ? n : e + " | " + n;
+    }
+    switch (patternId) {
+      case "regular-text":
+        return n;
+      case "bracket":
+        return toMathBoldText("「" + e + "」" + lower);
+      case "bar-divider":
+        return toMathBoldText(e + " | " + n);
+      case "flourish":
+        return toMathBoldText("✦" + n + "✦");
+      case "bold-column":
+        return toMathBoldText(e + "┃" + n);
+      case "corner-brackets":
+        return toMathBoldText("【" + e + "】" + lower);
+      case "chevrons":
+        return toMathBoldText("《" + e + "》" + lower);
+      case "dot-separator":
+        return toMathBoldText(e + "·" + lower.replace(/\s+/g, ""));
+      case "em-dash":
+        return toMathBoldText(e + " — " + lower);
+      case "parentheses":
+        return toMathBoldText("(" + e + ") " + lower);
+      case "star-accent":
+        return toMathBoldText("☆│" + lower);
+      case "slash-path":
+        return toMathBoldText(e + "/" + lower.replace(/\s+/g, ""));
+      case "fullwidth-pipe":
+        return toMathBoldText(e + "｜" + n);
+      case "double-line":
+        return toMathBoldText("║" + e + "║ " + n);
+      case "minimal-caps":
+        return toMathBoldText(n.toUpperCase().replace(/\s+/g, " "));
+      case "arrow-tail":
+        return toMathBoldText(e + "→" + lower.replace(/\s+/g, ""));
+      case "tilde-wave":
+        return toMathBoldText(e + "〜" + lower.replace(/\s+/g, ""));
+      case "bullet-ring":
+        return toMathBoldText("●│" + lower.replace(/\s+/g, ""));
+      case "plus-gate":
+        return toMathBoldText("➕│" + lower.replace(/\s+/g, ""));
+      case "sparkle-dot":
+        return toMathBoldText("✧・" + lower.replace(/\s+/g, ""));
+      case "angle-quotes":
+        return toMathBoldText("‹" + e + "› " + lower);
+      case "double-colon":
+        return toMathBoldText(e + "::" + lower.replace(/\s+/g, ""));
+      case "equals-bar":
+        return toMathBoldText("═" + e + "═" + lower.replace(/\s+/g, ""));
+      case "lightning-bolt":
+        return toMathBoldText("⚡・" + lower.replace(/\s+/g, ""));
+      case "box-branch":
+        return toMathBoldText("╰" + e + "╯" + lower.replace(/\s+/g, ""));
+      case "low-line-pad":
+        return toMathBoldText("▁" + lower.replace(/\s+/g, "") + "▁");
+      case "infinity-tag":
+        return toMathBoldText("∞│" + lower.replace(/\s+/g, ""));
+      case "diamond-frame":
+        return toMathBoldText("◇" + lower.replace(/\s+/g, "") + "◇");
+      case "numbered-lanes": {
+        var k = (idx % 98) + 1;
+        var numStr = k < 10 ? "0" + k : String(k);
+        return toMathBoldText(numStr + "┊" + lower.replace(/\s+/g, ""));
+      }
+      case "prefix-tag":
+        return toMathBoldText(isVoice ? "[vc] " + lower : "[ch] " + lower);
+      case "wave-dash":
+        return toMathBoldText(e + "〜〜" + lower.replace(/\s+/g, ""));
+      case "minimal-lowercase":
+        return toMathBoldText(lower.replace(/\s+/g, "-"));
+      case "section-sign":
+        return toMathBoldText("§" + e + "§" + lower.replace(/\s+/g, ""));
+      case "musical-note":
+        return toMathBoldText("♪│" + lower.replace(/\s+/g, ""));
+      default:
+        return toMathBoldText(isVoice ? n : e + " | " + n);
+    }
+  }
+
+  function findDefaultDemoChannel() {
+    var i;
+    var j;
+    for (i = 0; i < CHANNEL_TREE.length; i++) {
+      if (CHANNEL_TREE[i].title !== "General") continue;
+      for (j = 0; j < CHANNEL_TREE[i].channels.length; j++) {
+        var ch = CHANNEL_TREE[i].channels[j];
+        if (!ch.voice && !ch.locked) return ch;
+      }
+    }
+    for (i = 0; i < CHANNEL_TREE.length; i++) {
+      for (j = 0; j < CHANNEL_TREE[i].channels.length; j++) {
+        var c = CHANNEL_TREE[i].channels[j];
+        if (!c.voice && !c.locked) return c;
+      }
+    }
+    return CHANNEL_TREE[0] && CHANNEL_TREE[0].channels[0] ? CHANNEL_TREE[0].channels[0] : { name: "general", voice: false, locked: false };
+  }
+
+  /** Each style: Information + General (text) + Voice Chat (voice), 3 channels each. */
+  var PATTERN_PREVIEW_DATA = {
+    "regular-text": {
+      info: ["announcements", "rules", "links"],
+      general: ["general", "clips", "art"],
+      voice: ["lounge", "music", "afk"],
+    },
+    bracket: {
+      info: ["「📢」announcements", "「📋」rules", "「🔗」links"],
+      general: ["「💬」general", "「🎬」clips", "「🎨」art"],
+      voice: ["「🎮」lounge", "「🎵」music", "「🛋」afk"],
+    },
+    "bar-divider": {
+      info: ["📢┊ Announcements", "📋┊ Rules", "🔗┊ Links"],
+      general: ["💬┊ General", "🎬┊ Clips", "🎨┊ Art"],
+      voice: ["🎮┊ Lounge", "🎵┊ Music", "🛋┊ AFK"],
+    },
+    flourish: {
+      info: ["✦𝐈𝐧𝐟𝐨✦", "✦𝐑𝐮𝐥𝐞𝐬✦", "✦𝐋𝐢𝐧𝐤𝐬✦"],
+      general: ["✦𝐆𝐞𝐧𝐞𝐫𝐚𝐥✦", "✦𝐂𝐥𝐢𝐩𝐬✦", "✦𝐀𝐫𝐭✦"],
+      voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
+    },
+    "bold-column": {
+      info: ["📢┃𝐍𝐞𝐰𝐬", "📋┃𝐑𝐮𝐥𝐞𝐬", "🔗┃𝐋𝐢𝐧𝐤𝐬"],
+      general: ["💬┃𝐆𝐞𝐧𝐞𝐫𝐚𝐥", "🎬┃𝐂𝐥𝐢𝐩𝐬", "🎨┃𝐀𝐫𝐭"],
+      voice: ["🎮┃𝐋𝐨𝐛𝐛𝐲", "🎵┃𝐌𝐮𝐬𝐢𝐜", "🛋┃𝐀𝐅𝐊"],
+    },
+    "corner-brackets": {
+      info: ["【📢】announcements", "【📋】rules", "【🔗】links"],
+      general: ["【💬】general", "【🎬】clips", "【🎨】art"],
+      voice: ["【🎮】lounge", "【🎵】music", "【🛋】afk"],
+    },
+    chevrons: {
+      info: ["《📢》announcements", "《📋》rules", "《🔗》links"],
+      general: ["《💬》general", "《🎬》clips", "《🎨》art"],
+      voice: ["《🎮》lounge", "《🎵》music", "《🛋》afk"],
+    },
+    "dot-separator": {
+      info: ["📢·announcements", "📋·rules", "🔗·links"],
+      general: ["💬·general", "🎬·clips", "🎨·art"],
+      voice: ["🎮·lounge", "🎵·music", "🛋·afk"],
+    },
+    "em-dash": {
+      info: ["📢 — alerts", "📋 — rules", "🔗 — links"],
+      general: ["💬 — chat", "🎬 — clips", "🎨 — art"],
+      voice: ["🎮 — lounge", "🎵 — music", "🛋 — afk"],
+    },
+    parentheses: {
+      info: ["(📢) announcements", "(📋) rules", "(🔗) links"],
+      general: ["(💬) general", "(🎮) lfg", "(🎨) art"],
+      voice: ["(🎮) lobby", "(🎵) music", "(🛋) afk"],
+    },
+    "star-accent": {
+      info: ["☆│announcements", "☆│rules", "☆│links"],
+      general: ["☆│general", "☆│chat", "☆│media"],
+      voice: ["☆│lobby", "☆│music", "☆│afk"],
+    },
+    "slash-path": {
+      info: ["📢/announcements", "📋/rules", "🔗/links"],
+      general: ["💬/general", "🎨/art", "📢/updates"],
+      voice: ["🎮/lobby", "🎵/music", "🛋/afk"],
+    },
+    "fullwidth-pipe": {
+      info: ["📢｜announcements", "📋｜rules", "🔗｜links"],
+      general: ["💬｜general", "🎮｜gaming", "📸｜shots"],
+      voice: ["🎮｜lobby", "🎵｜music", "🛋｜afk"],
+    },
+    "double-line": {
+      info: ["║📢║ announcements", "║📋║ rules", "║🔗║ links"],
+      general: ["║💬║ general", "║🎵║ music", "║✨║ misc"],
+      voice: ["║🎮║ lobby", "║🎵║ music", "║🛋║ afk"],
+    },
+    "minimal-caps": {
+      info: ["ANNOUNCEMENTS", "RULES", "LINKS"],
+      general: ["GENERAL", "CLIPS", "ART"],
+      voice: ["LOBBY", "MUSIC", "AFK"],
+    },
+    "arrow-tail": {
+      info: ["📢→announcements", "📋→rules", "🔗→links"],
+      general: ["💬→general", "🎮→lfg", "🎨→art"],
+      voice: ["🎮→lobby", "🎵→music", "🛋→afk"],
+    },
+    "tilde-wave": {
+      info: ["📢〜announcements", "📋〜rules", "🔗〜links"],
+      general: ["💬〜chat", "🎮〜party", "🎨〜studio"],
+      voice: ["🎮〜lobby", "🎵〜music", "🛋〜afk"],
+    },
+    "bullet-ring": {
+      info: ["●│announcements", "●│rules", "●│links"],
+      general: ["●│general", "●│welcome", "●│chat"],
+      voice: ["●│lobby", "●│music", "●│afk"],
+    },
+    "plus-gate": {
+      info: ["➕│announcements", "➕│rules", "➕│links"],
+      general: ["➕│welcome", "➕│general", "➕│clips"],
+      voice: ["➕│lobby", "➕│music", "➕│afk"],
+    },
+    "sparkle-dot": {
+      info: ["✧・announcements", "✧・rules", "✧・links"],
+      general: ["✧・general", "✧・lounge", "✧・gaming"],
+      voice: ["✧・lobby", "✧・music", "✧・afk"],
+    },
+    "angle-quotes": {
+      info: ["‹📢› announcements", "‹📋› rules", "‹🔗› links"],
+      general: ["‹💬› general", "‹🎮› lobby", "‹🎨› art"],
+      voice: ["‹🎮› lobby", "‹🎵› music", "‹🛋› afk"],
+    },
+    "double-colon": {
+      info: ["📢::announcements", "📋::rules", "🔗::links"],
+      general: ["💬::chat", "🎮::squad", "📢::feed"],
+      voice: ["🎮::lobby", "🎵::music", "🛋::afk"],
+    },
+    "equals-bar": {
+      info: ["═📢═announcements", "═📋═rules", "═🔗═links"],
+      general: ["═💬═general", "═🎮═lobby", "═📣═news"],
+      voice: ["═🎮═lobby", "═🎵═music", "═🛋═afk"],
+    },
+    "lightning-bolt": {
+      info: ["⚡・announcements", "⚡・rules", "⚡・links"],
+      general: ["⚡・general", "⚡・clips", "⚡・hype"],
+      voice: ["⚡・lobby", "⚡・music", "⚡・afk"],
+    },
+    "box-branch": {
+      info: ["╰📢╯announcements", "╰📋╯rules", "╰🔗╯links"],
+      general: ["╰💬╯general", "╰🎮╯party", "╰🎨╯studio"],
+      voice: ["╰🎮╯lobby", "╰🎵╯music", "╰🛋╯afk"],
+    },
+    "low-line-pad": {
+      info: ["▁announcements▁", "▁rules▁", "▁links▁"],
+      general: ["▁general▁", "▁chat▁", "▁gaming▁"],
+      voice: ["▁lobby▁", "▁music▁", "▁afk▁"],
+    },
+    "infinity-tag": {
+      info: ["∞│announcements", "∞│rules", "∞│links"],
+      general: ["∞│general", "∞│chat", "∞│media"],
+      voice: ["∞│lobby", "∞│music", "∞│afk"],
+    },
+    "diamond-frame": {
+      info: ["◇announcements◇", "◇rules◇", "◇links◇"],
+      general: ["◇general◇", "◇welcome◇", "◇rules◇"],
+      voice: ["◇lobby◇", "◇music◇", "◇afk◇"],
+    },
+    "numbered-lanes": {
+      info: ["01┊announcements", "02┊rules", "03┊links"],
+      general: ["01┊general", "02┊chat", "03┊gaming"],
+      voice: ["01┊lobby", "02┊music", "03┊afk"],
+    },
+    "prefix-tag": {
+      info: ["[info] announcements", "[info] rules", "[info] links"],
+      general: ["[chat] general", "[chat] clips", "[chat] art"],
+      voice: ["[vc] lobby", "[vc] music", "[vc] afk"],
+    },
+    "wave-dash": {
+      info: ["📢〜〜announcements", "📋〜〜rules", "🔗〜〜links"],
+      general: ["💬〜〜chat", "🎮〜〜party", "📢〜〜ping"],
+      voice: ["🎮〜〜lobby", "🎵〜〜music", "🛋〜〜afk"],
+    },
+    "minimal-lowercase": {
+      info: ["announcements-info", "rules-doc", "useful-links"],
+      general: ["general-chat", "clips-share", "art-wip"],
+      voice: ["voice-lobby", "music-room", "hang-afk"],
+    },
+    "section-sign": {
+      info: ["§📢§announcements", "§📋§rules", "§🔗§links"],
+      general: ["§💬§general", "§🎮§games", "§🎨§art"],
+      voice: ["§🎮§lobby", "§🎵§music", "§🛋§afk"],
+    },
+    "musical-note": {
+      info: ["♪│announcements", "♪│rules", "♪│links"],
+      general: ["♪│general", "♪│chat", "♪│requests"],
+      voice: ["♪│lobby", "♪│stage", "♪│afk"],
+    },
+  };
+
+  function buildPatternSidebarHtml(patternId) {
+    var data = PATTERN_PREVIEW_DATA[patternId];
+    if (!data) return "";
+    var regularTextMode = patternId === "regular-text";
+    function categoryBlock(title, labels, voice) {
+      var rows = "";
+      for (var i = 0; i < labels.length; i++) {
+        var t = labels[i];
+        if (regularTextMode) {
+          rows +=
+            '<div class="disc-ch-row"><span class="disc-ch-text">' +
+            escapeHtml(t) +
+            "</span></div>";
+          continue;
+        }
+        if (voice) {
+          rows +=
+            '<div class="disc-ch-row disc-ch-row-voice"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
+            escapeHtml(t) +
+            "</span></div>";
+        } else {
+          rows +=
+            '<div class="disc-ch-row"><span class="disc-hash">#</span><span class="disc-ch-text">' +
+            escapeHtml(t) +
+            "</span></div>";
+        }
+      }
+      return (
+        '<div class="disc-category">' +
+        '<div class="disc-category-head"><span class="disc-chevron" aria-hidden="true">▼</span><span class="disc-category-title">' +
+        escapeHtml(title) +
+        "</span></div>" +
+        '<div class="disc-channel-list mono" dir="ltr">' +
+        rows +
+        "</div></div>"
+      );
+    }
+    return (
+      categoryBlock("Information", data.info, false) +
+      categoryBlock("General", data.general, false) +
+      categoryBlock("Voice Chat", data.voice, true)
+    );
+  }
+
+  function renderPatternStylePreviews() {
+    patternSelectButtons.forEach(function (btn) {
+      var id = btn.getAttribute("data-pattern");
+      var mock = btn.querySelector(".sidebar-mock-pattern");
+      if (!id || !mock) return;
+      mock.innerHTML = buildPatternSidebarHtml(id);
+    });
+  }
+
+  function slugToLabel(slug) {
+    if (!slug) return "";
+    return String(slug)
+      .split("-")
+      .filter(Boolean)
+      .map(function (w) {
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      })
+      .join(" ");
+  }
+
+  function patternLabelFromButton(btn) {
+    var id = btn.getAttribute("data-pattern") || "";
+    var attr = btn.getAttribute("data-pattern-label");
+    if (attr != null && String(attr).trim() !== "") return String(attr).trim();
+    var el = btn.querySelector(".style-label");
+    if (el && el.textContent && String(el.textContent).trim() !== "") return el.textContent.trim();
+    return slugToLabel(id);
+  }
+
+  function summaryPatternDisplay() {
+    if (state.channelPatternLabel && String(state.channelPatternLabel).trim() !== "")
+      return String(state.channelPatternLabel).trim();
+    if (state.channelPattern) return slugToLabel(state.channelPattern);
+    return "";
+  }
+
+  var DEMO_PROFILES = [
+    { name: "Taylor Swift", seed: "taylor-swift-demo" },
+    { name: "Beyoncé", seed: "beyonce-demo" },
+    { name: "Drake", seed: "drake-demo" },
+    { name: "Rihanna", seed: "rihanna-demo" },
+    { name: "The Weeknd", seed: "weeknd-demo" },
+    { name: "Bad Bunny", seed: "badbunny-demo" },
+    { name: "Ariana Grande", seed: "ariana-demo" },
+    { name: "Zendaya", seed: "zendaya-demo" },
+    { name: "Chris Hemsworth", seed: "chris-hems-demo" },
+    { name: "Leonardo DiCaprio", seed: "leo-demo" },
+    { name: "Jennifer Lopez", seed: "jlo-demo" },
+    { name: "Dwayne Johnson", seed: "rock-demo" },
+    { name: "Billie Eilish", seed: "billie-eilish-demo" },
+    { name: "Dua Lipa", seed: "dua-lipa-demo" },
+    { name: "Ed Sheeran", seed: "ed-sheeran-demo" },
+    { name: "Bruno Mars", seed: "bruno-mars-demo" },
+    { name: "Selena Gomez", seed: "selena-gomez-demo" },
+    { name: "Miley Cyrus", seed: "miley-cyrus-demo" },
+    { name: "Shakira", seed: "shakira-demo" },
+    { name: "Lady Gaga", seed: "lady-gaga-demo" },
+    { name: "Post Malone", seed: "post-malone-demo" },
+    { name: "Travis Scott", seed: "travis-scott-demo" },
+    { name: "SZA", seed: "sza-demo" },
+    { name: "Doja Cat", seed: "doja-cat-demo" },
+    { name: "Olivia Rodrigo", seed: "olivia-rodrigo-demo" },
+    { name: "Kanye West", seed: "kanye-west-demo" },
+    { name: "Kendrick Lamar", seed: "kendrick-lamar-demo" },
+    { name: "Eminem", seed: "eminem-demo" },
+    { name: "Travis Kelce", seed: "travis-kelce-demo" },
+    { name: "LeBron James", seed: "lebron-james-demo" },
+    { name: "Cristiano Ronaldo", seed: "cr7-demo" },
+    { name: "Lionel Messi", seed: "messi-demo" },
+    { name: "Serena Williams", seed: "serena-williams-demo" },
+    { name: "Stephen Curry", seed: "stephen-curry-demo" },
+    { name: "Tom Holland", seed: "tom-holland-demo" },
+    { name: "Margot Robbie", seed: "margot-robbie-demo" },
+    { name: "Scarlett Johansson", seed: "scarlett-johansson-demo" },
+    { name: "Keanu Reeves", seed: "keanu-reeves-demo" },
+    { name: "Ryan Reynolds", seed: "ryan-reynolds-demo" },
+    { name: "Will Smith", seed: "will-smith-demo" },
+    { name: "Emma Stone", seed: "emma-stone-demo" },
+    { name: "Pedro Pascal", seed: "pedro-pascal-demo" },
+    { name: "Timothée Chalamet", seed: "timothee-chalamet-demo" },
+    { name: "Kim Kardashian", seed: "kim-kardashian-demo" },
+    { name: "Kylie Jenner", seed: "kylie-jenner-demo" },
+    { name: "MrBeast", seed: "mrbeast-demo" },
+    { name: "Logan Paul", seed: "logan-paul-demo" },
+    { name: "Neymar Jr", seed: "neymar-demo" },
+    { name: "Virat Kohli", seed: "virat-kohli-demo" },
+    { name: "Angelina Jolie", seed: "angelina-jolie-demo" },
+    { name: "Robert Downey Jr", seed: "rdj-demo" },
+    { name: "Megan Thee Stallion", seed: "meg-thee-stallion-demo" },
+    { name: "Ice Spice", seed: "ice-spice-demo" },
+    { name: "Sydney Sweeney", seed: "sydney-sweeney-demo" },
+  ];
+
+  /** Pairs shown as member list section titles (replaces former Idle / Do Not Disturb labels). */
+  var DEMO_ROLE_SECTION_PAIRS = [
+    ["Moderators", "VIP"],
+    ["Hosts", "Creators"],
+    ["Coaches", "Partners"],
+    ["Staff", "Artists"],
+    ["Analysts", "Producers"],
+  ];
+
+  function demoShuffle(arr) {
+    var a = arr.slice();
+    var i;
+    for (i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
+  function demoAvatarUrl(seed) {
+    return "https://picsum.photos/seed/" + encodeURIComponent(seed) + "/64/64";
+  }
+
+  function demoStatusHtml(status) {
+    var titles = {
+      online: "Online",
+      idle: "Idle",
+      dnd: "Do Not Disturb",
+      offline: "Offline",
+      invisible: "Invisible",
+      streaming: "Streaming",
+    };
+    var t = titles[status] || titles.offline;
+    return (
+      '<span class="discord-demo-status discord-demo-status--' +
+      status +
+      '" title="' +
+      escapeHtml(t) +
+      '" aria-hidden="true"></span>'
+    );
+  }
+
+  function buildDemoUserRoster() {
+    var shuffled = demoShuffle(DEMO_PROFILES);
+    var rest = shuffled.slice(0, 12);
+    var cycle = [
+      "online",
+      "idle",
+      "dnd",
+      "streaming",
+      "offline",
+      "invisible",
+      "online",
+    ];
+    var members = rest.map(function (p, i) {
+      return {
+        name: p.name,
+        seed: p.seed + "-m" + i,
+        status: cycle[i % cycle.length],
+      };
+    });
+    return {
+      self: { name: "You", seed: "you-self", status: "online" },
+      members: members,
+    };
+  }
+
+  function buildDemoUserbarHtml(roster) {
+    return (
+      '<div class="discord-demo-userbar" aria-hidden="true">' +
+      '<div class="discord-demo-avatar-wrap">' +
+      '<img class="discord-demo-user-av discord-demo-user-av--img" src="' +
+      escapeHtml(demoAvatarUrl(roster.self.seed)) +
+      '" alt="" width="32" height="32" loading="lazy" decoding="async" />' +
+      demoStatusHtml("online") +
+      "</div>" +
+      '<span class="discord-demo-user-meta">' +
+      "You" +
+      '<span class="discord-demo-user-sub">' +
+      escapeHtml("Online") +
+      "</span></span></div>"
+    );
+  }
+
+  function buildDemoRailHtml() {
+    return (
+      '<div class="discord-demo-rail" aria-hidden="true">' +
+      '<span class="discord-demo-rail-icon discord-demo-rail-icon--active" title="This server"></span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--1" title="Game Hub">GH</span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--2" title="Music Lounge">🎵</span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--3" title="Art Studio">AR</span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--4" title="Sports">⚽</span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--5" title="Developers">Dev</span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--6" title="Study group">📚</span>' +
+      '<span class="discord-demo-rail-fake discord-demo-rail-fake--7" title="Clips">▶</span>' +
+      "</div>"
+    );
+  }
+
+  function buildDemoMembersPanelHtml(roster) {
+    var selfRow = {
+      name: roster.self.name,
+      seed: roster.self.seed,
+      status: "online",
+      isYou: true,
+    };
+    var all = [selfRow].concat(roster.members);
+    var order = ["online", "streaming", "idle", "dnd", "offline"];
+    var rolePair = DEMO_ROLE_SECTION_PAIRS[Math.floor(Math.random() * DEMO_ROLE_SECTION_PAIRS.length)];
+    var labels = {
+      online: "Online",
+      streaming: "Streaming",
+      idle: rolePair[0],
+      dnd: rolePair[1],
+      offline: "Offline",
+    };
+    var out = "";
+    var oi;
+    for (oi = 0; oi < order.length; oi++) {
+      var key = order[oi];
+      var users = [];
+      var ui;
+      for (ui = 0; ui < all.length; ui++) {
+        if (key === "offline") {
+          if (all[ui].status === "offline" || all[ui].status === "invisible") {
+            users.push(all[ui]);
+          }
+        } else if (all[ui].status === key) {
+          users.push(all[ui]);
+        }
+      }
+      if (!users.length) continue;
+      out +=
+        '<div class="discord-demo-members-section">' +
+        '<div class="discord-demo-members-head">' +
+        escapeHtml(labels[key]) +
+        " — " +
+        users.length +
+        "</div>";
+      for (ui = 0; ui < users.length; ui++) {
+        var u = users[ui];
+        var rowCls = "discord-demo-member-row" + (key === "offline" ? " discord-demo-member-row--offline" : "");
+        var badgeStatus = u.status;
+        out +=
+          '<div class="' +
+          rowCls +
+          '">' +
+          '<div class="discord-demo-avatar-wrap discord-demo-avatar-wrap--sm">' +
+          '<img class="discord-demo-user-av discord-demo-user-av--sm discord-demo-user-av--img" src="' +
+          escapeHtml(demoAvatarUrl(u.seed)) +
+          '" alt="" width="32" height="32" loading="lazy" decoding="async" />' +
+          demoStatusHtml(badgeStatus) +
+          "</div>" +
+          '<span class="discord-demo-member-name">' +
+          (u.isYou
+            ? '<span class="discord-demo-you-strong">You</span>'
+            : escapeHtml(u.name)) +
+          "</span></div>";
+      }
+      out += "</div>";
+    }
+    return out;
+  }
+
+  function buildDiscordDemoHtml(patternId, displayLabel) {
+    var lab =
+      displayLabel && String(displayLabel).trim()
+        ? displayLabel.trim()
+        : patternId
+          ? slugToLabel(patternId)
+          : "";
+    var hasPattern = !!patternId;
+    var lead = hasPattern
+      ? '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing. Style selected: <strong>' +
+        escapeHtml(lab) +
+        "</strong>.</p>"
+      : '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing.</p>';
+
+    var defCh = findDefaultDemoChannel();
+    var regularTextMode = patternId === "regular-text";
+    var laneCounter = 0;
+    var defLaneIndex = 0;
+    var catHtml = "";
+    var ci;
+    for (ci = 0; ci < CHANNEL_TREE.length; ci++) {
+      var cat = CHANNEL_TREE[ci];
+      var rowsHtml = "";
+      var j;
+      for (j = 0; j < cat.channels.length; j++) {
+        var ch = cat.channels[j];
+        var isDef =
+          defCh &&
+          ch.name === defCh.name &&
+          ch.voice === defCh.voice &&
+          ch.locked === defCh.locked;
+        if (isDef) defLaneIndex = laneCounter;
+        var defCls = isDef ? " discord-demo-ch--default is-active" : "";
+        var label = formatChannelDemoLabel(patternId, ch.name, ch.voice, laneCounter);
+        laneCounter += 1;
+        var vCls = ch.voice ? " discord-demo-ch--voice" : "";
+        var lk = ch.locked ? "true" : "false";
+        rowsHtml +=
+          '<div class="discord-demo-ch' +
+          defCls +
+          vCls +
+          '" data-name="' +
+          escapeHtml(ch.name) +
+          '" data-voice="' +
+          (ch.voice ? "true" : "false") +
+          '" data-locked="' +
+          lk +
+          '" tabindex="-1" role="listitem">' +
+          (regularTextMode
+            ? ""
+            : ch.voice
+              ? '<span class="discord-demo-ch-icon" aria-hidden="true">🔊</span>'
+              : '<span class="discord-demo-ch-hash">#</span>') +
+          (regularTextMode ? "" : ch.locked ? '<span class="discord-demo-ch-lock" aria-hidden="true">🔒</span>' : "") +
+          '<span class="discord-demo-ch-label">' +
+          escapeHtml(label) +
+          "</span></div>";
+      }
+      catHtml +=
+        '<div class="discord-demo-cat' +
+        (cat.locked ? " discord-demo-cat--locked" : "") +
+        '">' +
+        '<div class="discord-demo-cat-head"><span class="discord-demo-cat-chev" aria-hidden="true">▼</span><span class="discord-demo-cat-title">' +
+        escapeHtml(cat.title) +
+        "</span></div>" +
+        '<div class="discord-demo-cat-channels" role="list">' +
+        rowsHtml +
+        "</div></div>";
+    }
+
+    var defLabel = formatChannelDemoLabel(patternId, defCh.name, defCh.voice, defLaneIndex);
+    var defText = regularTextMode ? defLabel : defCh.voice ? defLabel : "# " + defLabel;
+    var defHeader = defText;
+    var defWelcome = "Welcome to " + defText + "!";
+    var defSub = "This is the start of the " + defText + " channel.";
+    var defMsg = "Message " + defText;
+
+    var demoRoster = buildDemoUserRoster();
+
+    return (
+      '<div class="summary-preview-combined">' +
+      '<h4 class="outcome-h outcome-h--preview-bundle">Demo</h4>' +
+      lead +
+      '<div class="discord-demo" data-demo-pattern="' +
+      escapeHtml(patternId || "") +
+      '" role="region" aria-label="Discord-style layout preview">' +
+      buildDemoRailHtml() +
+      '<div class="discord-demo-sidebar">' +
+      '<div class="discord-demo-sidebar-top">' +
+      '<div class="discord-demo-server-name">Your server <span class="discord-demo-chev">▼</span></div>' +
+      '<div class="discord-demo-nav-static">' +
+      '<div class="discord-demo-nav-row">Events</div>' +
+      '<div class="discord-demo-nav-row">Server Boosts</div>' +
+      "</div>" +
+      "</div>" +
+      '<div class="discord-demo-channel-scroll" tabindex="0">' +
+      catHtml +
+      "</div>" +
+      buildDemoUserbarHtml(demoRoster) +
+      "</div>" +
+      '<div class="discord-demo-main">' +
+      '<div class="discord-demo-main-toolbar">' +
+      '<span class="discord-demo-main-channel" data-demo-main-header>' +
+      escapeHtml(defHeader) +
+      "</span>" +
+      "</div>" +
+      '<div class="discord-demo-main-body">' +
+      '<div class="discord-demo-welcome" data-demo-welcome>' +
+      '<h2 class="discord-demo-welcome-title" data-demo-welcome-title>' +
+      escapeHtml(defWelcome) +
+      "</h2>" +
+      '<p class="discord-demo-welcome-sub" data-demo-welcome-sub>' +
+      escapeHtml(defSub) +
+      "</p>" +
+      "</div>" +
+      '<div class="discord-demo-messages" data-demo-messages aria-live="polite"></div>' +
+      "</div>" +
+      '<div class="discord-demo-inputbar">' +
+      '<input type="text" class="discord-demo-input" data-demo-msg-input maxlength="500" autocomplete="off" spellcheck="false" placeholder="' +
+      escapeHtml(defMsg) +
+      '" aria-label="Demo message box (press Enter to send)" />' +
+      "</div>" +
+      "</div>" +
+      '<div class="discord-demo-members" aria-hidden="true">' +
+      buildDemoMembersPanelHtml(demoRoster) +
+      "</div></div></div>"
+    );
+  }
+
+  function initDiscordDemoPreview(container) {
+    if (!container) return;
+    var demo = container.querySelector(".discord-demo");
+    if (!demo) return;
+    var patternId = demo.getAttribute("data-demo-pattern") || "";
+    var scrollEl = demo.querySelector(".discord-demo-channel-scroll");
+    var mainHeader = demo.querySelector("[data-demo-main-header]");
+    var welcomeTitle = demo.querySelector("[data-demo-welcome-title]");
+    var welcomeSub = demo.querySelector("[data-demo-welcome-sub]");
+    var msgInput = demo.querySelector("[data-demo-msg-input]");
+    var msgList = demo.querySelector("[data-demo-messages]");
+    var welcomeWrap = demo.querySelector("[data-demo-welcome]");
+    var defaultRow = demo.querySelector(".discord-demo-ch--default");
+    if (!scrollEl || !mainHeader || !welcomeTitle || !welcomeSub) return;
+
+    var laneMap = {};
+    var idx = 0;
+    var rows = demo.querySelectorAll(".discord-demo-ch");
+    var r;
+    for (r = 0; r < rows.length; r++) {
+      laneMap[rows[r].getAttribute("data-name") || ""] = idx++;
+    }
+
+    function updateFromRow(row) {
+      var name = row.getAttribute("data-name") || "";
+      var voice = row.getAttribute("data-voice") === "true";
+      var regularTextMode = patternId === "regular-text";
+      var li = laneMap[name];
+      if (typeof li !== "number") li = 0;
+      var label = formatChannelDemoLabel(patternId, name, voice, li);
+      var shownLabel = regularTextMode ? label : voice ? label : "# " + label;
+      var headerText = shownLabel;
+      var welcome = "Welcome to " + shownLabel + "!";
+      var sub = "This is the start of the " + shownLabel + " channel.";
+      var msg = "Message " + shownLabel;
+      mainHeader.textContent = headerText;
+      welcomeTitle.textContent = welcome;
+      welcomeSub.textContent = sub;
+      if (msgInput) msgInput.placeholder = msg;
+      var k;
+      for (k = 0; k < rows.length; k++) {
+        rows[k].classList.remove("is-active");
+      }
+      row.classList.add("is-active");
+    }
+
+    function resetDefault() {
+      if (defaultRow) updateFromRow(defaultRow);
+    }
+
+    for (r = 0; r < rows.length; r++) {
+      rows[r].addEventListener("mouseenter", function () {
+        updateFromRow(this);
+      });
+    }
+    scrollEl.addEventListener("mouseleave", function () {
+      resetDefault();
+    });
+
+    var checkoutDemoReply =
+      "We know you like this template. If you want us to process it, use the checkout button below.";
+
+    function sendDemoMessage() {
+      if (!msgInput || !msgList) return;
+      var raw = msgInput.value.trim();
+      if (!raw) return;
+      msgInput.value = "";
+      var userRow =
+        '<div class="discord-demo-msg discord-demo-msg--user">' +
+        '<span class="discord-demo-msg-bubble">' +
+        escapeHtml(raw) +
+        "</span></div>";
+      msgList.insertAdjacentHTML("beforeend", userRow);
+      if (welcomeWrap) welcomeWrap.classList.add("discord-demo-welcome--faded");
+      msgList.scrollTop = msgList.scrollHeight;
+      var reply = checkoutDemoReply;
+      setTimeout(function () {
+        var botRow =
+          '<div class="discord-demo-msg discord-demo-msg--bot">' +
+          '<span class="discord-demo-msg-avatar" aria-hidden="true">✨</span>' +
+          '<span class="discord-demo-msg-bubble discord-demo-msg-bubble--bot">' +
+          escapeHtml(reply) +
+          "</span></div>";
+        msgList.insertAdjacentHTML("beforeend", botRow);
+        msgList.scrollTop = msgList.scrollHeight;
+      }, 380);
+    }
+
+    if (msgInput) {
+      msgInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendDemoMessage();
+        }
+      });
+    }
+  }
+
+  function getCheckoutApiBase() {
+    if (typeof window === "undefined" || !window.STRIPE_CHECKOUT_API) return "";
+    var s = String(window.STRIPE_CHECKOUT_API).trim();
+    if (!s) return "";
+    return s.replace(/\/$/, "");
+  }
+
+  function flashCheckout(message, kind) {
+    if (!checkoutFlash) return;
+    checkoutFlash.hidden = false;
+    checkoutFlash.textContent = message;
+    checkoutFlash.className = "checkout-flash checkout-flash--" + (kind || "info");
+    if (flashCheckoutTimer) clearTimeout(flashCheckoutTimer);
+    if (kind === "success") return;
+    flashCheckoutTimer = setTimeout(function () {
+      checkoutFlash.hidden = true;
+    }, kind === "error" ? 8000 : 5000);
+  }
+
+  function hasSummaryContent() {
+    return !!(
+      state.serverMode ||
+      state.hasFollowers === false ||
+      state.size ||
+      state.packageTier ||
+      state.channelPattern
+    );
+  }
+
+  function syncCheckoutPanel() {
+    if (!checkoutPanel) return;
+    var hasAny = hasSummaryContent();
+    if (!hasAny) {
+      checkoutPanel.hidden = true;
+      checkoutPanel.classList.remove("checkout-panel--revealed");
+      if (checkoutSubmit) checkoutSubmit.disabled = true;
+      return;
+    }
+    var api = getCheckoutApiBase();
+    if (checkoutApiNote) checkoutApiNote.hidden = !!api;
+    if (checkoutTierWarning) checkoutTierWarning.hidden = !!state.packageTier;
+    var tier = state.packageTier;
+    if (checkoutTierLabel) {
+      checkoutTierLabel.textContent =
+        tier && PACKAGE_LABELS[tier] ? PACKAGE_LABELS[tier] + " package" : "Pick a tier in step 2";
+    }
+    if (checkoutAmount) {
+      checkoutAmount.textContent =
+        tier && PACKAGE_PRICE_HINTS[tier] ? PACKAGE_PRICE_HINTS[tier] + " USD" : "—";
+    }
+    if (checkoutSubmit) {
+      checkoutSubmit.disabled = !tier || !api;
+    }
+    var show = !!state.checkoutReady;
+    checkoutPanel.hidden = !show;
+    checkoutPanel.classList.toggle("checkout-panel--revealed", show);
+  }
+
+  function renderSummary() {
+    if (!summaryEl) return;
+    var tier = state.packageTier || "simple";
+    var hasAny = hasSummaryContent();
+
+    if (!hasAny) {
+      summaryEl.innerHTML =
+        '<p class="summary-placeholder">Go through the steps above to generate your recap and preview.</p>';
+      if (summaryCheckoutCta) summaryCheckoutCta.hidden = true;
+      syncCheckoutPanel();
+      return;
+    }
+
+    var styleLabel = summaryPatternDisplay();
+
+    var incomplete = !state.packageTier
+      ? '<p class="summary-disclaimer">You haven’t chosen a package tier yet—go back to step 2 to pick <strong>Simple</strong> or <strong>Advanced</strong>.</p>'
+      : "";
+
+    var html =
+      incomplete +
+      buildDiscordDemoHtml(state.channelPattern, styleLabel);
+
+    summaryEl.innerHTML = html;
+    if (summaryCheckoutCta) summaryCheckoutCta.hidden = false;
+    syncCheckoutPanel();
+    requestAnimationFrame(function () {
+      initDiscordDemoPreview(summaryEl);
+    });
+  }
+
+  function resetWizard() {
+    state.serverMode = null;
+    state.layoutType = null;
+    state.hasFollowers = null;
+    state.size = null;
+    state.packageTier = null;
+    state.channelPattern = null;
+    state.channelPatternLabel = null;
+    state.checkoutReady = false;
+    document.querySelectorAll(".price-card.is-picked").forEach(function (card) {
+      card.classList.remove("is-picked");
+    });
+    syncPatternSelectionUI();
+    setStep(0);
+  }
+
+  document.querySelectorAll("[data-wizard-next]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      nextStep();
+    });
+  });
+
+  if (backBtn) backBtn.addEventListener("click", prevStep);
+
+  if (homeBtn) {
+    homeBtn.addEventListener("click", function () {
+      resetWizard();
+    });
+  }
+
+  document.querySelectorAll("[data-choice-key]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var key = btn.getAttribute("data-choice-key");
+      var val = btn.getAttribute("data-choice-value");
+      if (key === "serverMode") {
+        state.serverMode = val;
+        nextStep();
+        return;
+      }
+      if (key === "layoutType") {
+        state.layoutType = val;
+        nextStep();
+        return;
+      }
+      if (key === "hasFollowers") {
+        if (val === "yes") {
+          state.hasFollowers = true;
+          state.size = null;
+          syncAudienceStepUI();
+        } else {
+          state.hasFollowers = false;
+          state.size = null;
+          nextStep();
+        }
+        return;
+      }
+      if (key === "size") {
+        state.size = val;
+        nextStep();
+      }
+    });
+  });
+
+  var audienceRepick = document.getElementById("audience-repick-followers");
+  if (audienceRepick) {
+    audienceRepick.addEventListener("click", function () {
+      state.hasFollowers = null;
+      state.size = null;
+      syncAudienceStepUI();
+    });
+  }
+
+  var audienceStepEl = document.getElementById("step-audience");
+  if (audienceStepEl) {
+    audienceStepEl.addEventListener("click", function (e) {
+      var raw = e.target;
+      var el = raw && raw.nodeType === 3 ? raw.parentElement : raw;
+      var skipBtn = el && el.closest && el.closest("#audience-skip");
+      if (!skipBtn) return;
+      e.preventDefault();
+      state.hasFollowers = null;
+      state.size = null;
+      syncAudienceStepUI();
+      nextStep();
+    });
+  }
+
+  patternSelectButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.getAttribute("data-pattern");
+      if (state.packageTier === "simple" && id !== "regular-text") {
+        state.packageTier = "advanced";
+        syncPackagePickUI();
+        setStep(5);
+        return;
+      }
+      var lab = patternLabelFromButton(btn);
+      if (state.channelPattern === id) {
+        state.channelPattern = null;
+        state.channelPatternLabel = null;
+        syncPatternSelectionUI();
+      } else {
+        state.channelPattern = id;
+        state.channelPatternLabel = lab;
+        syncPatternSelectionUI();
+        nextStep();
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-package-tier]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.disabled) return;
+      var t = btn.getAttribute("data-package-tier");
+      if (!t || t === "professional") return;
+      state.packageTier = t;
+      if (t === "simple") {
+        state.channelPattern = "regular-text";
+        state.channelPatternLabel = "Regular text";
+      }
+      document.querySelectorAll("[data-package-tier]").forEach(function (b) {
+        var card = b.closest(".price-card");
+        if (card) card.classList.remove("is-picked");
+      });
+      var picked = btn.closest(".price-card");
+      if (picked) picked.classList.add("is-picked");
+      syncPatternTierGate();
+      nextStep();
+    });
+  });
+
+  if (checkoutSubmit) {
+    checkoutSubmit.addEventListener("click", function () {
+      var api = getCheckoutApiBase();
+      if (!api || !state.packageTier) return;
+      var email = checkoutEmailInp && checkoutEmailInp.value ? checkoutEmailInp.value.trim() : "";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        flashCheckout("Enter a valid email so we can send your order copy.", "error");
+        if (checkoutEmailInp) checkoutEmailInp.focus();
+        return;
+      }
+      checkoutSubmit.disabled = true;
+      flashCheckout("Redirecting to secure Stripe Checkout…", "info");
+      fetch(api + "/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: state.packageTier,
+          email: email,
+          serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
+          layoutType: state.layoutType,
+          hasFollowers:
+            state.hasFollowers === true ? true : state.hasFollowers === false ? false : null,
+          size: state.size,
+          channelPattern: state.channelPattern,
+          channelPatternLabel: state.channelPatternLabel,
+        }),
+      })
+        .then(function (r) {
+          return r.json().then(function (data) {
+            if (!r.ok) throw new Error(data.error || r.statusText || "Request failed");
+            return data;
+          });
+        })
+        .then(function (data) {
+          if (data.url) {
+            try {
+              sessionStorage.setItem(
+                "discordStudioWizard",
+                JSON.stringify({
+                  serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
+                  layoutType: state.layoutType,
+                  hasFollowers:
+                    state.hasFollowers === true ? true : state.hasFollowers === false ? false : null,
+                  size: state.size,
+                  packageTier: state.packageTier,
+                  channelPattern: state.channelPattern,
+                  channelPatternLabel: state.channelPatternLabel,
+                })
+              );
+            } catch (e) {}
+            window.location.href = data.url;
+            return;
+          }
+          throw new Error("No checkout URL returned");
+        })
+        .catch(function (err) {
+          flashCheckout(err.message || "Checkout failed. Check the API URL and try again.", "error");
+          checkoutSubmit.disabled = false;
+        });
+    });
+  }
+
+  function openDrawer() {
+    if (!drawer || !backdrop) return;
+    drawer.classList.add("is-open");
+    backdrop.classList.add("is-open");
+    drawer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("drawer-open");
+    if (navToggle) navToggle.setAttribute("aria-expanded", "true");
+  }
+
+  function closeDrawer() {
+    if (!drawer || !backdrop) return;
+    drawer.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    drawer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("drawer-open");
+    if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+    if (header) header.classList.remove("nav-open");
+  }
+
+  if (navToggle) {
+    navToggle.addEventListener("click", function () {
+      if (drawer && drawer.classList.contains("is-open")) closeDrawer();
+      else openDrawer();
+    });
+  }
+
+  if (backdrop) backdrop.addEventListener("click", closeDrawer);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDrawer();
+  });
+
+  document.querySelectorAll("[data-goto-step]").forEach(function (link) {
+    link.addEventListener("click", function () {
+      var stepFlow = parseInt(link.getAttribute("data-goto-step"), 10);
+      if (isNaN(stepFlow)) return;
+      var page = pageForFlowPos(stepFlow);
+      if (typeof page === "number") setStep(page);
+    });
+  });
+
+  var summaryOpenCheckoutBtn = document.getElementById("summary-open-checkout");
+  if (summaryOpenCheckoutBtn) {
+    summaryOpenCheckoutBtn.addEventListener("click", function () {
+      if (!state.packageTier) {
+        state.packageTier = "advanced";
+        syncPackagePickUI();
+        setStep(5);
+        flashCheckout("Nice choice. Advanced ($20) is preselected so you can review and continue.", "info");
+        return;
+      }
+      state.checkoutReady = true;
+      setStep(7);
+    });
+  }
+
+  renderPatternStylePreviews();
+  setStep(0);
+
+  (function handleCheckoutReturn() {
+    var q = new URLSearchParams(window.location.search);
+    var c = q.get("checkout");
+    if (c === "success" || c === "cancel") {
+      try {
+        var raw = sessionStorage.getItem("discordStudioWizard");
+        if (raw) {
+          var saved = JSON.parse(raw);
+          if (saved && typeof saved === "object") {
+            state.serverMode = saved.serverMode
+              ? normalizeServerMode(saved.serverMode) || saved.serverMode
+              : null;
+            state.layoutType = saved.layoutType || null;
+            if (saved.hasFollowers === true) state.hasFollowers = true;
+            else if (saved.hasFollowers === false) state.hasFollowers = false;
+            else state.hasFollowers = null;
+            state.size = saved.size || null;
+            state.packageTier =
+              saved.packageTier === "professional" ? null : saved.packageTier || null;
+            state.channelPattern = saved.channelPattern || null;
+            state.channelPatternLabel = saved.channelPatternLabel || null;
+          }
+        }
+      } catch (e) {}
+      if (c === "success") {
+        state.checkoutReady = false;
+      } else {
+        state.checkoutReady = true;
+      }
+      setStep(7);
+      if (c === "success") {
+        flashCheckout(
+          "Payment received. Check your inbox for your order summary—we’ll deliver your full server layout on the tier timeline.",
+          "success"
+        );
+      } else {
+        flashCheckout("Checkout was canceled. You can pay from the summary whenever you’re ready.", "error");
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  })();
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -5% 0px", threshold: 0.06 }
+    );
+    document.querySelectorAll("#step-finish .steps, #step-finish .feature-chips").forEach(function (el) {
+      el.classList.add("reveal");
+      observer.observe(el);
+    });
+  }
+})();
