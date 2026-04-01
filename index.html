@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Serverly — build your own Discord server with guided layouts: channels, roles, flows, and tier-based monetization from $10. You create the server; we supply the design. Live server fixes coming soon." />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Serverly — Build your Discord server</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="site-header">
+    <button type="button" class="logo logo-btn" id="wizard-home" aria-label="Restart from beginning">
+      <span class="logo-mark">◆</span>
+      Serverly
+    </button>
+    <div class="wizard-progress" id="wizard-progress" role="status" aria-live="polite">
+      <span class="progress-label" id="progress-label">Step 1 of 8</span>
+      <div class="progress-track" aria-hidden="true">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-ghost btn-sm" id="wizard-back" hidden>← Back</button>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
+
+  <div class="mobile-drawer" id="mobile-drawer" aria-hidden="true">
+    <p class="drawer-title">Quick jump</p>
+    <button type="button" class="drawer-link" data-goto-step="0">Welcome</button>
+    <button type="button" class="drawer-link" data-goto-step="1">Package tier</button>
+    <button type="button" class="drawer-link" data-goto-step="2">Server setup</button>
+    <button type="button" class="drawer-link" data-goto-step="3">Layout type</button>
+    <button type="button" class="drawer-link" data-goto-step="4">Followers</button>
+    <button type="button" class="drawer-link" data-goto-step="5">Channel names</button>
+    <button type="button" class="drawer-link" data-goto-step="6">Summary</button>
+    <button type="button" class="drawer-link" data-goto-step="7">Checkout</button>
+  </div>
+
+  <main class="wizard-main" id="main-content">
+    <div class="wizard-pages" id="wizard-pages">
+
+    <div class="wizard-page is-active" data-step="0" id="step-welcome" aria-label="Welcome">
+    <section class="hero hero-wizard hero-welcome-centered">
+      <p class="badge fade-in">
+        <span class="badge-icon" aria-hidden="true">✦</span>
+        Your server, professionally structured for growth
+      </p>
+      <h1 class="hero-title fade-in delay-1">
+        Build your own Discord server.<br />
+        <span class="text-accent">You design it. We build it.</span>
+      </h1>
+      <p class="hero-lead fade-in delay-2">
+        You create the server in your account; we deliver the full layout—channels, roles, flows, and tier-based monetization notes—not a blank doc. Live server fixes aren’t bookable yet; hands-on help is optional.
+      </p>
+      <ul class="hero-value-list fade-in delay-2" aria-label="What you get">
+        <li><strong>Monetize:</strong> paid-access ready channels and roles.</li>
+        <li><strong>Growth:</strong> scalable structure without chaos.</li>
+        <li><strong>Affordable:</strong> pricing starts at $10.</li>
+        <li><strong>Optimal:</strong> layouts tuned for engagement.</li>
+        <li><strong>Easy:</strong> quick wizard with live demo.</li>
+      </ul>
+      <div class="hero-cta fade-in delay-3">
+        <button type="button" class="btn btn-primary btn-lg" data-wizard-next>Start Here</button>
+      </div>
+    </section>
+    </div>
+
+    <div class="wizard-page" data-step="1" id="step-server-mode" aria-label="Server setup type">
+      <div class="wizard-inner wizard-inner-centered server-mode-step">
+        <p class="wizard-step-hint">Step 3 of 8</p>
+        <h2 class="wizard-question wizard-question-tight">What do you need?</h2>
+        <div class="choice-grid choice-grid-server-mode">
+          <div
+            class="choice-card choice-card--goal choice-card--disabled"
+            role="group"
+            aria-label="Update current server. In progress—not available yet."
+          >
+            <span class="choice-soon-badge">In progress</span>
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🔧</span></span>
+            <span class="choice-title">Fix or update my current server</span>
+            <span class="choice-tagline">We’re building this service—it’s not available to book yet.</span>
+          </div>
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="serverMode" data-choice-value="fresh">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">📋</span></span>
+            <span class="choice-title">New server template</span>
+            <span class="choice-tagline">Pre-built structure: channels, roles &amp; flows—apply on a fresh or reset server</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-page" data-step="2" id="step-layout-type" aria-label="Choose layout type">
+      <div class="wizard-inner wizard-inner-centered server-mode-step">
+        <p class="wizard-step-hint">Step 4 of 8</p>
+        <h2 class="wizard-question wizard-question-tight">What layout are you building?</h2>
+        <div class="choice-grid choice-grid-server-mode">
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="content_creator">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🎬</span></span>
+            <span class="choice-title">Content creator</span>
+            <span class="choice-tagline">Built for content loops, clips, and announcements</span>
+          </button>
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="business">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">💼</span></span>
+            <span class="choice-title">Businesses</span>
+            <span class="choice-tagline">Client-ready structure with clean support lanes</span>
+          </button>
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="education">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🎓</span></span>
+            <span class="choice-title">Education</span>
+            <span class="choice-tagline">Class channels, resources, and discussion flow</span>
+          </button>
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="startup">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🚀</span></span>
+            <span class="choice-title">Startup workspace</span>
+            <span class="choice-tagline">Ops-friendly team channels for fast execution</span>
+          </button>
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="coaching">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🧠</span></span>
+            <span class="choice-title">Coaching</span>
+            <span class="choice-tagline">Member journey, check-ins, and accountability rooms</span>
+          </button>
+          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="private">
+            <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🔒</span></span>
+            <span class="choice-title">Private servers</span>
+            <span class="choice-tagline">Tighter access and private community flow</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-page" data-step="3" id="step-audience" aria-label="Followers and audience">
+      <div class="wizard-inner wizard-inner-centered audience-step">
+        <p class="wizard-step-hint">Step 5 of 8</p>
+
+        <div id="audience-followers-panel" class="audience-panel">
+          <h2 class="wizard-question wizard-question-tight">Do you have followers?</h2>
+          <div class="choice-grid choice-grid-2">
+            <button type="button" class="choice-card card-hover" data-choice-key="hasFollowers" data-choice-value="yes">
+              <span class="choice-title">Yes</span>
+            </button>
+            <button type="button" class="choice-card card-hover" data-choice-key="hasFollowers" data-choice-value="no">
+              <span class="choice-title">No</span>
+            </button>
+          </div>
+          <div class="audience-skip-wrap">
+            <button
+              type="button"
+              class="btn btn-link audience-skip-btn"
+              id="audience-skip"
+              aria-label="Skip the followers question"
+            >
+              Skip this question
+            </button>
+          </div>
+        </div>
+
+        <div id="audience-size-panel" class="audience-panel" hidden>
+          <button type="button" class="btn btn-ghost btn-sm audience-repick" id="audience-repick-followers">
+            ← Change follower answer
+          </button>
+          <h2 class="wizard-question wizard-question-tight">How big is your following?</h2>
+          <p class="wizard-micro-hint">Rough total reach or how big you expect the server to get—your best guess is fine.</p>
+          <div class="choice-grid choice-grid-2">
+            <button type="button" class="choice-card card-hover" data-choice-key="size" data-choice-value="small">
+              <span class="choice-title">Under 500</span>
+            </button>
+            <button type="button" class="choice-card card-hover" data-choice-key="size" data-choice-value="medium">
+              <span class="choice-title">500 – 5,000</span>
+            </button>
+            <button type="button" class="choice-card card-hover" data-choice-key="size" data-choice-value="large">
+              <span class="choice-title">5,000+</span>
+            </button>
+            <button type="button" class="choice-card card-hover" data-choice-key="size" data-choice-value="not-yet">
+              <span class="choice-title">Other / Rather not say</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-page" data-step="4" id="step-styles" aria-label="Channel name look">
+      <div class="wizard-inner wizard-inner-wide section-alt-wizard">
+        <p class="wizard-step-hint">Step 6 of 8</p>
+        <p class="wizard-micro-hint" id="style-tier-note">Advanced unlocks all channel naming styles.</p>
+        <h2 class="section-title section-title-wizard">Choose a design for your channel names.</h2>
+        <p class="section-lead section-lead-wizard section-lead-short">
+          Pick a channel-name design style. Each card previews Information, General, and Voice Chat. Tap one to save it to your summary. Advanced lets you mix styles across categories.
+        </p>
+
+      <div class="style-grid">
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="regular-text" data-pattern-label="Regular text" aria-pressed="false">
+          <h3 class="style-label">Regular text</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="bar-divider" data-pattern-label="Bar divider" aria-pressed="false">
+          <h3 class="style-label">Bar divider</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="flourish" data-pattern-label="Flourish wrap" aria-pressed="false">
+          <h3 class="style-label">Flourish wrap</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="bold-column" data-pattern-label="Bold column" aria-pressed="false">
+          <h3 class="style-label">Bold column</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="corner-brackets" data-pattern-label="Corner brackets" aria-pressed="false">
+          <h3 class="style-label">Corner brackets</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="chevrons" data-pattern-label="Chevrons" aria-pressed="false">
+          <h3 class="style-label">Chevrons</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="dot-separator" data-pattern-label="Dot separator" aria-pressed="false">
+          <h3 class="style-label">Dot separator</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="em-dash" data-pattern-label="Em dash" aria-pressed="false">
+          <h3 class="style-label">Em dash</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="parentheses" data-pattern-label="Parentheses" aria-pressed="false">
+          <h3 class="style-label">Parentheses</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="star-accent" data-pattern-label="Star accent" aria-pressed="false">
+          <h3 class="style-label">Star accent</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="slash-path" data-pattern-label="Slash path" aria-pressed="false">
+          <h3 class="style-label">Slash path</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="fullwidth-pipe" data-pattern-label="Fullwidth pipe" aria-pressed="false">
+          <h3 class="style-label">Fullwidth pipe</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="double-line" data-pattern-label="Double line" aria-pressed="false">
+          <h3 class="style-label">Double line</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="minimal-caps" data-pattern-label="Minimal caps" aria-pressed="false">
+          <h3 class="style-label">Minimal caps</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="arrow-tail" data-pattern-label="Arrow tail" aria-pressed="false">
+          <h3 class="style-label">Arrow tail</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="tilde-wave" data-pattern-label="Tilde wave" aria-pressed="false">
+          <h3 class="style-label">Tilde wave</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="bullet-ring" data-pattern-label="Bullet &amp; ring" aria-pressed="false">
+          <h3 class="style-label">Bullet &amp; ring</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="plus-gate" data-pattern-label="Plus gate" aria-pressed="false">
+          <h3 class="style-label">Plus gate</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="sparkle-dot" data-pattern-label="Sparkle dot" aria-pressed="false">
+          <h3 class="style-label">Sparkle dot</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="angle-quotes" data-pattern-label="Angle quotes" aria-pressed="false">
+          <h3 class="style-label">Angle quotes</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="double-colon" data-pattern-label="Double colon" aria-pressed="false">
+          <h3 class="style-label">Double colon</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="equals-bar" data-pattern-label="Equals bar" aria-pressed="false">
+          <h3 class="style-label">Equals bar</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="lightning-bolt" data-pattern-label="Lightning bolt" aria-pressed="false">
+          <h3 class="style-label">Lightning bolt</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="box-branch" data-pattern-label="Box branch" aria-pressed="false">
+          <h3 class="style-label">Box branch</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="low-line-pad" data-pattern-label="Low line pad" aria-pressed="false">
+          <h3 class="style-label">Low line pad</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="infinity-tag" data-pattern-label="Infinity tag" aria-pressed="false">
+          <h3 class="style-label">Infinity tag</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="diamond-frame" data-pattern-label="Diamond frame" aria-pressed="false">
+          <h3 class="style-label">Diamond frame</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="numbered-lanes" data-pattern-label="Numbered lanes" aria-pressed="false">
+          <h3 class="style-label">Numbered lanes</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="prefix-tag" data-pattern-label="Prefix tag" aria-pressed="false">
+          <h3 class="style-label">Prefix tag</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="wave-dash" data-pattern-label="Wave dash" aria-pressed="false">
+          <h3 class="style-label">Wave dash</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="minimal-lowercase" data-pattern-label="Minimal lowercase" aria-pressed="false">
+          <h3 class="style-label">Minimal lowercase</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="section-sign" data-pattern-label="Section sign" aria-pressed="false">
+          <h3 class="style-label">Section sign</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+        <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="musical-note" data-pattern-label="Musical note" aria-pressed="false">
+          <h3 class="style-label">Musical note</h3>
+          <div class="sidebar-mock sidebar-mock-pattern"></div>
+        </button>
+      </div>
+      </div>
+    </div>
+
+    <div class="wizard-page" data-step="5" id="step-packages" aria-label="Choose package">
+      <div class="wizard-inner wizard-inner-wide packages-step">
+        <header class="packages-step-header">
+          <p class="wizard-step-hint">Step 2 of 8</p>
+          <h2 class="wizard-question packages-step-title wizard-question-tight">Pick your outcome</h2>
+        </header>
+
+        <div class="pricing-grid wizard-pricing tier-cards-grid">
+        <article class="price-card tier-card tier-card--simple card-hover">
+          <div class="tier-card-head">
+            <h3 class="price-name">Simple</h3>
+            <p class="price-tag">Clear plan, fast</p>
+            <div class="tier-price-block" aria-label="Package price">
+              <span class="tier-price-label">From</span>
+              <span class="tier-price-nums">$10</span>
+            </div>
+            <div class="tier-meta-row">
+              <span class="tier-pill">⚡ Instant delivery</span>
+            </div>
+          </div>
+          <p class="tier-includes-kicker">What you get</p>
+          <ul class="price-features tier-feature-list tier-feature-list--rich">
+            <li>Full functional Discord layout</li>
+            <li>Custom channel names</li>
+            <li>Basic roles</li>
+            <li>Basic text &amp; voice setup</li>
+            <li>Welcome and rules channel starter</li>
+            <li>Simple setup notes</li>
+          </ul>
+          <button type="button" class="btn btn-outline btn-block btn-tier-pick" data-package-tier="simple">
+            <span class="btn-tier-main">Choose Simple</span>
+            <span class="btn-tier-sub">$10</span>
+          </button>
+        </article>
+
+        <article class="price-card price-card-featured tier-card tier-card--featured card-hover">
+          <div class="ribbon">Popular</div>
+          <div class="tier-card-head">
+            <h3 class="price-name">Advanced</h3>
+            <p class="price-tag">Creator polish &amp; flow</p>
+            <div class="tier-price-block tier-price-block--accent" aria-label="Package price">
+              <span class="tier-price-label">From</span>
+              <span class="tier-price-nums">$20</span>
+            </div>
+            <div class="tier-meta-row">
+              <span class="tier-pill">⚡ Instant delivery</span>
+            </div>
+          </div>
+          <p class="tier-includes-kicker">What you get</p>
+          <ul class="price-features tier-feature-list tier-feature-list--rich">
+            <li>Everything in Simple</li>
+            <li>Growth-focused channel architecture</li>
+            <li>Advanced role hierarchy and permissions map</li>
+            <li>Announcement, ticket, and conversion lanes</li>
+            <li>VIP/private room strategy</li>
+            <li>Creator/business optimization by layout type</li>
+            <li>Monetization-ready server flow ideas</li>
+            <li>Priority polish and delivery</li>
+          </ul>
+          <button type="button" class="btn btn-primary btn-block btn-tier-pick" data-package-tier="advanced">
+            <span class="btn-tier-main">Choose Advanced</span>
+            <span class="btn-tier-sub">$20</span>
+          </button>
+        </article>
+
+        <article class="price-card tier-card tier-card--pro tier-card--soon" aria-disabled="true">
+          <div class="ribbon ribbon--soon">Coming soon</div>
+          <div class="tier-card-head">
+            <h3 class="price-name">Professional</h3>
+            <p class="price-tag">Teams, revenue &amp; scale</p>
+            <div class="tier-price-block" aria-label="Package price">
+              <span class="tier-price-label">From</span>
+              <span class="tier-price-nums">$50</span>
+            </div>
+            <div class="tier-meta-row">
+              <span class="tier-pill">⏱ TBD</span>
+            </div>
+          </div>
+          <p class="tier-includes-kicker">Planned scope (not bookable yet)</p>
+          <ul class="price-features tier-feature-list tier-feature-list--rich">
+            <li>Everything in Advanced</li>
+            <li>Staff vs public maps</li>
+            <li>VIP &amp; paid-access flows</li>
+            <li>Events &amp; bot mapping</li>
+            <li>Full consistency pass</li>
+            <li>Timeline TBD</li>
+          </ul>
+          <button type="button" class="btn btn-outline btn-block btn-tier-pick" disabled aria-disabled="true">
+            <span class="btn-tier-main">Coming soon</span>
+            <span class="btn-tier-sub">—</span>
+          </button>
+        </article>
+      </div>
+
+        <p class="packages-footnote">Most people start with <strong>Simple</strong> or <strong>Advanced</strong>. <strong>Professional</strong> is coming soon for heavy staff ops and revenue-scale layouts.</p>
+      </div>
+    </div>
+
+    <div class="wizard-page" data-step="6" id="step-finish" aria-label="Summary and contact">
+      <div class="wizard-inner wizard-inner-wide">
+        <div class="finish-step-head">
+        <p class="wizard-step-hint">Step 7 of 8</p>
+        <h2 class="wizard-question wizard-question-tight">Your summary</h2>
+        <p class="wizard-sub wizard-sub-tight">Review everything below. The <strong>Discord-style preview</strong> scrolls, updates when you <strong>hover channels</strong>, and you can type in the message box—<strong>Enter</strong> shows a short note pointing you to checkout. It’s still a demo, not a live server. Use <strong>Edit</strong> to fix a step; when you’re ready, continue to checkout.</p>
+        </div>
+        <div class="summary-card summary-card-rich" id="wizard-summary" aria-live="polite">
+          <p class="summary-placeholder">Go through the steps above to generate your recap and preview.</p>
+        </div>
+        <div class="summary-checkout-cta" id="summary-checkout-cta" hidden>
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="summary-open-checkout">Continue to checkout</button>
+        </div>
+
+    <section id="faq" class="section">
+      <h2 class="section-title">FAQ</h2>
+      <div class="faq-list">
+        <details class="faq-item card-hover">
+          <summary>Do you log into my Discord?</summary>
+          <p>By default we deliver a complete template you apply yourself. If you want us inside your server, that’s a separate hands-on option.</p>
+        </details>
+        <details class="faq-item card-hover">
+          <summary>Does this work for my existing server?</summary>
+          <p>
+            Layouts are designed for a <strong>new server</strong> or a <strong>full reset</strong> so structure stays clean—same idea as a Discord template import, but with our channel list and notes.
+            <strong>Fixing a live server in place</strong> is <strong>in progress</strong> and <strong>not bookable yet</strong>.
+          </p>
+        </details>
+        <details class="faq-item card-hover">
+          <summary>Why pay vs free templates?</summary>
+          <p>Free lists rarely tie <strong>structure → engagement → monetization</strong> together. Our tiers bundle naming, roles, flows, and tier-specific patterns (VIP lanes, funnels, staff ops) with a clear deliverable and timeline—so you buy an <strong>outcome</strong>, not a bare channel list.</p>
+        </details>
+        <details class="faq-item card-hover">
+          <summary>Can I mix channel styles?</summary>
+          <p>Yes—especially on Advanced. (Professional will support more mixing when it launches.)</p>
+        </details>
+        <details class="faq-item card-hover">
+          <summary>What about bots?</summary>
+          <p>We map channels per bot; you configure the bot itself.</p>
+        </details>
+        <details class="faq-item card-hover">
+          <summary>What format is the deliverable?</summary>
+          <p>A structured <strong>server layout</strong> you implement like a <strong>Discord server template</strong>: channels, roles, naming, and written guidance (welcome flows, optional VIP/paid-access patterns by tier). We don’t run bots inside your server unless you buy hands-on help separately.</p>
+        </details>
+        <details class="faq-item card-hover">
+          <summary>How does checkout work?</summary>
+          <p>You pay through Stripe on their secure page. Our payment server emails an order summary matching your questionnaire—<strong>instant confirmation</strong>. Your full layout ships on your tier’s timeline after any quick detail check.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="contact" class="section cta-block section-in-finish">
+      <h2 class="section-title">Questions first?</h2>
+      <p class="section-lead">Prefer to talk before paying? Email us with your wizard summary—or pay above and we’ll follow up with your layout on the tier timeline.</p>
+      <a href="mailto:hello@example.com" class="btn btn-outline btn-lg">Email us</a>
+      <p class="cta-fine-print">If you already paid via Stripe, you’ll get an order email automatically; no need to duplicate here.</p>
+    </section>
+      </div>
+    </div>
+
+    <div class="wizard-page" data-step="7" id="step-checkout" aria-label="Checkout">
+      <div class="wizard-inner wizard-inner-wide">
+        <div class="finish-step-head">
+          <p class="wizard-step-hint">Step 8 of 8</p>
+          <h2 class="wizard-question wizard-question-tight">Checkout</h2>
+        </div>
+        <div class="checkout-flash summary-card" id="checkout-flash" role="status" aria-live="polite" hidden></div>
+        <section class="checkout-panel summary-card checkout-panel--revealed" id="checkout-panel" aria-label="Checkout">
+          <h3 class="checkout-title">Complete your order</h3>
+          <p class="checkout-lead">
+            Checkout is securely processed by Stripe. After payment, we email your order confirmation with your selected tier details. Your Discord server layout is delivered based on your package scope for a <strong>new or reset</strong> server. For stronger growth and monetization structure, most clients choose <strong>Advanced ($20)</strong>. Live server fix services are not currently bookable.
+          </p>
+          <div class="checkout-line" id="checkout-line">
+            <span class="checkout-tier" id="checkout-tier-label">—</span>
+            <span class="checkout-amount" id="checkout-amount">—</span>
+          </div>
+          <p class="checkout-note" id="checkout-api-note" hidden>
+            Checkout API is not configured. Set <code>window.STRIPE_CHECKOUT_API</code> on this page (see <code>stripe-server/README.md</code>) and host the checkout API service.
+          </p>
+          <p class="checkout-note" id="checkout-tier-warning" hidden>
+            Choose <strong>Simple</strong> or <strong>Advanced</strong> in step 2 before paying—that locks in price and scope.
+          </p>
+          <label class="checkout-label" for="checkout-email">Business email for receipt and order details</label>
+          <input type="email" class="checkout-input" id="checkout-email" name="checkout-email" autocomplete="email" placeholder="you@example.com" required />
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="checkout-submit" disabled>
+            Proceed to secure checkout
+          </button>
+          <p class="checkout-fine-print">You will enter payment details on Stripe. By completing payment, you confirm delivery under the selected package scope.</p>
+        </section>
+      </div>
+    </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p><strong>Serverly</strong> — Build your Discord server yourself with our layouts &amp; templates (channels, roles &amp; flows you apply). Not affiliated with Discord Inc.</p>
+  </footer>
+
+  <script>
+    window.STRIPE_CHECKOUT_API = "https://serverly-mzwf.onrender.com ";
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
