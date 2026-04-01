@@ -15,7 +15,6 @@ const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const clientUrl = (process.env.CLIENT_URL || "http://localhost:5500").replace(/\/$/, "");
 const port = parseInt(process.env.PORT || "3000", 10);
-const checkoutCouponId = (process.env.STRIPE_CHECKOUT_COUPON_ID || "GRjbiI7y").trim();
 
 if (!stripeSecret) {
   console.warn("Warning: STRIPE_SECRET_KEY is not set.");
@@ -24,7 +23,7 @@ if (!stripeSecret) {
 const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 
 const TIERS = {
-  simple: { amount: 100, name: "Serverly — Simple server layout" },
+  simple: { amount: 1000, name: "Serverly — Simple server layout" },
   advanced: { amount: 2000, name: "Serverly — Advanced server layout" },
   professional: { amount: 5000, name: "Serverly — Professional server layout" },
 };
@@ -245,7 +244,7 @@ app.post("/create-checkout-session", async (req, res) => {
         : "";
 
   try {
-    const sessionPayload = {
+    const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: emailStr,
       line_items: [
@@ -273,19 +272,7 @@ app.post("/create-checkout-session", async (req, res) => {
         channelPatternLabel: patLab,
         customer_email: emailStr,
       },
-    };
-
-    if (checkoutCouponId) {
-      sessionPayload.discounts = [{ coupon: checkoutCouponId }];
-    }
-
-    console.log("Creating checkout session", {
-      tier,
-      unit_amount: t.amount,
-      coupon: checkoutCouponId || "(none)",
     });
-
-    const session = await stripe.checkout.sessions.create(sessionPayload);
 
     return res.json({ url: session.url });
   } catch (e) {
