@@ -204,6 +204,9 @@
     }
     if (n === 7) {
       state.checkoutReady = true;
+      if (!state.packageTier) {
+        state.packageTier = "advanced";
+      }
       syncCheckoutPanel();
     }
     closeDrawer();
@@ -1425,7 +1428,13 @@
   if (checkoutSubmit) {
     checkoutSubmit.addEventListener("click", function () {
       var api = getCheckoutApiBase();
-      if (!api || !state.packageTier) return;
+      if (!state.packageTier) {
+        state.packageTier = "advanced";
+      }
+      if (!api) {
+        flashCheckout("Checkout API is not configured yet. Add STRIPE_CHECKOUT_API and try again.", "error");
+        return;
+      }
       var email = checkoutEmailInp && checkoutEmailInp.value ? checkoutEmailInp.value.trim() : "";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         flashCheckout("Enter a valid email so we can send your order copy.", "error");
