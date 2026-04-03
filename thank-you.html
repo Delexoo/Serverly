@@ -215,6 +215,18 @@
         }
       }
 
+      function appendSecondaryTroubleshooting() {
+        if (!claimActions) return;
+        var sub = document.createElement("p");
+        sub.className = "thank-you-claim-secondary-wrap";
+        var helpA = document.createElement("a");
+        helpA.className = "btn btn-outline btn-block";
+        helpA.href = "#thank-you-email-help";
+        helpA.textContent = "Didn’t get the email? Troubleshooting";
+        sub.appendChild(helpA);
+        claimActions.appendChild(sub);
+      }
+
       function appendClaimChrome(primaryHref, primaryLabel, leadText) {
         if (!claimActions) return;
         if (claimLead) claimLead.textContent = leadText;
@@ -224,57 +236,93 @@
         openBtn.rel = "noopener noreferrer";
         openBtn.textContent = primaryLabel;
         claimActions.appendChild(openBtn);
-        var sub = document.createElement("p");
-        sub.className = "thank-you-claim-secondary-wrap";
-        var helpA = document.createElement("a");
-        helpA.className = "btn btn-outline btn-block";
-        helpA.href = "#thank-you-email-help";
-        helpA.textContent = "Get your order by email — troubleshooting";
-        sub.appendChild(helpA);
-        claimActions.appendChild(sub);
+        appendSecondaryTroubleshooting();
         if (claimHint) claimHint.textContent = "";
       }
 
-      /** Template ready: primary = email help (same as fallback); secondary = open Discord template. */
-      function appendDiscordTemplateClaim(discordUrl, leadText) {
-        if (!claimActions) return;
-        if (claimLead) claimLead.textContent = leadText;
-        var helpBtn = document.createElement("a");
-        helpBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
-        helpBtn.href = "#thank-you-email-help";
-        helpBtn.textContent = "Get your order by email — troubleshooting";
-        claimActions.appendChild(helpBtn);
-        var sub = document.createElement("p");
-        sub.className = "thank-you-claim-secondary-wrap";
-        var claimBtn = document.createElement("a");
-        claimBtn.className = "btn btn-outline btn-block";
-        claimBtn.href = discordUrl;
-        claimBtn.rel = "noopener noreferrer";
-        claimBtn.textContent = "Claim Discord template";
-        sub.appendChild(claimBtn);
-        claimActions.appendChild(sub);
-        if (claimHint) claimHint.textContent = "";
-      }
-
-      function showClaimFallback(hasSessionId, hadApiBase) {
+      function showClaimFallback(hasSessionId, hadApiBase, sessionId, apiBaseForClaim) {
         if (!claimActions) return;
         if (claimLead) {
           if (hasSessionId && hadApiBase) {
             claimLead.textContent =
-              "We couldn’t load your template link from the server. Check your Serverly order email for the same Discord template link, or verify your Render env and API URL below.";
+              "We couldn’t load your template on the first try. Tap the button to fetch it from your payment session, or check your order email for the same link.";
+          } else if (hasSessionId && !hadApiBase) {
+            claimLead.textContent =
+              "Add your checkout API URL (meta serverly-checkout-api or window.STRIPE_CHECKOUT_API) so we can load your template. Until then, review what you purchased below and use the link in your order email.";
           } else {
             claimLead.textContent =
-              "Add your checkout API URL (meta serverly-checkout-api or window.STRIPE_CHECKOUT_API) to load your template button here. Your template link is also in your order email when SMTP is configured.";
+              "Open your template from the order email sent to the address you used at checkout. Below you can review what you purchased.";
           }
         }
-        var emailBtn = document.createElement("a");
-        emailBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
-        emailBtn.href = "#thank-you-email-help";
-        emailBtn.textContent = "Get your order by email — troubleshooting";
-        claimActions.appendChild(emailBtn);
-        if (claimHint) {
+
+        var claimBtn = document.createElement("button");
+        claimBtn.type = "button";
+        claimBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+        claimBtn.textContent = "Claim your Discord template";
+
+        claimBtn.addEventListener("click", function () {
+          if (hasSessionId && hadApiBase && sessionId && apiBaseForClaim) {
+            claimBtn.disabled = true;
+            claimBtn.textContent = "Loading your template…";
+            if (claimHint) claimHint.textContent = "";
+            fetch(
+              apiBaseForClaim + "/order-instant?session_id=" + encodeURIComponent(sessionId)
+            )
+              .then(function (r) {
+                return r.ok ? r.json() : {};
+              })
+              .then(function (data) {
+                var u = data && data.discordTemplateUrl ? String(data.discordTemplateUrl).trim() : "";
+                if (u) {
+                  window.open(u, "_blank", "noopener,noreferrer");
+                  claimBtn.disabled = false;
+                  claimBtn.textContent = "Claim your Discord template";
+                  if (claimHint) {
+                    claimHint.textContent =
+                      "Opened in a new tab. If the window was blocked, allow pop-ups or copy the link from your order email.";
+                  }
+                } else {
+                  claimBtn.disabled = false;
+                  claimBtn.textContent = "Claim your Discord template";
+                  if (claimHint) {
+                    claimHint.textContent =
+                      "We still couldn’t load your template. Confirm your Render env (e.g. CONTENT_CREATOR_COLUM) matches this purchase, or use the link in your order email.";
+                  }
+                }
+              })
+              .catch(function () {
+                claimBtn.disabled = false;
+                claimBtn.textContent = "Claim your Discord template";
+                if (claimHint) {
+                  claimHint.textContent =
+                    "Couldn’t reach the server. Try again in a moment or use the link in your order email.";
+                }
+              });
+            return;
+          }
+
+          var receiptEl = document.getElementById("thank-you-receipt");
+          if (receiptEl && !receiptEl.hidden) {
+            receiptEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            if (claimHint) {
+              claimHint.textContent =
+                "Your package and channel style are summarized above. Your Discord template link is in your Serverly order email.";
+            }
+          } else {
+            var helpEl = document.getElementById("thank-you-email-help");
+            if (helpEl) helpEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            if (claimHint) {
+              claimHint.textContent =
+                "Find your template link in the email from Serverly (when SMTP is configured) or Stripe’s receipt.";
+            }
+          }
+        });
+
+        claimActions.appendChild(claimBtn);
+        appendSecondaryTroubleshooting();
+        if (claimHint && !claimHint.textContent) {
           claimHint.innerHTML =
-            "Template links are not stored in this page’s code — they come from your payment session (server) or your order email.";
+            "Template links are loaded from your payment session (server) or your order email — not embedded in this page.";
         }
       }
 
@@ -308,9 +356,10 @@
         var discordUrl = discordFromStripe ? String(discordFromStripe).trim() : "";
         var metaOk = metaInstantValid();
         if (discordUrl) {
-          appendDiscordTemplateClaim(
+          appendClaimChrome(
             discordUrl,
-            "Your paid Discord server template is ready — use your order email for the link, or open it directly below."
+            "Claim Discord template",
+            "Your paid Discord server template is ready. Open it while signed into Discord — the same link is in your order email."
           );
           return;
         }
@@ -322,7 +371,7 @@
           );
           return;
         }
-        showClaimFallback(!!id, !!(id && apiBase));
+        showClaimFallback(!!id, !!(id && apiBase), id || "", apiBase);
       });
 
       var receipt = document.getElementById("thank-you-receipt");
