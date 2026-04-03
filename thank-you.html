@@ -6,6 +6,8 @@
   <meta name="description" content="Thank you for your Serverly order — receipt and next steps." />
   <meta name="theme-color" content="#2563eb" />
   <meta name="robots" content="noindex" />
+  <!-- Optional: same URL as DIGITAL_DELIVERY_URL on your Render server — shows “Instant access” on this page -->
+  <meta name="serverly-digital-delivery-url" content="" />
   <title>Thank you — Serverly</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,8 +35,17 @@
       </p>
       <h1 class="thank-you-title">Thank you for your order</h1>
       <p class="thank-you-lead">
-        Below is a copy of what you bought (saved from your browser when you went to checkout). Stripe also emails a <strong>receipt</strong> and often a <strong>hosted invoice</strong> to the address you used. We can email a detailed <strong>order summary</strong> from our server when it’s configured — see “Didn’t get an email?” if anything is missing.
+        Your purchase includes a <strong>custom Discord layout</strong> (delivered to your email on your tier timeline) and any <strong>instant resource</strong> you configure below. This page shows a on-screen receipt (from your browser). Stripe also sends a <strong>receipt</strong> and often a <strong>hosted invoice</strong>. Our server sends a full <strong>digital order email</strong> when SMTP + webhook are set — see “Didn’t get an email?” if needed.
       </p>
+
+      <section class="summary-card thank-you-claim" id="thank-you-claim" aria-labelledby="claim-product-heading">
+        <h2 class="section-title section-title-tight" id="claim-product-heading">Claim your digital product</h2>
+        <p class="thank-you-claim-lead" id="thank-you-claim-lead">
+          Your purchase is fulfilled by email: Stripe’s receipt, optional instant download (if we’ve added a link), and your custom Discord layout on your tier timeline. Use the button below to open an instant file or get help if email hasn’t arrived.
+        </p>
+        <div class="thank-you-claim-actions" id="thank-you-claim-actions"></div>
+        <p class="thank-you-claim-hint" id="thank-you-claim-hint"></p>
+      </section>
 
       <section class="summary-card thank-you-receipt" id="thank-you-receipt" aria-labelledby="receipt-heading" hidden>
         <h2 class="section-title section-title-tight" id="receipt-heading">Your order receipt</h2>
@@ -52,7 +63,7 @@
         <p class="thank-you-ref-id mono" id="thank-you-session-id"></p>
       </div>
 
-      <section class="summary-card thank-you-email-help" aria-labelledby="email-help-heading">
+      <section class="summary-card thank-you-email-help" id="thank-you-email-help" aria-labelledby="email-help-heading">
         <h2 class="section-title section-title-tight" id="email-help-heading">Didn’t get an email?</h2>
         <ul class="thank-you-email-help-list">
           <li><strong>Stripe receipt / invoice</strong> — In <a href="https://dashboard.stripe.com/settings/emails" rel="noopener noreferrer">Stripe Dashboard → Settings → Customer emails</a>, make sure receipts (and invoices, if you use them) are enabled. Check spam for the address you typed at checkout.</li>
@@ -176,6 +187,61 @@
       if (id && box && el) {
         el.textContent = id;
         box.hidden = false;
+      }
+
+      var metaInstant = document.querySelector('meta[name="serverly-digital-delivery-url"]');
+      var instantUrl =
+        metaInstant && metaInstant.getAttribute("content")
+          ? String(metaInstant.getAttribute("content")).trim()
+          : "";
+      var claimActions = document.getElementById("thank-you-claim-actions");
+      var claimHint = document.getElementById("thank-you-claim-hint");
+      var claimLead = document.getElementById("thank-you-claim-lead");
+      if (claimActions) {
+        var hasInstant = false;
+        if (instantUrl) {
+          try {
+            new URL(instantUrl);
+            hasInstant = true;
+          } catch (eUrl) {
+            hasInstant = false;
+          }
+        }
+        if (hasInstant) {
+          if (claimLead) {
+            claimLead.textContent =
+              "Open your instant download or starter file below. Your full custom layout still arrives by email on your tier timeline.";
+          }
+          var openBtn = document.createElement("a");
+          openBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+          openBtn.href = instantUrl;
+          openBtn.rel = "noopener noreferrer";
+          openBtn.textContent = "Open digital product / download";
+          claimActions.appendChild(openBtn);
+          var sub = document.createElement("p");
+          sub.className = "thank-you-claim-secondary-wrap";
+          var helpA = document.createElement("a");
+          helpA.className = "btn btn-outline btn-block";
+          helpA.href = "#thank-you-email-help";
+          helpA.textContent = "Didn’t get the email? Troubleshooting";
+          sub.appendChild(helpA);
+          claimActions.appendChild(sub);
+          if (claimHint) claimHint.textContent = "";
+        } else {
+          if (claimLead) {
+            claimLead.textContent =
+              "There’s no instant file link on this page yet (your host can add one in the site settings). Your digital product is delivered to the email you used at Stripe — receipt from Stripe, order details from us when email is configured.";
+          }
+          var emailBtn = document.createElement("a");
+          emailBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+          emailBtn.href = "#thank-you-email-help";
+          emailBtn.textContent = "Get your order by email — troubleshooting";
+          claimActions.appendChild(emailBtn);
+          if (claimHint) {
+            claimHint.innerHTML =
+              "Tip: add the same URL in <code>thank-you.html</code> (meta <code>serverly-digital-delivery-url</code>) and <code>DIGITAL_DELIVERY_URL</code> on Render to show an <strong>Open download</strong> button here.";
+          }
+        }
       }
 
       var raw = null;

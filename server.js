@@ -30,6 +30,7 @@ function buildPublicSiteBaseUrl() {
 
 const clientUrl = buildPublicSiteBaseUrl();
 const port = parseInt(process.env.PORT || "3000", 10);
+const digitalDeliveryUrl = (process.env.DIGITAL_DELIVERY_URL || "").trim();
 
 function warnIfGithubPagesMissingRepoPath() {
   const raw = (process.env.CLIENT_URL || "").trim().replace(/\/$/, "");
@@ -164,35 +165,57 @@ function thankYouPageUrl(checkoutSessionId) {
     : base;
 }
 
-function buildOrderEmailText(meta, customerEmail, extras) {
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildOrderEmail(meta, customerEmail, extras) {
   extras = extras || {};
   const checkoutSessionId = extras.checkoutSessionId || "";
   const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
   const tier = meta.tier || "simple";
   const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
   const lines = [
-    "Thank you for your order!",
+    "YOUR DIGITAL PRODUCT — Serverly",
     "",
-    "NEXT STEPS (bookmark this page):",
+    "Thank you for your purchase. Here is what you bought and how you get it.",
+    "",
+  ];
+
+  if (digitalDeliveryUrl) {
+    lines.push("1) INSTANT ACCESS (use this now)", "Download / starter resource:", digitalDeliveryUrl, "");
+  }
+
+  lines.push(
+    digitalDeliveryUrl
+      ? "2) CUSTOM DISCORD LAYOUT (your main purchase)"
+      : "1) CUSTOM DISCORD LAYOUT (your purchase)",
+    "This is the personalized server blueprint: channels, categories, roles, and setup notes based on your wizard answers.",
+    "We deliver it to this email in line with your tier timeline unless we reach out separately.",
+    "",
+    "3) ORDER PAGE (bookmark)",
     thankYouPageUrl(checkoutSessionId),
     "",
-    "Emails at " + customerEmail + ":",
-    "• Stripe — payment receipt (enable under Dashboard → Settings → Customer emails → Successful payments if you don’t see it).",
+    "Emails sent to " + customerEmail + ":",
+    "• Stripe — payment receipt (enable under Dashboard → Settings → Customer emails if missing).",
     stripeInvoiceUrl
       ? "• Stripe — hosted invoice: " + stripeInvoiceUrl
       : "• Stripe — hosted invoice link when your account sends invoices for this Checkout session.",
-    "• Serverly — this email is your order snapshot (wizard choices + what’s included).",
+    "• Serverly — this message is your order record and spec snapshot.",
     "",
     "Checkout reference: " + (checkoutSessionId || "(n/a)") + "",
     "",
-    "Here is a copy of what you selected (same as your on-site summary).",
-    "We’ll deliver your full server layout on the timeline for your tier.",
-    "",
     "---",
-    `Package: ${tierName}`,
-    `Email: ${customerEmail}`,
+    "ORDER SNAPSHOT (what you selected)",
     "",
-  ];
+    `Package: ${tierName}`,
+    `Delivery email: ${customerEmail}`,
+    "",
+  );
   if (meta.goal) lines.push(`Goal: ${GOAL_LABELS[meta.goal] || meta.goal}`);
   if (meta.serverMode) {
     const sm = effectiveServerMode(meta.serverMode);
@@ -207,7 +230,89 @@ function buildOrderEmailText(meta, customerEmail, extras) {
   const inc = includesForTier(tier, meta.goal, effectiveServerMode(meta.serverMode));
   inc.forEach((x) => lines.push(`• ${x}`));
   lines.push("", "— Serverly");
-  return lines.join("\n");
+
+  const text = lines.join("\n");
+
+  let html =
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
+  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your digital product — Serverly</h1>';
+  html += "<p>Thank you for your purchase. Below is what you bought and how you get it.</p>";
+
+  if (digitalDeliveryUrl) {
+    html +=
+      '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Instant access</h2><p style="margin:0 0 0.5rem">Use this link right away for your starter resource or download:</p><p style="margin:0"><a href="' +
+      escapeHtml(digitalDeliveryUrl) +
+      '">' +
+      escapeHtml(digitalDeliveryUrl) +
+      "</a></p>";
+  }
+
+  html +=
+    '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Custom Discord layout</h2><p style="margin:0 0 0.75rem">Your personalized server blueprint (channels, roles, notes) is produced from your wizard answers and delivered to <strong>' +
+    escapeHtml(customerEmail) +
+    "</strong> on your tier timeline.</p>";
+
+  html += '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Thank-you page</h2><p style="margin:0 0 0.75rem"><a href="' + escapeHtml(thankYouPageUrl(checkoutSessionId)) + '">' + escapeHtml(thankYouPageUrl(checkoutSessionId)) + "</a></p>";
+
+  html += "<h2 style=\"font-size:1rem;margin:1.25rem 0 0.5rem\">Stripe</h2><ul style=\"margin:0;padding-left:1.25rem\">";
+  html += "<li>Receipt from Stripe (check spam).</li>";
+  if (stripeInvoiceUrl) {
+    html +=
+      '<li>Hosted invoice: <a href="' + escapeHtml(stripeInvoiceUrl) + '">' + escapeHtml(stripeInvoiceUrl) + "</a></li>";
+  } else {
+    html += "<li>Hosted invoice link when your invoice is available.</li>";
+  }
+  html += "</ul>";
+
+  html +=
+    '<p style="margin:1rem 0 0"><strong>Checkout reference:</strong> ' +
+    escapeHtml(checkoutSessionId || "(n/a)") +
+    "</p>";
+
+  html += '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Order snapshot</h2><dl style="margin:0 0 1rem">';
+  html += "<dt style=\"font-weight:600;color:#64748b\">Package</dt><dd style=\"margin:0 0 0.5rem\">" + escapeHtml(tierName) + "</dd>";
+  if (meta.goal) {
+    html +=
+      "<dt style=\"font-weight:600;color:#64748b\">Goal</dt><dd style=\"margin:0 0 0.5rem\">" +
+      escapeHtml(GOAL_LABELS[meta.goal] || meta.goal) +
+      "</dd>";
+  }
+  if (meta.serverMode) {
+    const sm = effectiveServerMode(meta.serverMode);
+    html +=
+      "<dt style=\"font-weight:600;color:#64748b\">Server approach</dt><dd style=\"margin:0 0 0.5rem\">" +
+      escapeHtml(SERVER_LABELS[sm] || sm) +
+      "</dd>";
+  }
+  if (meta.hasFollowers === "false") {
+    html +=
+      '<dt style="font-weight:600;color:#64748b">Followers</dt><dd style="margin:0 0 0.5rem">No established audience yet</dd>';
+  }
+  if (meta.size) {
+    html +=
+      "<dt style=\"font-weight:600;color:#64748b\">Following / reach</dt><dd style=\"margin:0 0 0.5rem\">" +
+      escapeHtml(SIZE_LABELS[meta.size] || meta.size) +
+      "</dd>";
+  }
+  if (meta.channelPatternLabel) {
+    html +=
+      "<dt style=\"font-weight:600;color:#64748b\">Naming style</dt><dd style=\"margin:0 0 0.5rem\">" +
+      escapeHtml(meta.channelPatternLabel) +
+      "</dd>";
+  }
+  html += "</dl>";
+
+  html += '<h2 style="font-size:1rem;margin:1rem 0 0.5rem">Included in this tier</h2><ul style="margin:0;padding-left:1.25rem">';
+  inc.forEach((x) => {
+    html += "<li>" + escapeHtml(x) + "</li>";
+  });
+  html += "</ul>";
+
+  html += '<p style="margin:1.5rem 0 0;color:#64748b;font-size:0.9rem">— Serverly</p>';
+
+  html += "</body></html>";
+
+  return { text, html };
 }
 
 let transporter = null;
@@ -226,7 +331,7 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendOrderEmail(to, subject, text) {
+async function sendOrderEmail(to, subject, text, html) {
   const tx = getTransporter();
   if (!tx) {
     console.warn("Email not configured (SMTP_HOST / EMAIL_FROM). Order text:\n", text);
@@ -238,6 +343,7 @@ async function sendOrderEmail(to, subject, text) {
     subject,
     text,
   };
+  if (html) mail.html = html;
   if (process.env.EMAIL_BCC) mail.bcc = process.env.EMAIL_BCC;
   await tx.sendMail(mail);
 }
@@ -284,11 +390,11 @@ app.post(
               console.warn("Could not load Stripe invoice for email:", invErr.message);
             }
           }
-          const body = buildOrderEmailText(meta, email, {
+          const { text, html } = buildOrderEmail(meta, email, {
             checkoutSessionId: session.id,
             stripeInvoiceUrl,
           });
-          await sendOrderEmail(email, "Your Serverly order — next steps & summary", body);
+          await sendOrderEmail(email, "Your Serverly digital order — layout & delivery", text, html);
         } catch (e) {
           console.error("Send email failed:", e);
         }

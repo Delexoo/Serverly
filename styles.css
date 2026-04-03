@@ -3095,6 +3095,42 @@ body.drawer-open {
   margin-top: auto;
 }
 
+.thank-you-claim {
+  margin-bottom: 1.25rem;
+  text-align: left;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+}
+
+.thank-you-claim-lead {
+  margin: 0 0 1rem;
+  line-height: 1.55;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.95rem;
+}
+
+.thank-you-claim-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.thank-you-claim-secondary-wrap {
+  margin: 0;
+}
+
+.thank-you-claim-hint {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-text-muted, #64748b);
+}
+
+.thank-you-claim-hint code {
+  font-size: 0.8em;
+  word-break: break-word;
+}
+
 .thank-you-receipt {
   margin-bottom: 1.25rem;
   text-align: left;
@@ -3155,6 +3191,7 @@ body.drawer-open {
 .thank-you-email-help {
   margin-bottom: 1.25rem;
   text-align: left;
+  scroll-margin-top: 5rem;
 }
 
 .thank-you-email-help-list {
