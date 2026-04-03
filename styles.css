@@ -551,6 +551,14 @@ button.style-card.pattern-select {
   margin-bottom: 0.5rem;
 }
 
+.pattern-card[data-pattern="regular-text"] .style-label {
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
 .sidebar-mock-pattern {
   margin-top: 0;
   max-height: 280px;
@@ -692,6 +700,22 @@ button.style-card.pattern-select {
   flex-direction: column;
   gap: 2px;
   padding: 0 0.15rem;
+}
+
+/* Regular text pattern: Discord-style gg sans–like UI font (not monospace) */
+.disc-channel-list--discord-regular {
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.disc-channel-list--discord-regular .disc-ch-text {
+  font-family: inherit;
+  color: #949ba4;
+}
+
+.disc-channel-list--discord-regular .disc-ch-row {
+  font-size: 0.95rem;
 }
 
 .disc-ch-row {
@@ -1198,6 +1222,39 @@ button.style-card.pattern-select {
   word-break: break-word;
   font-family: ui-monospace, "Cascadia Code", monospace;
   font-size: 0.78rem;
+}
+
+.discord-demo[data-demo-pattern="regular-text"] .discord-demo-ch-label {
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: #949ba4;
+  letter-spacing: 0.01em;
+}
+
+.discord-demo[data-demo-pattern="regular-text"] .discord-demo-ch:hover .discord-demo-ch-label,
+.discord-demo[data-demo-pattern="regular-text"] .discord-demo-ch.is-active .discord-demo-ch-label {
+  color: #dbdee1;
+}
+
+.discord-demo[data-demo-pattern="regular-text"] .discord-demo-main-channel {
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #dbdee1;
+}
+
+.discord-demo[data-demo-pattern="regular-text"] .discord-demo-welcome-title {
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #f2f3f5;
+}
+
+.discord-demo[data-demo-pattern="regular-text"] .discord-demo-welcome-sub {
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  color: #949ba4;
 }
 
 .discord-demo-userbar {

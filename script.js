@@ -434,13 +434,15 @@
     }
     switch (patternId) {
       case "regular-text":
-        return n;
+        return String(n)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
       case "bar-divider":
-        return toMathBoldText(e + " | " + n);
+        return toMathBoldText(e + " ┊ " + n);
       case "flourish":
         return toMathBoldText("✦" + n + "✦");
       case "bold-column":
-        return e + "┃" + n;
+        return e + " ┃ " + n;
       case "corner-brackets":
         return toMathBoldText("【" + e + "】" + lower);
       case "chevrons":
@@ -478,14 +480,14 @@
   /** Each style: Information + General (text) + Voice Chat (voice), 3 channels each. */
   var PATTERN_PREVIEW_DATA = {
     "regular-text": {
-      info: ["announcements", "rule", "links"],
-      general: ["general", "clips", "art"],
+      info: ["announcements", "giveaway", "pick-your-role"],
+      general: ["the-yard", "off-topic", "game-chat"],
       voice: ["lounge", "music", "afk"],
     },
     "bar-divider": {
-      info: ["📢┊ Announcements", "📋┊ Rule", "🔗┊ Links"],
-      general: ["💬┊ General", "🎬┊ Clips", "🎨┊ Art"],
-      voice: ["🎮┊ Lounge", "🎵┊ Music", "🛋┊ AFK"],
+      info: ["📢 ┊ Announcements", "📋 ┊ Rule", "🔗 ┊ Links"],
+      general: ["💬 ┊ General", "🎬 ┊ Clips", "🎨 ┊ Art"],
+      voice: ["🎮 ┊ Lounge", "🎵 ┊ Music", "🛋 ┊ AFK"],
     },
     flourish: {
       info: ["✦𝐈𝐧𝐟𝐨✦", "✦𝐑𝐮𝐥𝐞✦", "✦𝐋𝐢𝐧𝐤𝐬✦"],
@@ -493,9 +495,9 @@
       voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
     },
     "bold-column": {
-      info: ["📢┃News", "📋┃Rule", "🔗┃Links"],
-      general: ["💬┃General", "🎬┃Clips", "🎨┃Art"],
-      voice: ["🎮┃Lounge", "🎵┃Music", "🛋┃AFK"],
+      info: ["📢 ┃ News", "📋 ┃ Rule", "🔗 ┃ Links"],
+      general: ["💬 ┃ General", "🎬 ┃ Clips", "🎨 ┃ Art"],
+      voice: ["🎮 ┃ Lounge", "🎵 ┃ Music", "🛋 ┃ AFK"],
     },
     "corner-brackets": {
       info: ["【📢】announcements", "【📋】rule", "【🔗】links"],
@@ -556,7 +558,9 @@
         '<div class="disc-category-head"><span class="disc-chevron" aria-hidden="true">▼</span><span class="disc-category-title">' +
         escapeHtml(title) +
         "</span></div>" +
-        '<div class="disc-channel-list mono" dir="ltr">' +
+        '<div class="disc-channel-list' +
+        (regularTextMode ? " disc-channel-list--discord-regular" : " mono") +
+        '" dir="ltr">' +
         rows +
         "</div></div>"
       );
