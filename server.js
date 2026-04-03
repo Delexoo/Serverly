@@ -51,6 +51,26 @@ function warnIfGithubPagesMissingRepoPath() {
   }
 }
 
+function githubPagesMissingProjectPathError() {
+  try {
+    const u = new URL(clientUrl);
+    if (!u.hostname.endsWith(".github.io")) return null;
+    const segments = u.pathname.split("/").filter(Boolean);
+    if (segments.length > 0) return null;
+    return (
+      "Server misconfigured: CLIENT_URL is only " +
+      u.origin +
+      " but your site is a project page. Set CLIENT_URL to https://" +
+      u.hostname +
+      "/YOUR_REPO (no trailing slash) or add CLIENT_SITE_PATH=YOUR_REPO on Render, then redeploy. Wrong URL sends customers to " +
+      u.origin +
+      "/thank-you.html which does not exist."
+    );
+  } catch {
+    return null;
+  }
+}
+
 function originFromSiteUrl(url) {
   try {
     return new URL(url).origin;
@@ -310,6 +330,12 @@ app.post("/create-checkout-session", async (req, res) => {
   const emailStr = typeof email === "string" ? email.trim() : "";
   if (!emailStr || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
     return res.status(400).json({ error: "Valid email is required." });
+  }
+
+  const ghPagesErr = githubPagesMissingProjectPathError();
+  if (ghPagesErr) {
+    console.error(ghPagesErr);
+    return res.status(500).json({ error: ghPagesErr });
   }
 
   const t = TIERS[tier];
