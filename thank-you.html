@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Thank you for your Serverly order — how to claim your Discord server layout." />
+  <meta name="description" content="Thank you for your Serverly order — receipt and next steps." />
   <meta name="theme-color" content="#2563eb" />
   <meta name="robots" content="noindex" />
   <title>Thank you — Serverly</title>
@@ -33,13 +33,32 @@
       </p>
       <h1 class="thank-you-title">Thank you for your order</h1>
       <p class="thank-you-lead">
-        Stripe sends a <strong>payment receipt</strong> and, when your account is set up for it, a <strong>hosted invoice</strong> to the email you used at checkout. We also email an <strong>order summary</strong> from Serverly (same address) when our server is configured — check spam just in case.
+        Below is a copy of what you bought (saved from your browser when you went to checkout). Stripe also emails a <strong>receipt</strong> and often a <strong>hosted invoice</strong> to the address you used. We can email a detailed <strong>order summary</strong> from our server when it’s configured — see “Didn’t get an email?” if anything is missing.
+      </p>
+
+      <section class="summary-card thank-you-receipt" id="thank-you-receipt" aria-labelledby="receipt-heading" hidden>
+        <h2 class="section-title section-title-tight" id="receipt-heading">Your order receipt</h2>
+        <p class="thank-you-receipt-note" id="thank-you-receipt-email-line"></p>
+        <dl class="thank-you-receipt-dl" id="thank-you-receipt-dl"></dl>
+        <div class="thank-you-receipt-includes" id="thank-you-receipt-includes"></div>
+      </section>
+
+      <p class="thank-you-receipt-fallback summary-card" id="thank-you-receipt-fallback" hidden>
+        We couldn’t load your choices from this browser (new device, private window, or storage cleared). Your <strong>paid package</strong> is still valid — use the checkout reference below and the email you used at Stripe for support.
       </p>
 
       <div class="thank-you-ref summary-card" id="thank-you-ref" hidden>
         <p class="thank-you-ref-label">Checkout reference (for support)</p>
         <p class="thank-you-ref-id mono" id="thank-you-session-id"></p>
       </div>
+
+      <section class="summary-card thank-you-email-help" aria-labelledby="email-help-heading">
+        <h2 class="section-title section-title-tight" id="email-help-heading">Didn’t get an email?</h2>
+        <ul class="thank-you-email-help-list">
+          <li><strong>Stripe receipt / invoice</strong> — In <a href="https://dashboard.stripe.com/settings/emails" rel="noopener noreferrer">Stripe Dashboard → Settings → Customer emails</a>, make sure receipts (and invoices, if you use them) are enabled. Check spam for the address you typed at checkout.</li>
+          <li><strong>Serverly order summary</strong> — That message is sent by your <strong>Render</strong> app after Stripe fires the webhook. You need: <code>STRIPE_WEBHOOK_SECRET</code> matching your live webhook, endpoint <code>https://YOUR-API.onrender.com/webhook</code>, event <code>checkout.session.completed</code>, plus <code>SMTP_HOST</code>, <code>EMAIL_FROM</code>, and mail credentials in Render. If any of those are missing, only Stripe’s mail will arrive.</li>
+        </ul>
+      </section>
 
       <section class="summary-card thank-you-card" aria-labelledby="claim-heading">
         <h2 class="section-title section-title-tight" id="claim-heading">How to claim your Discord server layout</h2>
@@ -48,7 +67,7 @@
         </p>
         <ol class="thank-you-steps">
           <li>
-            <strong>Watch your email</strong> for Stripe’s receipt and invoice link, plus our order summary with your wizard choices.
+            <strong>Watch your email</strong> for Stripe’s receipt and invoice link, plus our order summary with your wizard choices (when SMTP + webhook are set up).
           </li>
           <li>
             <strong>In the Discord app</strong>, create a <strong>new server</strong> or use an empty / reset server you’re ready to structure. You stay the owner — we never need your password.
@@ -77,12 +96,167 @@
 
   <script>
     (function () {
+      var LAYOUT_TYPE_LABELS = {
+        content_creator: "Content creator",
+        business: "Businesses",
+        education: "Education",
+        startup: "Startup workspace",
+        coaching: "Coaching",
+        private: "Private servers",
+      };
+      var SIZE_LABELS = {
+        small: "Under 500 (following / reach)",
+        medium: "500 – 5,000",
+        large: "5,000+",
+        "not-yet": "Other / Rather not say",
+      };
+      var PACKAGE_LABELS = { simple: "Simple", advanced: "Advanced", professional: "Professional" };
+      var PACKAGE_PRICE_HINTS = { simple: "$1", advanced: "$20", professional: "$50" };
+      var SERVER_MODE_LABELS = {
+        fresh: "New server template (new or reset server)",
+        update: "Update current server",
+      };
+
+      function normalizeServerMode(mode) {
+        if (mode === "update") return "fresh";
+        return mode;
+      }
+
+      function includesForTier(tier, serverMode) {
+        var base = {
+          simple: [
+            "Full functional Discord layout",
+            "Custom channel names",
+            "Basic roles",
+            "Basic text & voice setup",
+            "Welcome and rules channel starter",
+            "Simple setup notes",
+          ],
+          advanced: [
+            "Everything in Simple",
+            "Growth-focused channel architecture",
+            "Advanced role hierarchy and permissions map",
+            "Announcement, ticket, and conversion lanes",
+            "VIP/private room strategy",
+            "Creator/business optimization by layout type",
+            "Monetization-ready server flow ideas",
+            "Priority polish and delivery",
+          ],
+          professional: [
+            "Everything in Advanced",
+            "Staff vs public maps",
+            "VIP & paid-access flows",
+            "Events & bot mapping",
+            "Full consistency pass",
+            "Timeline TBD",
+          ],
+        };
+        var list = base[tier] || base.simple;
+        if (normalizeServerMode(serverMode) === "fresh") {
+          list = list.slice();
+          list.push("Delivered as an implementable layout (template-style + notes)");
+        }
+        return list;
+      }
+
+      function slugToLabel(slug) {
+        if (!slug) return "";
+        return String(slug)
+          .split("-")
+          .filter(Boolean)
+          .map(function (w) {
+            return w.charAt(0).toUpperCase() + w.slice(1);
+          })
+          .join(" ");
+      }
+
       var id = new URLSearchParams(window.location.search).get("session_id");
       var box = document.getElementById("thank-you-ref");
       var el = document.getElementById("thank-you-session-id");
       if (id && box && el) {
         el.textContent = id;
         box.hidden = false;
+      }
+
+      var raw = null;
+      try {
+        raw = sessionStorage.getItem("discordStudioWizard");
+      } catch (e) {}
+      var saved = null;
+      if (raw) {
+        try {
+          saved = JSON.parse(raw);
+        } catch (e2) {}
+      }
+
+      var receipt = document.getElementById("thank-you-receipt");
+      var fallback = document.getElementById("thank-you-receipt-fallback");
+      var emailLine = document.getElementById("thank-you-receipt-email-line");
+      var dl = document.getElementById("thank-you-receipt-dl");
+      var includesEl = document.getElementById("thank-you-receipt-includes");
+
+      function addRow(label, value) {
+        if (value == null || value === "") return;
+        var dt = document.createElement("dt");
+        dt.className = "thank-you-receipt-dt";
+        dt.textContent = label;
+        var dd = document.createElement("dd");
+        dd.className = "thank-you-receipt-dd";
+        dd.textContent = value;
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      }
+
+      if (saved && typeof saved === "object" && saved.packageTier) {
+        receipt.hidden = false;
+        if (saved.checkoutEmail) {
+          emailLine.textContent =
+            "Confirmation and delivery will use: " + saved.checkoutEmail + " (same as Stripe checkout unless you changed it in Stripe).";
+        } else {
+          emailLine.textContent = "Use the email you entered on Stripe checkout for receipts and delivery.";
+        }
+
+        var tier = saved.packageTier;
+        var tierLabel = PACKAGE_LABELS[tier] || tier;
+        var price = PACKAGE_PRICE_HINTS[tier] || "";
+        addRow("Package", tierLabel + (price ? " — " + price + " USD" : ""));
+
+        if (saved.layoutType && LAYOUT_TYPE_LABELS[saved.layoutType]) {
+          addRow("Layout focus", LAYOUT_TYPE_LABELS[saved.layoutType]);
+        }
+        var sm = saved.serverMode ? normalizeServerMode(saved.serverMode) || saved.serverMode : "";
+        if (sm && SERVER_MODE_LABELS[sm]) addRow("Server approach", SERVER_MODE_LABELS[sm]);
+
+        if (saved.hasFollowers === true) addRow("Audience", "Established following");
+        if (saved.hasFollowers === false) addRow("Audience", "No following size given yet");
+
+        if (saved.size && SIZE_LABELS[saved.size]) addRow("Following / reach", SIZE_LABELS[saved.size]);
+
+        var pat =
+          saved.channelPatternLabel && String(saved.channelPatternLabel).trim()
+            ? String(saved.channelPatternLabel).trim()
+            : saved.channelPattern
+              ? slugToLabel(saved.channelPattern)
+              : "";
+        if (pat) addRow("Channel naming style", pat);
+
+        var bullets = includesForTier(tier, saved.serverMode);
+        if (bullets.length && includesEl) {
+          var h3 = document.createElement("h3");
+          h3.className = "thank-you-includes-title";
+          h3.textContent = "What this package includes";
+          var ul = document.createElement("ul");
+          ul.className = "thank-you-includes-list";
+          bullets.forEach(function (line) {
+            var li = document.createElement("li");
+            li.textContent = line;
+            ul.appendChild(li);
+          });
+          includesEl.appendChild(h3);
+          includesEl.appendChild(ul);
+        }
+      } else if (fallback) {
+        fallback.hidden = false;
       }
     })();
   </script>

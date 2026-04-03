@@ -3094,3 +3094,95 @@ body.drawer-open {
 .thank-you-footer {
   margin-top: auto;
 }
+
+.thank-you-receipt {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.thank-you-receipt-note {
+  margin: 0 0 1rem;
+  line-height: 1.55;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.95rem;
+}
+
+.thank-you-receipt-dl {
+  margin: 0 0 1.25rem;
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+}
+
+.thank-you-receipt-dt {
+  margin: 0;
+  color: var(--color-text-muted, #64748b);
+  font-weight: 500;
+}
+
+.thank-you-receipt-dd {
+  margin: 0;
+}
+
+.thank-you-receipt-includes {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.thank-you-includes-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.65rem;
+}
+
+.thank-you-includes-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.thank-you-receipt-fallback {
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+  color: var(--color-text-muted, #64748b);
+}
+
+.thank-you-email-help {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.thank-you-email-help-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.thank-you-email-help-list a {
+  color: var(--color-accent, #2563eb);
+  font-weight: 500;
+}
+
+.thank-you-email-help-list code {
+  font-size: 0.85em;
+  word-break: break-word;
+}
+
+@media (max-width: 520px) {
+  .thank-you-receipt-dl {
+    grid-template-columns: 1fr;
+    gap: 0.15rem 0;
+  }
+
+  .thank-you-receipt-dd {
+    margin-bottom: 0.65rem;
+  }
+}

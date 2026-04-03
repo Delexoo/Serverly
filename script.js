@@ -1291,6 +1291,7 @@
               sessionStorage.setItem(
                 "discordStudioWizard",
                 JSON.stringify({
+                  checkoutEmail: email,
                   serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
                   layoutType: state.layoutType,
                   hasFollowers:
