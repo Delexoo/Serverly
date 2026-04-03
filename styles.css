@@ -1707,53 +1707,140 @@ button.style-card.pattern-select {
   color: #f2f3f5;
 }
 
+/* Mobile tab bar: hidden on desktop; shown inside @media below */
+.discord-demo-tabbar {
+  display: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom, 0));
+  background: #1e1f22;
+  border-top: 1px solid #1f2023;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 0.25rem;
+}
+
+.discord-demo-tabbar-item {
+  flex: 1;
+  max-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.2rem 0.25rem 0.1rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #949ba4;
+  font: inherit;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.discord-demo-tabbar-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.discord-demo-tabbar-icon-wrap--you {
+  border-radius: 50%;
+  background: #5865f2;
+  color: #fff;
+}
+
+.discord-demo-tabbar-svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.discord-demo-tabbar-icon-wrap--you .discord-demo-tabbar-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.discord-demo-tabbar-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 1.1rem;
+  padding: 0.08rem 0.28rem;
+  border-radius: 99px;
+  background: #ed4245;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.discord-demo-tabbar-badge--sm {
+  min-width: 0.95rem;
+  padding: 0.08rem 0.22rem;
+  font-size: 0.55rem;
+  top: -4px;
+  right: -8px;
+}
+
+.discord-demo-tabbar-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-align: center;
+}
+
 @media (max-width: 720px) {
   .discord-demo {
     flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
   }
 
-  .discord-demo-members {
-    flex: 0 1 auto;
-    width: 100%;
-    max-width: none;
-    align-self: stretch;
-    border-left: none;
-    border-top: 1px solid #1f2023;
-    max-height: min(32vh, 240px);
-  }
-
-  .discord-demo-members-scroll {
-    max-height: min(32vh, 240px);
-  }
-
-  .discord-demo-rail {
-    flex-direction: row;
-    justify-content: flex-start;
-    width: 100%;
-    flex: 0 0 auto;
-    padding: 0.4rem;
-    max-height: none;
-    overflow-y: hidden;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    gap: 0.45rem;
-  }
-
-  .discord-demo-rail::-webkit-scrollbar {
-    height: 6px;
-    width: auto;
+  .discord-demo-rail,
+  .discord-demo-main,
+  .discord-demo-members,
+  .discord-demo-userbar,
+  .discord-demo-nav-static {
+    display: none !important;
   }
 
   .discord-demo-sidebar {
     flex: 1 1 auto;
     width: 100%;
-    max-height: min(45vh, 380px);
+    max-width: none;
+    min-height: 0;
     border-right: none;
-    border-bottom: 1px solid #1f2023;
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
   }
 
-  .discord-demo-main {
-    min-height: 160px;
+  .discord-demo-sidebar-top {
+    flex-shrink: 0;
+  }
+
+  .discord-demo-channel-scroll {
+    flex: 1 1 auto;
+    min-height: 180px;
+    max-height: min(55vh, 420px);
+  }
+
+  .discord-demo-tabbar {
+    display: flex;
+  }
+
+  .discord-demo-tabbar-item:first-child {
+    color: #f2f3f5;
   }
 }
 

@@ -62,7 +62,7 @@
   };
 
   var PACKAGE_PRICE_HINTS = {
-    simple: "$1",
+    simple: "$10",
     advanced: "$20",
     professional: "$50",
   };
@@ -771,6 +771,38 @@
     );
   }
 
+  /** Decorative mobile-only tab bar (CSS shows only under max-width breakpoint). */
+  function buildDemoMobileTabbarHtml() {
+    var homeSvg =
+      '<svg class="discord-demo-tabbar-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/></svg>';
+    var bellSvg =
+      '<svg class="discord-demo-tabbar-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
+    var youSvg =
+      '<svg class="discord-demo-tabbar-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+    return (
+      '<nav class="discord-demo-tabbar" aria-hidden="true">' +
+      '<button type="button" class="discord-demo-tabbar-item" tabindex="-1">' +
+      '<span class="discord-demo-tabbar-icon-wrap">' +
+      homeSvg +
+      '<span class="discord-demo-tabbar-badge">460</span></span>' +
+      '<span class="discord-demo-tabbar-label">Home</span>' +
+      "</button>" +
+      '<button type="button" class="discord-demo-tabbar-item" tabindex="-1">' +
+      '<span class="discord-demo-tabbar-icon-wrap">' +
+      bellSvg +
+      '<span class="discord-demo-tabbar-badge discord-demo-tabbar-badge--sm">4</span></span>' +
+      '<span class="discord-demo-tabbar-label">Notifications</span>' +
+      "</button>" +
+      '<button type="button" class="discord-demo-tabbar-item" tabindex="-1">' +
+      '<span class="discord-demo-tabbar-icon-wrap discord-demo-tabbar-icon-wrap--you">' +
+      youSvg +
+      "</span>" +
+      '<span class="discord-demo-tabbar-label">You</span>' +
+      "</button>" +
+      "</nav>"
+    );
+  }
+
   function buildDemoMembersPanelHtml(roster) {
     var selfRow = {
       name: roster.self.name,
@@ -1010,7 +1042,9 @@
       "</div>" +
       '<div class="discord-demo-members" aria-hidden="true">' +
       buildDemoMembersPanelHtml(demoRoster) +
-      "</div></div></div>"
+      "</div>" +
+      buildDemoMobileTabbarHtml() +
+      "</div></div>"
     );
   }
 

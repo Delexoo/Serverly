@@ -122,7 +122,7 @@
         private: "Private servers",
       };
       var PACKAGE_LABELS = { simple: "Basic", advanced: "Advanced", professional: "Professional" };
-      var PACKAGE_PRICE_HINTS = { simple: "$1", advanced: "$20", professional: "$50" };
+      var PACKAGE_PRICE_HINTS = { simple: "$10", advanced: "$20", professional: "$50" };
       var SERVER_MODE_LABELS = {
         fresh: "New server template (new or reset server)",
         update: "Update current server",
@@ -290,7 +290,7 @@
                   claimBtn.textContent = "Claim your Discord template";
                   if (claimHint) {
                     claimHint.textContent =
-                      "We still couldn’t load your template. Confirm CONTENT_CREATOR_COLUMN is set on Render for Advanced + Content creator + Column, or use the link in your order email.";
+                      "We still couldn’t load your template. Confirm the matching env on Render (see template-registry.js — e.g. CONTENT_CREATOR_COLUMN or CONTENT_CREATOR_REGULAR_TEXT), or use the link in your order email.";
                   }
                 }
               })
