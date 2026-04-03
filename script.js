@@ -73,6 +73,19 @@
     professional: "Professional — subscription care (coming soon)",
   };
 
+  /** Naming styles for Advanced summary demo (matches wizard style step). */
+  var DEMO_PATTERN_OPTIONS = [
+    { id: "regular-text", label: "Regular text" },
+    { id: "bar-divider", label: "Bar divider" },
+    { id: "flourish", label: "Flourish wrap" },
+    { id: "bold-column", label: "Column" },
+    { id: "corner-brackets", label: "Corner brackets" },
+    { id: "chevrons", label: "Chevrons" },
+    { id: "dot-separator", label: "Dot separator" },
+    { id: "em-dash", label: "Em dash" },
+    { id: "sparkle-dot", label: "Sparkle dot" },
+  ];
+
   function serverModeNote(mode) {
     var m = normalizeServerMode(mode);
     if (m === "fresh")
@@ -706,23 +719,22 @@
 
   function buildDemoUserRoster() {
     var shuffled = demoShuffle(DEMO_PROFILES);
-    var rest = shuffled.slice(0, 28);
+    var rest = shuffled.slice(0, 14);
     var cycle = [
       "online",
       "idle",
       "dnd",
       "streaming",
       "offline",
-      "invisible",
       "online",
       "idle",
       "dnd",
       "streaming",
       "offline",
-      "invisible",
       "online",
       "idle",
       "dnd",
+      "streaming",
     ];
     var members = rest.map(function (p, i) {
       return {
@@ -743,7 +755,7 @@
       '<div class="discord-demo-avatar-wrap">' +
       '<img class="discord-demo-user-av discord-demo-user-av--img" src="' +
       escapeHtml(demoAvatarUrl(roster.self.seed)) +
-      '" alt="" width="32" height="32" loading="lazy" decoding="async" />' +
+      '" alt="" width="32" height="32" loading="eager" decoding="async" />' +
       demoStatusHtml("online") +
       "</div>" +
       '<span class="discord-demo-user-meta">' +
@@ -813,7 +825,7 @@
           '<div class="discord-demo-avatar-wrap discord-demo-avatar-wrap--sm">' +
           '<img class="discord-demo-user-av discord-demo-user-av--sm discord-demo-user-av--img" src="' +
           escapeHtml(demoAvatarUrl(u.seed)) +
-          '" alt="" width="32" height="32" loading="lazy" decoding="async" />' +
+          '" alt="" width="32" height="32" loading="eager" decoding="async" />' +
           demoStatusHtml(badgeStatus) +
           "</div>" +
           '<span class="discord-demo-member-name">' +
@@ -827,7 +839,34 @@
     return '<div class="discord-demo-members-scroll">' + out + "</div>";
   }
 
-  function buildDiscordDemoHtml(patternId, displayLabel) {
+  function buildDemoPatternSwitcherHtml(activePatternId) {
+    var active = activePatternId || "regular-text";
+    var i;
+    var out =
+      '<div class="demo-pattern-switcher" role="group" aria-label="Preview channel naming style">' +
+      '<span class="demo-pattern-switcher-label">Naming style</span>' +
+      '<div class="demo-pattern-switcher-chips">';
+    for (i = 0; i < DEMO_PATTERN_OPTIONS.length; i++) {
+      var o = DEMO_PATTERN_OPTIONS[i];
+      var isOn = active === o.id;
+      out +=
+        '<button type="button" class="demo-pattern-chip' +
+        (isOn ? " demo-pattern-chip--active" : "") +
+        '" data-demo-pattern-btn="' +
+        escapeHtml(o.id) +
+        '" data-demo-pattern-label="' +
+        escapeHtml(o.label) +
+        '" aria-pressed="' +
+        (isOn ? "true" : "false") +
+        '">' +
+        escapeHtml(o.label) +
+        "</button>";
+    }
+    out += "</div></div>";
+    return out;
+  }
+
+  function buildDiscordDemoHtml(patternId, displayLabel, packageTier) {
     var lab =
       displayLabel && String(displayLabel).trim()
         ? displayLabel.trim()
@@ -840,6 +879,10 @@
         escapeHtml(lab) +
         "</strong>.</p>"
       : '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing.</p>';
+    var patternBar = "";
+    if (packageTier === "advanced") {
+      patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text");
+    }
 
     var defCh = findDefaultDemoChannel();
     var regularTextMode = patternId === "regular-text";
@@ -888,7 +931,9 @@
         '<div class="discord-demo-cat' +
         (cat.locked ? " discord-demo-cat--locked" : "") +
         '">' +
-        '<div class="discord-demo-cat-head"><span class="discord-demo-cat-chev" aria-hidden="true">▼</span><span class="discord-demo-cat-title">' +
+        '<div class="discord-demo-cat-head" role="button" tabindex="0" aria-expanded="true" aria-label="' +
+        escapeHtml("Toggle " + cat.title + " category") +
+        '"><span class="discord-demo-cat-chev" aria-hidden="true">▼</span><span class="discord-demo-cat-title">' +
         escapeHtml(cat.title) +
         "</span></div>" +
         '<div class="discord-demo-cat-channels" role="list">' +
@@ -908,6 +953,7 @@
     return (
       '<div class="summary-preview-combined">' +
       '<h4 class="outcome-h outcome-h--preview-bundle">Demo</h4>' +
+      patternBar +
       lead +
       '<div class="discord-demo" data-demo-pattern="' +
       escapeHtml(patternId || "") +
@@ -1010,6 +1056,26 @@
         updateFromRow(this);
       });
     }
+
+    demo.querySelectorAll(".discord-demo-cat").forEach(function (catEl) {
+      var head = catEl.querySelector(".discord-demo-cat-head");
+      if (!head) return;
+      function toggleCat() {
+        var collapsed = catEl.classList.toggle("discord-demo-cat--collapsed");
+        head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      }
+      head.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleCat();
+      });
+      head.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleCat();
+        }
+      });
+    });
+
     scrollEl.addEventListener("mouseleave", function () {
       resetDefault();
     });
@@ -1131,6 +1197,11 @@
       return;
     }
 
+    if (state.packageTier === "advanced" && !state.channelPattern) {
+      state.channelPattern = "regular-text";
+      state.channelPatternLabel = "Regular text";
+    }
+
     var styleLabel = summaryPatternDisplay();
 
     var incomplete = !state.packageTier
@@ -1139,7 +1210,7 @@
 
     var html =
       incomplete +
-      buildDiscordDemoHtml(state.channelPattern, styleLabel);
+      buildDiscordDemoHtml(state.channelPattern, styleLabel, state.packageTier);
 
     summaryEl.innerHTML = html;
     if (summaryCheckoutCta) summaryCheckoutCta.hidden = false;
@@ -1354,6 +1425,23 @@
       }
       state.checkoutReady = true;
       setStep(6);
+    });
+  }
+
+  if (summaryEl) {
+    summaryEl.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-demo-pattern-btn]");
+      if (!btn || !summaryEl.contains(btn)) return;
+      if (state.packageTier !== "advanced") return;
+      e.preventDefault();
+      var id = btn.getAttribute("data-demo-pattern-btn");
+      if (!id) return;
+      var labAttr = btn.getAttribute("data-demo-pattern-label");
+      state.channelPattern = id;
+      state.channelPatternLabel =
+        labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
+      syncPatternSelectionUI();
+      renderSummary();
     });
   }
 
