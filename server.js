@@ -23,7 +23,7 @@ if (!stripeSecret) {
 const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 
 const TIERS = {
-  simple: { amount: 1000, name: "Serverly — Simple server layout" },
+  simple: { amount: 100, name: "Serverly — Simple server layout" },
   advanced: { amount: 2000, name: "Serverly — Advanced server layout" },
   professional: { amount: 5000, name: "Serverly — Professional server layout" },
 };
