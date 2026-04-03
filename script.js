@@ -766,7 +766,23 @@
   function buildDemoRailHtml() {
     return (
       '<div class="discord-demo-rail" aria-hidden="true">' +
+      '<span class="discord-demo-rail-dm" title="Direct Messages"></span>' +
+      '<span class="discord-demo-rail-item discord-demo-rail-item--active">' +
+      '<span class="discord-demo-rail-pill" aria-hidden="true"></span>' +
       '<span class="discord-demo-rail-icon discord-demo-rail-icon--active" title="This server"></span>' +
+      "</span>" +
+      '<span class="discord-demo-rail-item">' +
+      '<span class="discord-demo-rail-icon discord-demo-rail-icon--alt" title="Server"></span>' +
+      '<span class="discord-demo-rail-badge">10</span>' +
+      "</span>" +
+      '<span class="discord-demo-rail-item">' +
+      '<span class="discord-demo-rail-icon" title="Server"></span>' +
+      '<span class="discord-demo-rail-badge">31</span>' +
+      "</span>" +
+      '<span class="discord-demo-rail-item">' +
+      '<span class="discord-demo-rail-icon discord-demo-rail-icon--alt2" title="Server"></span>' +
+      '<span class="discord-demo-rail-badge">1</span>' +
+      "</span>" +
       "</div>"
     );
   }

@@ -1040,8 +1040,11 @@ button.style-card.pattern-select {
   background: #1e1f22;
   pointer-events: none;
   max-height: min(55vh, 520px);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   justify-content: flex-start;
+  scrollbar-width: thin;
+  scrollbar-color: #4e5058 #1a1c1e;
 }
 
 .discord-demo-rail-icon {
@@ -1055,6 +1058,69 @@ button.style-card.pattern-select {
 .discord-demo-rail-icon--active {
   border-radius: 35%;
   background: #5865f2;
+}
+
+.discord-demo-rail-dm {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #313338;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.discord-demo-rail-dm::before {
+  content: "💬";
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.discord-demo-rail-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.discord-demo-rail-item--active .discord-demo-rail-pill {
+  position: absolute;
+  left: -0.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: #f2f3f5;
+  z-index: 1;
+}
+
+.discord-demo-rail-icon--alt {
+  background: linear-gradient(145deg, #5865f2, #3c45a5);
+}
+
+.discord-demo-rail-icon--alt2 {
+  background: linear-gradient(145deg, #eb459e, #9b59b6);
+}
+
+.discord-demo-rail-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  min-width: 1rem;
+  padding: 0.05rem 0.2rem;
+  border-radius: 99px;
+  background: #ed4245;
+  color: #fff;
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  border: 2px solid #1e1f22;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 
 .discord-demo-sidebar {
@@ -1800,13 +1866,28 @@ button.style-card.pattern-select {
 }
 
 @media (max-width: 720px) {
+  /* Row 1: server rail (left) + channel list; row 2: bottom tab bar */
   .discord-demo {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: stretch;
+    align-content: flex-start;
     min-height: 0;
   }
 
-  .discord-demo-rail,
+  .discord-demo-rail {
+    display: flex !important;
+    flex: 0 0 52px;
+    width: 52px;
+    max-height: none;
+    min-height: min(55vh, 420px);
+    align-self: stretch;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .discord-demo-main,
   .discord-demo-members,
   .discord-demo-userbar,
@@ -1815,8 +1896,9 @@ button.style-card.pattern-select {
   }
 
   .discord-demo-sidebar {
-    flex: 1 1 auto;
-    width: 100%;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
     max-width: none;
     min-height: 0;
     border-right: none;
@@ -1837,6 +1919,9 @@ button.style-card.pattern-select {
 
   .discord-demo-tabbar {
     display: flex;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
   }
 
   .discord-demo-tabbar-item:first-child {
