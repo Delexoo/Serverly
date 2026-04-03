@@ -87,9 +87,9 @@ if (!stripeSecret) {
 const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 
 const TIERS = {
-  simple: { amount: 100, name: "Serverly — Simple server layout" },
+  simple: { amount: 100, name: "Serverly — Basic server layout" },
   advanced: { amount: 2000, name: "Serverly — Advanced server layout" },
-  professional: { amount: 5000, name: "Serverly — Professional server layout" },
+  professional: { amount: 5000, name: "Serverly — Professional (subscription & hands-on)" },
 };
 
 const GOAL_LABELS = {
@@ -120,16 +120,16 @@ function includesForTier(tier, goal, serverMode) {
   const base = {
     simple: [
       "Full channel map",
-      "Wizard-matched names",
+      "Regular channel names",
       "Member, mod, admin roles",
       "Clean categories",
       "Text & voice",
-      "Welcome & rules spots",
-      "Plain setup notes",
       "On-time delivery",
     ],
     advanced: [
-      "Everything in Simple",
+      "Everything in Basic",
+      "50+ channels",
+      "Custom channel names",
       "Rules channel blueprint",
       "High-traffic room presets",
       "One to two name patterns",
@@ -141,11 +141,11 @@ function includesForTier(tier, goal, serverMode) {
     ],
     professional: [
       "Everything in Advanced",
-      "Staff vs public maps",
-      "VIP & paid-access flows",
-      "Events & bot mapping",
-      "Full consistency pass",
-      "Timeline TBD",
+      "Subscription-based Discord bot setups",
+      "24/7 Discord moderation",
+      "1:1 helper / mentor",
+      "High-quality, white-glove service",
+      "Priority support & iteration",
     ],
   };
   let list = [...(base[tier] || base.simple)];

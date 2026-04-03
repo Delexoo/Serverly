@@ -115,7 +115,7 @@
         coaching: "Coaching",
         private: "Private servers",
       };
-      var PACKAGE_LABELS = { simple: "Simple", advanced: "Advanced", professional: "Professional" };
+      var PACKAGE_LABELS = { simple: "Basic", advanced: "Advanced", professional: "Professional" };
       var PACKAGE_PRICE_HINTS = { simple: "$1", advanced: "$20", professional: "$50" };
       var SERVER_MODE_LABELS = {
         fresh: "New server template (new or reset server)",
@@ -131,29 +131,29 @@
         var base = {
           simple: [
             "Full functional Discord layout",
-            "Custom channel names",
+            "Regular channel names",
             "Basic roles",
             "Basic text & voice setup",
-            "Welcome and rules channel starter",
-            "Simple setup notes",
           ],
           advanced: [
-            "Everything in Simple",
+            "Everything in Basic",
+            "50+ channels",
+            "Custom channel names",
             "Growth-focused channel architecture",
             "Advanced role hierarchy and permissions map",
             "Announcement, ticket, and conversion lanes",
             "VIP/private room strategy",
-            "Creator/business optimization by layout type",
+            "Layout fit for your niche",
             "Monetization-ready server flow ideas",
             "Priority polish and delivery",
           ],
           professional: [
             "Everything in Advanced",
-            "Staff vs public maps",
-            "VIP & paid-access flows",
-            "Events & bot mapping",
-            "Full consistency pass",
-            "Timeline TBD",
+            "Subscription-based Discord bot setups",
+            "24/7 Discord moderation",
+            "1:1 helper / mentor",
+            "High-quality, white-glove service",
+            "Priority support and iteration",
           ],
         };
         var list = base[tier] || base.simple;

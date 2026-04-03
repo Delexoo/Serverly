@@ -56,7 +56,7 @@
   }
 
   var PACKAGE_LABELS = {
-    simple: "Simple",
+    simple: "Basic",
     advanced: "Advanced",
     professional: "Professional",
   };
@@ -68,9 +68,9 @@
   };
 
   var TIER_TITLES = {
-    simple: "Simple — gets the job done",
-    advanced: "Advanced — Simple + presets & polish",
-    professional: "Professional — coming soon",
+    simple: "Basic — gets the job done",
+    advanced: "Advanced — Basic + presets & polish",
+    professional: "Professional — subscription care (coming soon)",
   };
 
   function serverModeNote(mode) {
@@ -90,29 +90,29 @@
     var base = {
       simple: [
         "Full functional Discord layout",
-        "Custom channel names",
+        "Regular channel names",
         "Basic roles",
         "Basic text & voice setup",
-        "Welcome and rules channel starter",
-        "Simple setup notes",
       ],
       advanced: [
-        "Everything in Simple",
+        "Everything in Basic",
+        "50+ channels",
+        "Custom channel names",
         "Growth-focused channel architecture",
         "Advanced role hierarchy and permissions map",
         "Announcement, ticket, and conversion lanes",
         "VIP/private room strategy",
-        "Creator/business optimization by layout type",
+        "Layout fit for your niche",
         "Monetization-ready server flow ideas",
         "Priority polish and delivery",
       ],
       professional: [
         "Everything in Advanced",
-        "Staff vs public maps",
-        "VIP & paid-access flows",
-        "Events & bot mapping",
-        "Full consistency pass",
-        "Timeline TBD",
+        "Subscription-based Discord bot setups",
+        "24/7 Discord moderation",
+        "1:1 helper / mentor",
+        "High-quality, white-glove service",
+        "Priority support & iteration",
       ],
     };
     var list = base[tier] || base.simple;
@@ -152,7 +152,7 @@
     });
     if (styleTierNoteEl) {
       styleTierNoteEl.textContent = simple
-        ? "Simple includes Regular text only. Other styles are visible but available in Advanced ($20)."
+        ? "Basic includes Regular text only. Other styles are visible but available in Advanced ($20)."
         : "Advanced unlocks all channel naming styles.";
     }
   }
@@ -824,7 +824,7 @@
       }
       out += "</div>";
     }
-    return out;
+    return '<div class="discord-demo-members-scroll">' + out + "</div>";
   }
 
   function buildDiscordDemoHtml(patternId, displayLabel) {
@@ -916,12 +916,12 @@
       '<div class="discord-demo-sidebar">' +
       '<div class="discord-demo-sidebar-top">' +
       '<div class="discord-demo-server-name">Your server <span class="discord-demo-chev">▼</span></div>' +
+      "</div>" +
+      '<div class="discord-demo-channel-scroll" tabindex="0">' +
       '<div class="discord-demo-nav-static">' +
       '<div class="discord-demo-nav-row">Events</div>' +
       '<div class="discord-demo-nav-row">Server Boosts</div>' +
       "</div>" +
-      "</div>" +
-      '<div class="discord-demo-channel-scroll" tabindex="0">' +
       catHtml +
       "</div>" +
       buildDemoUserbarHtml(demoRoster) +
@@ -1102,7 +1102,9 @@
     var tier = state.packageTier;
     if (checkoutTierLabel) {
       checkoutTierLabel.textContent =
-        tier && PACKAGE_LABELS[tier] ? PACKAGE_LABELS[tier] + " package" : "Pick a tier in step 2";
+        tier && PACKAGE_LABELS[tier]
+          ? PACKAGE_LABELS[tier] + " package"
+          : "Pick a tier in step 2";
     }
     if (checkoutAmount) {
       checkoutAmount.textContent =
@@ -1132,7 +1134,7 @@
     var styleLabel = summaryPatternDisplay();
 
     var incomplete = !state.packageTier
-      ? '<p class="summary-disclaimer">You haven’t chosen a package tier yet—go back to step 2 to pick <strong>Simple</strong> or <strong>Advanced</strong>.</p>'
+      ? '<p class="summary-disclaimer">You haven’t chosen a package tier yet—go back to step 2 to pick <strong>Basic</strong> or <strong>Advanced</strong>.</p>'
       : "";
 
     var html =

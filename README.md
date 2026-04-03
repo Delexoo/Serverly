@@ -4,7 +4,7 @@ Your marketing site is **static HTML**. Stripe **secret keys** and **webhooks** 
 
 ## What this does
 
-1. **`POST /create-checkout-session`** — Creates a [Stripe Checkout](https://stripe.com/docs/payments/checkout) session for **$1 / $20 / $50** (Simple / Advanced / Professional) and stores the wizard answers in **session metadata**.
+1. **`POST /create-checkout-session`** — Creates a [Stripe Checkout](https://stripe.com/docs/payments/checkout) session for **$1 / $20 / $50** (Basic / Advanced / Professional) and stores the wizard answers in **session metadata**.
 2. **`POST /webhook`** — On `checkout.session.completed`, builds a **plain-text email** (questionnaire + tier bullets, same idea as the on-site summary) and sends it to the customer’s email.
 
 The **full polished blueprint** is still something you deliver manually (Google Doc, etc.); this email is the **order receipt + spec snapshot**.
