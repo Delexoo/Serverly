@@ -235,6 +235,27 @@
         if (claimHint) claimHint.textContent = "";
       }
 
+      /** Template ready: primary = email help (same as fallback); secondary = open Discord template. */
+      function appendDiscordTemplateClaim(discordUrl, leadText) {
+        if (!claimActions) return;
+        if (claimLead) claimLead.textContent = leadText;
+        var helpBtn = document.createElement("a");
+        helpBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+        helpBtn.href = "#thank-you-email-help";
+        helpBtn.textContent = "Get your order by email — troubleshooting";
+        claimActions.appendChild(helpBtn);
+        var sub = document.createElement("p");
+        sub.className = "thank-you-claim-secondary-wrap";
+        var claimBtn = document.createElement("a");
+        claimBtn.className = "btn btn-outline btn-block";
+        claimBtn.href = discordUrl;
+        claimBtn.rel = "noopener noreferrer";
+        claimBtn.textContent = "Claim Discord template";
+        sub.appendChild(claimBtn);
+        claimActions.appendChild(sub);
+        if (claimHint) claimHint.textContent = "";
+      }
+
       function showClaimFallback(hasSessionId, hadApiBase) {
         if (!claimActions) return;
         if (claimLead) {
@@ -287,10 +308,9 @@
         var discordUrl = discordFromStripe ? String(discordFromStripe).trim() : "";
         var metaOk = metaInstantValid();
         if (discordUrl) {
-          appendClaimChrome(
+          appendDiscordTemplateClaim(
             discordUrl,
-            "Claim Discord template",
-            "Your paid Discord server template is ready. Open it while signed into Discord — the same link is in your order email."
+            "Your paid Discord server template is ready — use your order email for the link, or open it directly below."
           );
           return;
         }
