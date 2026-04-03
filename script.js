@@ -79,6 +79,7 @@
     { id: "bar-divider", label: "Bar divider" },
     { id: "flourish", label: "Flourish wrap" },
     { id: "bold-column", label: "Column" },
+    { id: "colum", label: "Colum" },
     { id: "corner-brackets", label: "Corner brackets" },
     { id: "chevrons", label: "Chevrons" },
     { id: "dot-separator", label: "Dot separator" },
@@ -443,6 +444,8 @@
         return toMathBoldText("✦" + n + "✦");
       case "bold-column":
         return e + " ┃ " + n;
+      case "colum":
+        return e + " ┃ " + n;
       case "corner-brackets":
         return toMathBoldText("【" + e + "】" + lower);
       case "chevrons":
@@ -495,6 +498,11 @@
       voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
     },
     "bold-column": {
+      info: ["📢 ┃ News", "📋 ┃ Rule", "🔗 ┃ Links"],
+      general: ["💬 ┃ General", "🎬 ┃ Clips", "🎨 ┃ Art"],
+      voice: ["🎮 ┃ Lounge", "🎵 ┃ Music", "🛋 ┃ AFK"],
+    },
+    colum: {
       info: ["📢 ┃ News", "📋 ┃ Rule", "🔗 ┃ Links"],
       general: ["💬 ┃ General", "🎬 ┃ Clips", "🎨 ┃ Art"],
       voice: ["🎮 ┃ Lounge", "🎵 ┃ Music", "🛋 ┃ AFK"],
@@ -836,30 +844,48 @@
     return '<div class="discord-demo-members-scroll">' + out + "</div>";
   }
 
-  function buildDemoPatternSwitcherHtml(activePatternId) {
-    var active = activePatternId || "regular-text";
+  function buildDemoPatternSwitcherHtml(activePatternId, basicTierLocked) {
+    var active = basicTierLocked ? "regular-text" : activePatternId || "regular-text";
     var i;
+    var groupLabel = basicTierLocked
+      ? "Preview channel naming style (Basic includes Regular text only; other styles unlock with Advanced)"
+      : "Preview channel naming style";
     var out =
-      '<div class="demo-pattern-switcher" role="group" aria-label="Preview channel naming style">' +
+      '<div class="demo-pattern-switcher' +
+      (basicTierLocked ? " demo-pattern-switcher--basic" : "") +
+      '" role="group" aria-label="' +
+      escapeHtml(groupLabel) +
+      '">' +
       '<span class="demo-pattern-switcher-label">Naming style</span>' +
       '<div class="demo-pattern-switcher-chips">';
     for (i = 0; i < DEMO_PATTERN_OPTIONS.length; i++) {
       var o = DEMO_PATTERN_OPTIONS[i];
       var isOn = active === o.id;
+      var isLocked = !!basicTierLocked && o.id !== "regular-text";
       out +=
         '<button type="button" class="demo-pattern-chip' +
         (isOn ? " demo-pattern-chip--active" : "") +
+        (isLocked ? " demo-pattern-chip--locked" : "") +
         '" data-demo-pattern-btn="' +
         escapeHtml(o.id) +
         '" data-demo-pattern-label="' +
         escapeHtml(o.label) +
         '" aria-pressed="' +
         (isOn ? "true" : "false") +
-        '">' +
+        '"' +
+        (isLocked
+          ? ' aria-disabled="true" title="Try other naming styles with Advanced ($20)."'
+          : "") +
+        ">" +
         escapeHtml(o.label) +
         "</button>";
     }
-    out += "</div></div>";
+    out += "</div>";
+    if (basicTierLocked) {
+      out +=
+        '<p class="demo-pattern-switcher-upsell">Try other naming styles with <strong>Advanced</strong> ($20).</p>';
+    }
+    out += "</div>";
     return out;
   }
 
@@ -877,8 +903,8 @@
         "</strong>.</p>"
       : '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing.</p>';
     var patternBar = "";
-    if (packageTier === "advanced") {
-      patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text");
+    if (packageTier === "advanced" || packageTier === "simple") {
+      patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text", packageTier === "simple");
     }
 
     var defCh = findDefaultDemoChannel();
@@ -1426,9 +1452,18 @@
     summaryEl.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-demo-pattern-btn]");
       if (!btn || !summaryEl.contains(btn)) return;
+      var id = btn.getAttribute("data-demo-pattern-btn");
+      if (state.packageTier === "simple") {
+        e.preventDefault();
+        if (!id || id === "regular-text") return;
+        flashCheckout(
+          "Other channel naming styles are included in Advanced ($20). Pick Advanced in step 2 to unlock them.",
+          "info"
+        );
+        return;
+      }
       if (state.packageTier !== "advanced") return;
       e.preventDefault();
-      var id = btn.getAttribute("data-demo-pattern-btn");
       if (!id) return;
       var labAttr = btn.getAttribute("data-demo-pattern-label");
       state.channelPattern = id;

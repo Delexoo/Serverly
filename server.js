@@ -10,6 +10,7 @@ const express = require("express");
 const cors = require("cors");
 const Stripe = require("stripe");
 const nodemailer = require("nodemailer");
+const { resolveDiscordTemplateUrl } = require("./template-registry.js");
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -116,6 +117,15 @@ const SIZE_LABELS = {
   "not-yet": "Other / Rather not say",
 };
 
+const LAYOUT_TYPE_LABELS = {
+  content_creator: "Content creator",
+  business: "Businesses",
+  education: "Education",
+  startup: "Startup workspace",
+  coaching: "Coaching",
+  private: "Private servers",
+};
+
 function includesForTier(tier, goal, serverMode) {
   const base = {
     simple: [
@@ -179,6 +189,10 @@ function buildOrderEmail(meta, customerEmail, extras) {
   const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
   const tier = meta.tier || "simple";
   const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+  const metaDiscord = (meta.discord_template_url && String(meta.discord_template_url).trim()) || "";
+  const instantUrl = (metaDiscord || digitalDeliveryUrl || "").trim();
+  const isDiscordTemplate = !!metaDiscord;
+
   const lines = [
     "YOUR DIGITAL PRODUCT — Serverly",
     "",
@@ -186,18 +200,25 @@ function buildOrderEmail(meta, customerEmail, extras) {
     "",
   ];
 
-  if (digitalDeliveryUrl) {
-    lines.push("1) INSTANT ACCESS (use this now)", "Download / starter resource:", digitalDeliveryUrl, "");
+  if (instantUrl) {
+    lines.push(
+      "1) INSTANT ACCESS — your digital product",
+      isDiscordTemplate
+        ? "Open this link while signed into Discord to create a server from your purchased template (same link as your thank-you page):"
+        : "Use this link right away for your starter resource or download:",
+      instantUrl,
+      ""
+    );
   }
 
+  const layoutSectionNum = instantUrl ? "2)" : "1)";
+  const orderPageSectionNum = instantUrl ? "3)" : "2)";
   lines.push(
-    digitalDeliveryUrl
-      ? "2) CUSTOM DISCORD LAYOUT (your main purchase)"
-      : "1) CUSTOM DISCORD LAYOUT (your purchase)",
+    `${layoutSectionNum} CUSTOM DISCORD LAYOUT (${instantUrl ? "your main purchase" : "your purchase"})`,
     "This is the personalized server blueprint: channels, categories, roles, and setup notes based on your wizard answers.",
     "We deliver it to this email in line with your tier timeline unless we reach out separately.",
     "",
-    "3) ORDER PAGE (bookmark)",
+    `${orderPageSectionNum} ORDER PAGE (bookmark)`,
     thankYouPageUrl(checkoutSessionId),
     "",
     "Emails sent to " + customerEmail + ":",
@@ -217,6 +238,9 @@ function buildOrderEmail(meta, customerEmail, extras) {
     "",
   );
   if (meta.goal) lines.push(`Goal: ${GOAL_LABELS[meta.goal] || meta.goal}`);
+  if (meta.layout_type) {
+    lines.push(`Layout focus: ${LAYOUT_TYPE_LABELS[meta.layout_type] || meta.layout_type}`);
+  }
   if (meta.serverMode) {
     const sm = effectiveServerMode(meta.serverMode);
     lines.push(`Server approach: ${SERVER_LABELS[sm] || sm}`);
@@ -238,13 +262,22 @@ function buildOrderEmail(meta, customerEmail, extras) {
   html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your digital product — Serverly</h1>';
   html += "<p>Thank you for your purchase. Below is what you bought and how you get it.</p>";
 
-  if (digitalDeliveryUrl) {
-    html +=
-      '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Instant access</h2><p style="margin:0 0 0.5rem">Use this link right away for your starter resource or download:</p><p style="margin:0"><a href="' +
-      escapeHtml(digitalDeliveryUrl) +
-      '">' +
-      escapeHtml(digitalDeliveryUrl) +
-      "</a></p>";
+  if (instantUrl) {
+    if (isDiscordTemplate) {
+      html +=
+        '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Discord server template (instant)</h2><p style="margin:0 0 0.5rem">Open this link while signed into Discord. It matches the template you purchased:</p><p style="margin:0;word-break:break-all"><a href="' +
+        escapeHtml(instantUrl) +
+        '">' +
+        escapeHtml(instantUrl) +
+        "</a></p>";
+    } else {
+      html +=
+        '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Instant access</h2><p style="margin:0 0 0.5rem">Use this link right away for your starter resource or download:</p><p style="margin:0;word-break:break-all"><a href="' +
+        escapeHtml(instantUrl) +
+        '">' +
+        escapeHtml(instantUrl) +
+        "</a></p>";
+    }
   }
 
   html +=
@@ -275,6 +308,12 @@ function buildOrderEmail(meta, customerEmail, extras) {
     html +=
       "<dt style=\"font-weight:600;color:#64748b\">Goal</dt><dd style=\"margin:0 0 0.5rem\">" +
       escapeHtml(GOAL_LABELS[meta.goal] || meta.goal) +
+      "</dd>";
+  }
+  if (meta.layout_type) {
+    html +=
+      "<dt style=\"font-weight:600;color:#64748b\">Layout focus</dt><dd style=\"margin:0 0 0.5rem\">" +
+      escapeHtml(LAYOUT_TYPE_LABELS[meta.layout_type] || meta.layout_type) +
       "</dd>";
   }
   if (meta.serverMode) {
@@ -409,6 +448,22 @@ app.post(
 
 app.use(express.json());
 
+app.get("/order-instant", async (req, res) => {
+  const sessionId = typeof req.query.session_id === "string" ? req.query.session_id.trim() : "";
+  if (!sessionId || !stripe) {
+    return res.status(400).json({ error: "Missing session_id or Stripe not configured." });
+  }
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const meta = session.metadata || {};
+    const discordTemplateUrl = (meta.discord_template_url || "").toString().trim();
+    return res.json({ discordTemplateUrl });
+  } catch (e) {
+    console.error("order-instant:", e.message);
+    return res.status(400).json({ error: "Could not load checkout session." });
+  }
+});
+
 app.post("/create-checkout-session", async (req, res) => {
   if (!stripe) {
     return res.status(500).json({ error: "Stripe is not configured on the server." });
@@ -423,6 +478,7 @@ app.post("/create-checkout-session", async (req, res) => {
     size,
     channelPattern,
     channelPatternLabel,
+    layoutType,
   } = req.body || {};
 
   if (!tier || !TIERS[tier]) {
@@ -446,6 +502,12 @@ app.post("/create-checkout-session", async (req, res) => {
 
   const t = TIERS[tier];
   const patLab = (channelPatternLabel || "").toString().slice(0, 450);
+  const layoutTypeMeta = (layoutType || "").toString().slice(0, 450);
+  const discordTemplateUrl = resolveDiscordTemplateUrl({
+    tier,
+    layoutType: layoutTypeMeta,
+    channelPattern: (channelPattern || "").toString(),
+  }).slice(0, 500);
   const hasFollowersMeta =
     hasFollowers === true || hasFollowers === "true"
       ? "true"
@@ -488,6 +550,8 @@ app.post("/create-checkout-session", async (req, res) => {
         size: size || "",
         channelPattern: channelPattern || "",
         channelPatternLabel: patLab,
+        layout_type: layoutTypeMeta,
+        discord_template_url: discordTemplateUrl,
         customer_email: emailStr,
       },
     });

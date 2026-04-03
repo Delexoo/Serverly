@@ -8,6 +8,8 @@
   <meta name="robots" content="noindex" />
   <!-- Optional: same URL as DIGITAL_DELIVERY_URL on your Render server — shows “Instant access” on this page -->
   <meta name="serverly-digital-delivery-url" content="" />
+  <!-- Checkout API base (same as window.STRIPE_CHECKOUT_API on index.html). Needed to load your template link after payment — no template URLs belong in static files. -->
+  <meta name="serverly-checkout-api" content="" />
   <title>Thank you — Serverly</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -175,69 +177,6 @@
           .join(" ");
       }
 
-      var id = new URLSearchParams(window.location.search).get("session_id");
-      var box = document.getElementById("thank-you-ref");
-      var el = document.getElementById("thank-you-session-id");
-      if (id && box && el) {
-        el.textContent = id;
-        box.hidden = false;
-      }
-
-      var metaInstant = document.querySelector('meta[name="serverly-digital-delivery-url"]');
-      var instantUrl =
-        metaInstant && metaInstant.getAttribute("content")
-          ? String(metaInstant.getAttribute("content")).trim()
-          : "";
-      var claimActions = document.getElementById("thank-you-claim-actions");
-      var claimHint = document.getElementById("thank-you-claim-hint");
-      var claimLead = document.getElementById("thank-you-claim-lead");
-      if (claimActions) {
-        var hasInstant = false;
-        if (instantUrl) {
-          try {
-            new URL(instantUrl);
-            hasInstant = true;
-          } catch (eUrl) {
-            hasInstant = false;
-          }
-        }
-        if (hasInstant) {
-          if (claimLead) {
-            claimLead.textContent =
-              "Open your instant download or starter file below. Your full custom layout still arrives by email on your tier timeline.";
-          }
-          var openBtn = document.createElement("a");
-          openBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
-          openBtn.href = instantUrl;
-          openBtn.rel = "noopener noreferrer";
-          openBtn.textContent = "Open digital product / download";
-          claimActions.appendChild(openBtn);
-          var sub = document.createElement("p");
-          sub.className = "thank-you-claim-secondary-wrap";
-          var helpA = document.createElement("a");
-          helpA.className = "btn btn-outline btn-block";
-          helpA.href = "#thank-you-email-help";
-          helpA.textContent = "Didn’t get the email? Troubleshooting";
-          sub.appendChild(helpA);
-          claimActions.appendChild(sub);
-          if (claimHint) claimHint.textContent = "";
-        } else {
-          if (claimLead) {
-            claimLead.textContent =
-              "There’s no instant file link on this page yet (your host can add one in the site settings). Your digital product is delivered to the email you used at Stripe — receipt from Stripe, order details from us when email is configured.";
-          }
-          var emailBtn = document.createElement("a");
-          emailBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
-          emailBtn.href = "#thank-you-email-help";
-          emailBtn.textContent = "Get your order by email — troubleshooting";
-          claimActions.appendChild(emailBtn);
-          if (claimHint) {
-            claimHint.innerHTML =
-              "Tip: add the same URL in <code>thank-you.html</code> (meta <code>serverly-digital-delivery-url</code>) and <code>DIGITAL_DELIVERY_URL</code> on Render to show an <strong>Open download</strong> button here.";
-          }
-        }
-      }
-
       var raw = null;
       try {
         raw = sessionStorage.getItem("discordStudioWizard");
@@ -248,6 +187,123 @@
           saved = JSON.parse(raw);
         } catch (e2) {}
       }
+
+      var id = new URLSearchParams(window.location.search).get("session_id");
+      var box = document.getElementById("thank-you-ref");
+      var el = document.getElementById("thank-you-session-id");
+      if (id && box && el) {
+        el.textContent = id;
+        box.hidden = false;
+      }
+
+      var metaInstant = document.querySelector('meta[name="serverly-digital-delivery-url"]');
+      var instantUrlMeta =
+        metaInstant && metaInstant.getAttribute("content")
+          ? String(metaInstant.getAttribute("content")).trim()
+          : "";
+      var claimActions = document.getElementById("thank-you-claim-actions");
+      var claimHint = document.getElementById("thank-you-claim-hint");
+      var claimLead = document.getElementById("thank-you-claim-lead");
+
+      function metaInstantValid() {
+        if (!instantUrlMeta) return "";
+        try {
+          new URL(instantUrlMeta);
+          return instantUrlMeta;
+        } catch (eUrl) {
+          return "";
+        }
+      }
+
+      function appendClaimChrome(primaryHref, primaryLabel, leadText) {
+        if (!claimActions) return;
+        if (claimLead) claimLead.textContent = leadText;
+        var openBtn = document.createElement("a");
+        openBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+        openBtn.href = primaryHref;
+        openBtn.rel = "noopener noreferrer";
+        openBtn.textContent = primaryLabel;
+        claimActions.appendChild(openBtn);
+        var sub = document.createElement("p");
+        sub.className = "thank-you-claim-secondary-wrap";
+        var helpA = document.createElement("a");
+        helpA.className = "btn btn-outline btn-block";
+        helpA.href = "#thank-you-email-help";
+        helpA.textContent = "Didn’t get the email? Troubleshooting";
+        sub.appendChild(helpA);
+        claimActions.appendChild(sub);
+        if (claimHint) claimHint.textContent = "";
+      }
+
+      function showClaimFallback(hasSessionId, hadApiBase) {
+        if (!claimActions) return;
+        if (claimLead) {
+          if (hasSessionId && hadApiBase) {
+            claimLead.textContent =
+              "We couldn’t load your template link from the server. Check your Serverly order email for the same Discord template link, or verify your Render env and API URL below.";
+          } else {
+            claimLead.textContent =
+              "Add your checkout API URL (meta serverly-checkout-api or window.STRIPE_CHECKOUT_API) to load your template button here. Your template link is also in your order email when SMTP is configured.";
+          }
+        }
+        var emailBtn = document.createElement("a");
+        emailBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+        emailBtn.href = "#thank-you-email-help";
+        emailBtn.textContent = "Get your order by email — troubleshooting";
+        claimActions.appendChild(emailBtn);
+        if (claimHint) {
+          claimHint.innerHTML =
+            "Template links are not stored in this page’s code — they come from your payment session (server) or your order email.";
+        }
+      }
+
+      var metaApi = document.querySelector('meta[name="serverly-checkout-api"]');
+      var apiFromMeta =
+        metaApi && metaApi.getAttribute("content") ? String(metaApi.getAttribute("content")).trim() : "";
+      var apiBase = "";
+      if (typeof window.STRIPE_CHECKOUT_API === "string" && window.STRIPE_CHECKOUT_API.trim()) {
+        apiBase = String(window.STRIPE_CHECKOUT_API).trim().replace(/\/$/, "");
+      } else if (apiFromMeta) {
+        apiBase = apiFromMeta.replace(/\/$/, "");
+      }
+
+      var fetchDiscord = Promise.resolve("");
+      if (id && apiBase) {
+        fetchDiscord = fetch(
+          apiBase + "/order-instant?session_id=" + encodeURIComponent(id)
+        )
+          .then(function (r) {
+            return r.ok ? r.json() : {};
+          })
+          .then(function (data) {
+            return data && data.discordTemplateUrl ? String(data.discordTemplateUrl).trim() : "";
+          })
+          .catch(function () {
+            return "";
+          });
+      }
+
+      fetchDiscord.then(function (discordFromStripe) {
+        var discordUrl = discordFromStripe ? String(discordFromStripe).trim() : "";
+        var metaOk = metaInstantValid();
+        if (discordUrl) {
+          appendClaimChrome(
+            discordUrl,
+            "Claim Discord template",
+            "Your paid Discord server template is ready. Open it while signed into Discord — the same link is in your order email."
+          );
+          return;
+        }
+        if (metaOk) {
+          appendClaimChrome(
+            metaOk,
+            "Open digital product / download",
+            "Open your instant download or starter file below. Your full custom layout still arrives by email on your tier timeline."
+          );
+          return;
+        }
+        showClaimFallback(!!id, !!(id && apiBase));
+      });
 
       var receipt = document.getElementById("thank-you-receipt");
       var fallback = document.getElementById("thank-you-receipt-fallback");

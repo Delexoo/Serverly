@@ -988,6 +988,32 @@ button.style-card.pattern-select {
   outline-offset: 2px;
 }
 
+.demo-pattern-chip--locked {
+  opacity: 0.72;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+.demo-pattern-chip--locked:hover {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.demo-pattern-chip--locked:focus-visible {
+  outline-color: var(--text-muted);
+}
+
+.demo-pattern-switcher-upsell {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.demo-pattern-switcher--basic {
+  background: rgba(100, 116, 139, 0.08);
+}
+
 /* Summary: Discord-style interactive demo (scroll + hover) */
 .discord-demo {
   display: flex;
