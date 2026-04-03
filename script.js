@@ -466,7 +466,7 @@
       case "flourish":
         return toMathBoldText("✦" + n + "✦");
       case "bold-column":
-        return toMathBoldText(e + "┃" + n);
+        return e + "┃" + n;
       case "corner-brackets":
         return toMathBoldText("【" + e + "】" + lower);
       case "chevrons":
@@ -519,9 +519,9 @@
       voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
     },
     "bold-column": {
-      info: ["📢┃𝐍𝐞𝐰𝐬", "📋┃𝐑𝐮𝐥𝐞𝐬", "🔗┃𝐋𝐢𝐧𝐤𝐬"],
-      general: ["💬┃𝐆𝐞𝐧𝐞𝐫𝐚𝐥", "🎬┃𝐂𝐥𝐢𝐩𝐬", "🎨┃𝐀𝐫𝐭"],
-      voice: ["🎮┃𝐋𝐨𝐛𝐛𝐲", "🎵┃𝐌𝐮𝐬𝐢𝐜", "🛋┃𝐀𝐅𝐊"],
+      info: ["📢┃News", "📋┃Rules", "🔗┃Links"],
+      general: ["💬┃General", "🎬┃Clips", "🎨┃Art"],
+      voice: ["🎮┃Lounge", "🎵┃Music", "🛋┃AFK"],
     },
     "corner-brackets": {
       info: ["【📢】announcements", "【📋】rules", "【🔗】links"],
