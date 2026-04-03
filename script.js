@@ -534,13 +534,6 @@
       var rows = "";
       for (var i = 0; i < labels.length; i++) {
         var t = labels[i];
-        if (regularTextMode) {
-          rows +=
-            '<div class="disc-ch-row"><span class="disc-ch-text">' +
-            escapeHtml(t) +
-            "</span></div>";
-          continue;
-        }
         if (voice) {
           rows +=
             '<div class="disc-ch-row disc-ch-row-voice"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
@@ -922,11 +915,9 @@
           '" data-locked="' +
           lk +
           '" tabindex="-1" role="listitem">' +
-          (regularTextMode
-            ? ""
-            : ch.voice
-              ? '<span class="discord-demo-ch-icon" aria-hidden="true">🔊</span>'
-              : '<span class="discord-demo-ch-hash">#</span>') +
+          (ch.voice
+            ? '<span class="discord-demo-ch-icon" aria-hidden="true">🔊</span>'
+            : '<span class="discord-demo-ch-hash">#</span>') +
           '<span class="discord-demo-ch-label">' +
           escapeHtml(label) +
           "</span></div>";
@@ -946,7 +937,7 @@
     }
 
     var defLabel = formatChannelDemoLabel(patternId, defCh.name, defCh.voice, defLaneIndex);
-    var defText = regularTextMode ? defLabel : defCh.voice ? defLabel : "# " + defLabel;
+    var defText = defCh.voice ? defLabel : "# " + defLabel;
     var defHeader = defText;
     var defWelcome = "Welcome to " + defText + "!";
     var defSub = "This is the start of the " + defText + " channel.";
@@ -1031,11 +1022,10 @@
     function updateFromRow(row) {
       var name = row.getAttribute("data-name") || "";
       var voice = row.getAttribute("data-voice") === "true";
-      var regularTextMode = patternId === "regular-text";
       var li = laneMap[name];
       if (typeof li !== "number") li = 0;
       var label = formatChannelDemoLabel(patternId, name, voice, li);
-      var shownLabel = regularTextMode ? label : voice ? label : "# " + label;
+      var shownLabel = voice ? label : "# " + label;
       var headerText = shownLabel;
       var welcome = "Welcome to " + shownLabel + "!";
       var sub = "This is the start of the " + shownLabel + " channel.";
