@@ -31,6 +31,26 @@ function buildPublicSiteBaseUrl() {
 const clientUrl = buildPublicSiteBaseUrl();
 const port = parseInt(process.env.PORT || "3000", 10);
 
+function warnIfGithubPagesMissingRepoPath() {
+  const raw = (process.env.CLIENT_URL || "").trim().replace(/\/$/, "");
+  const extraPath = (process.env.CLIENT_SITE_PATH || "").replace(/^\/+|\/+$/g, "").trim();
+  if (!raw || extraPath) return;
+  try {
+    const u = new URL(raw);
+    const pathEmpty = !u.pathname || u.pathname === "/";
+    if (u.hostname.endsWith(".github.io") && pathEmpty) {
+      console.warn(
+        "[Serverly] CLIENT_URL is only %s — project sites need the repo name. Add env CLIENT_SITE_PATH=Serverly (or your repo) OR set CLIENT_URL=https://%s/Serverly. Otherwise Stripe sends buyers to %s/thank-you.html and GitHub shows “no site here”.",
+        u.origin,
+        u.hostname,
+        u.origin
+      );
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function originFromSiteUrl(url) {
   try {
     return new URL(url).origin;
@@ -352,6 +372,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.listen(port, () => {
+  warnIfGithubPagesMissingRepoPath();
   console.log(`Checkout API listening on http://localhost:${port}`);
   console.log(`Stripe return / CORS site base: ${clientUrl}`);
 });
