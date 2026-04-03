@@ -115,12 +115,6 @@
         coaching: "Coaching",
         private: "Private servers",
       };
-      var SIZE_LABELS = {
-        small: "Under 500 (following / reach)",
-        medium: "500 – 5,000",
-        large: "5,000+",
-        "not-yet": "Other / Rather not say",
-      };
       var PACKAGE_LABELS = { simple: "Simple", advanced: "Advanced", professional: "Professional" };
       var PACKAGE_PRICE_HINTS = { simple: "$1", advanced: "$20", professional: "$50" };
       var SERVER_MODE_LABELS = {
@@ -292,11 +286,6 @@
         }
         var sm = saved.serverMode ? normalizeServerMode(saved.serverMode) || saved.serverMode : "";
         if (sm && SERVER_MODE_LABELS[sm]) addRow("Server approach", SERVER_MODE_LABELS[sm]);
-
-        if (saved.hasFollowers === true) addRow("Audience", "Established following");
-        if (saved.hasFollowers === false) addRow("Audience", "No following size given yet");
-
-        if (saved.size && SIZE_LABELS[saved.size]) addRow("Following / reach", SIZE_LABELS[saved.size]);
 
         var pat =
           saved.channelPatternLabel && String(saved.channelPatternLabel).trim()

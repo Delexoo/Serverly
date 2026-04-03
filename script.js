@@ -1,7 +1,7 @@
 (function () {
   var pages = document.querySelectorAll(".wizard-page");
-  var FLOW_PAGE_ORDER = [0, 5, 1, 2, 3, 4, 6, 7];
-  var totalSteps = FLOW_PAGE_ORDER.length || pages.length || 8;
+  var FLOW_PAGE_ORDER = [0, 4, 1, 2, 3, 5, 6];
+  var totalSteps = FLOW_PAGE_ORDER.length || pages.length || 7;
   var backBtn = document.getElementById("wizard-back");
   var progressLabel = document.getElementById("progress-label");
   var progressFill = document.getElementById("progress-fill");
@@ -17,8 +17,6 @@
     step: 0,
     serverMode: null,
     layoutType: null,
-    hasFollowers: null,
-    size: null,
     packageTier: null,
     channelPattern: null,
     channelPatternLabel: null,
@@ -57,13 +55,6 @@
     return mode;
   }
 
-  var SIZE_LABELS = {
-    small: "Under 500 (following / reach)",
-    medium: "500 – 5,000",
-    large: "5,000+",
-    "not-yet": "Other / Rather not say",
-  };
-
   var PACKAGE_LABELS = {
     simple: "Simple",
     advanced: "Advanced",
@@ -81,14 +72,6 @@
     advanced: "Advanced — Simple + presets & polish",
     professional: "Professional — coming soon",
   };
-
-  function sizeNote(size) {
-    if (size === "small") return "Lean layout for a small team.";
-    if (size === "medium") return "Room to grow.";
-    if (size === "large") return "Scaled for traffic and support.";
-    if (size === "not-yet") return "We’ll keep the layout flexible—no fixed audience size needed.";
-    return "";
-  }
 
   function serverModeNote(mode) {
     var m = normalizeServerMode(mode);
@@ -192,17 +175,16 @@
       progressFill.style.width = ((flowPos + 1) / totalSteps) * 100 + "%";
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-    if (n === 6) renderSummary();
-    if (n === 3) syncAudienceStepUI();
-    if (n === 4) syncPatternSelectionUI();
-    if (n === 4) syncPatternTierGate();
-    if (n === 5) syncPackagePickUI();
-    if (n === 6) {
+    if (n === 5) renderSummary();
+    if (n === 3) syncPatternSelectionUI();
+    if (n === 3) syncPatternTierGate();
+    if (n === 4) syncPackagePickUI();
+    if (n === 5) {
       syncPackagePickUI();
       syncPatternSelectionUI();
       syncPatternTierGate();
     }
-    if (n === 7) {
+    if (n === 6) {
       state.checkoutReady = true;
       if (!state.packageTier) {
         state.packageTier = "advanced";
@@ -221,21 +203,6 @@
     });
     if (patternPickLabelEl) {
       patternPickLabelEl.textContent = state.channelPatternLabel || "none selected (optional)";
-    }
-  }
-
-  function syncAudienceStepUI() {
-    var page = document.getElementById("step-audience");
-    if (!page) return;
-    var pFollow = document.getElementById("audience-followers-panel");
-    var pSize = document.getElementById("audience-size-panel");
-    if (!pFollow || !pSize) return;
-    if (state.hasFollowers === true) {
-      pFollow.hidden = true;
-      pSize.hidden = false;
-    } else {
-      pFollow.hidden = false;
-      pSize.hidden = true;
     }
   }
 
@@ -260,7 +227,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  /** Full server layout: categories and channels (single source for summary list + Discord demo). */
+  /** Full server layout: categories and channels (single source for summary list + Discord demo). Total: 58 channels. */
   var CHANNEL_TREE = [
     {
       title: "New !",
@@ -299,7 +266,7 @@
       ],
     },
     {
-      title: "Bot",
+      title: "BOT",
       locked: false,
       channels: [
         { name: "Bots", voice: false, locked: false },
@@ -342,7 +309,7 @@
       ],
     },
     {
-      title: "Advisory",
+      title: "🎉 Advisory",
       locked: true,
       channels: [
         { name: "Restricted-Users", voice: false, locked: true },
@@ -351,7 +318,7 @@
       ],
     },
     {
-      title: "Staff",
+      title: "🚫 Staff",
       locked: true,
       channels: [
         { name: "Admin", voice: false, locked: true },
@@ -394,12 +361,12 @@
       Clips: "📷",
       Tech: "📱",
       Art: "🎨",
-      Questions: "❓",
-      Feedback: "🔔",
+      Questions: "❔",
+      Feedback: "📣",
       Bots: "🤖",
       CMD: "💻",
       "Tools-and-Apps": "🧰",
-      "Creator-Events": "🎉",
+      "Creator-Events": "🥳",
       "Monthly-Highlights": "🏆",
       "Thumbnail-Contests": "🎨",
       "Editing-Room": "🎬",
@@ -412,7 +379,7 @@
       "Support-VC": "🛠️",
       "Creator Lounge": "🎙️",
       "Production Room": "🎬",
-      Lounge: "☁️",
+      Lounge: "🗨️",
       "Duo #1": "🎧",
       "Duo #2": "🎧",
       "Squad #1": "👥",
@@ -423,7 +390,7 @@
       AFK: "💤",
       "Restricted-Users": "🔻",
       "Muted-Users": "🚫",
-      "Judgment VC": "⚖️",
+      "Judgment VC": "🔨",
       Admin: "👑",
       "Server-Ideas": "⛔",
       "Staff-Information": "❗",
@@ -434,7 +401,7 @@
       Streaming: "📹",
       Friends: "👥",
       "Self-Promote": "📣",
-      "Content-Ideas": "💭",
+      "Content-Ideas": "🗨️",
       "Brand-Deals": "💼",
     };
     return m[name] || "📌";
@@ -456,7 +423,7 @@
     var e = demoEmojiForName(n);
     var lower = n.toLowerCase();
     if (!patternId) {
-      return isVoice ? n : e + " | " + n;
+      return e + " | " + n;
     }
     switch (patternId) {
       case "regular-text":
@@ -1102,8 +1069,7 @@
   function hasSummaryContent() {
     return !!(
       state.serverMode ||
-      state.hasFollowers === false ||
-      state.size ||
+      state.layoutType ||
       state.packageTier ||
       state.channelPattern
     );
@@ -1172,8 +1138,6 @@
   function resetWizard() {
     state.serverMode = null;
     state.layoutType = null;
-    state.hasFollowers = null;
-    state.size = null;
     state.packageTier = null;
     state.channelPattern = null;
     state.channelPatternLabel = null;
@@ -1213,48 +1177,8 @@
         nextStep();
         return;
       }
-      if (key === "hasFollowers") {
-        if (val === "yes") {
-          state.hasFollowers = true;
-          state.size = null;
-          syncAudienceStepUI();
-        } else {
-          state.hasFollowers = false;
-          state.size = null;
-          nextStep();
-        }
-        return;
-      }
-      if (key === "size") {
-        state.size = val;
-        nextStep();
-      }
     });
   });
-
-  var audienceRepick = document.getElementById("audience-repick-followers");
-  if (audienceRepick) {
-    audienceRepick.addEventListener("click", function () {
-      state.hasFollowers = null;
-      state.size = null;
-      syncAudienceStepUI();
-    });
-  }
-
-  var audienceStepEl = document.getElementById("step-audience");
-  if (audienceStepEl) {
-    audienceStepEl.addEventListener("click", function (e) {
-      var raw = e.target;
-      var el = raw && raw.nodeType === 3 ? raw.parentElement : raw;
-      var skipBtn = el && el.closest && el.closest("#audience-skip");
-      if (!skipBtn) return;
-      e.preventDefault();
-      state.hasFollowers = null;
-      state.size = null;
-      syncAudienceStepUI();
-      nextStep();
-    });
-  }
 
   patternSelectButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -1262,7 +1186,7 @@
       if (state.packageTier === "simple" && id !== "regular-text") {
         state.packageTier = "advanced";
         syncPackagePickUI();
-        setStep(5);
+        setStep(4);
         return;
       }
       var lab = patternLabelFromButton(btn);
@@ -1326,9 +1250,6 @@
           email: email,
           serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
           layoutType: state.layoutType,
-          hasFollowers:
-            state.hasFollowers === true ? true : state.hasFollowers === false ? false : null,
-          size: state.size,
           channelPattern: state.channelPattern,
           channelPatternLabel: state.channelPatternLabel,
         }),
@@ -1348,9 +1269,6 @@
                   checkoutEmail: email,
                   serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
                   layoutType: state.layoutType,
-                  hasFollowers:
-                    state.hasFollowers === true ? true : state.hasFollowers === false ? false : null,
-                  size: state.size,
                   packageTier: state.packageTier,
                   channelPattern: state.channelPattern,
                   channelPatternLabel: state.channelPatternLabel,
@@ -1416,12 +1334,12 @@
       if (!state.packageTier) {
         state.packageTier = "advanced";
         syncPackagePickUI();
-        setStep(5);
+        setStep(4);
         flashCheckout("Nice choice. Advanced ($20) is preselected so you can review and continue.", "info");
         return;
       }
       state.checkoutReady = true;
-      setStep(7);
+      setStep(6);
     });
   }
 
@@ -1447,10 +1365,6 @@
               ? normalizeServerMode(saved.serverMode) || saved.serverMode
               : null;
             state.layoutType = saved.layoutType || null;
-            if (saved.hasFollowers === true) state.hasFollowers = true;
-            else if (saved.hasFollowers === false) state.hasFollowers = false;
-            else state.hasFollowers = null;
-            state.size = saved.size || null;
             state.packageTier =
               saved.packageTier === "professional" ? null : saved.packageTier || null;
             state.channelPattern = saved.channelPattern || null;
@@ -1459,7 +1373,7 @@
         }
       } catch (e2) {}
       state.checkoutReady = true;
-      setStep(7);
+      setStep(6);
       flashCheckout("Checkout was canceled. You can pay from the summary whenever you’re ready.", "error");
       window.history.replaceState({}, "", window.location.pathname);
     }
