@@ -302,7 +302,7 @@
       ],
     },
     {
-      title: "🎉 Advisory",
+      title: "Advisory",
       locked: true,
       channels: [
         { name: "Restricted-Users", voice: false, locked: true },
@@ -311,7 +311,7 @@
       ],
     },
     {
-      title: "🚫 Staff",
+      title: "Staff",
       locked: true,
       channels: [
         { name: "Admin", voice: false, locked: true },
