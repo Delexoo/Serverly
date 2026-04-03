@@ -6,6 +6,9 @@
 
 /** Map "tier:layoutType:channelPattern" → process.env key name */
 const TEMPLATE_ENV_KEYS = {
+  /** Wizard card "Column" → data-pattern="bold-column" */
+  "advanced:content_creator:bold-column": "CONTENT_CREATOR_COLUMN",
+  /** Wizard card "Colum" → data-pattern="colum" */
   "advanced:content_creator:colum": "CONTENT_CREATOR_COLUM",
 };
 
