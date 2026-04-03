@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex" />
   <!-- Optional: same URL as DIGITAL_DELIVERY_URL on your Render server — shows “Instant access” on this page -->
   <meta name="serverly-digital-delivery-url" content="" />
-  <!-- Checkout API base (same as window.STRIPE_CHECKOUT_API on index.html). Needed to load your template link after payment — no template URLs belong in static files. -->
+  <!-- Optional override for checkout API base; defaults to the script below if empty. -->
   <meta name="serverly-checkout-api" content="" />
   <title>Thank you — Serverly</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -107,6 +107,10 @@
     <p><strong>Serverly</strong> — Build your Discord server yourself with our layouts &amp; templates. Not affiliated with Discord Inc.</p>
   </footer>
 
+  <!-- Must match index.html so /order-instant can load your template after Stripe redirect (thank-you does not load script.js). -->
+  <script>
+    window.STRIPE_CHECKOUT_API = window.STRIPE_CHECKOUT_API || "https://serverly-mzwf.onrender.com";
+  </script>
   <script>
     (function () {
       var LAYOUT_TYPE_LABELS = {
@@ -286,7 +290,7 @@
                   claimBtn.textContent = "Claim your Discord template";
                   if (claimHint) {
                     claimHint.textContent =
-                      "We still couldn’t load your template. Confirm your Render env matches your purchase (e.g. CONTENT_CREATOR_COLUMN for Column, CONTENT_CREATOR_COLUM for Colum), or use the link in your order email.";
+                      "We still couldn’t load your template. Confirm CONTENT_CREATOR_COLUMN is set on Render for Advanced + Content creator + Column, or use the link in your order email.";
                   }
                 }
               })

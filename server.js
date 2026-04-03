@@ -456,7 +456,14 @@ app.get("/order-instant", async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const meta = session.metadata || {};
-    const discordTemplateUrl = (meta.discord_template_url || "").toString().trim();
+    let discordTemplateUrl = (meta.discord_template_url || "").toString().trim();
+    if (!discordTemplateUrl) {
+      discordTemplateUrl = resolveDiscordTemplateUrl({
+        tier: meta.tier || "",
+        layoutType: meta.layout_type || "",
+        channelPattern: meta.channelPattern || "",
+      });
+    }
     return res.json({ discordTemplateUrl });
   } catch (e) {
     console.error("order-instant:", e.message);

@@ -79,7 +79,6 @@
     { id: "bar-divider", label: "Bar divider" },
     { id: "flourish", label: "Flourish wrap" },
     { id: "bold-column", label: "Column" },
-    { id: "colum", label: "Colum" },
     { id: "corner-brackets", label: "Corner brackets" },
     { id: "chevrons", label: "Chevrons" },
     { id: "dot-separator", label: "Dot separator" },
@@ -444,8 +443,6 @@
         return toMathBoldText("✦" + n + "✦");
       case "bold-column":
         return e + " ┃ " + n;
-      case "colum":
-        return e + " ┃ " + n;
       case "corner-brackets":
         return toMathBoldText("【" + e + "】" + lower);
       case "chevrons":
@@ -498,11 +495,6 @@
       voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
     },
     "bold-column": {
-      info: ["📢 ┃ News", "📋 ┃ Rule", "🔗 ┃ Links"],
-      general: ["💬 ┃ General", "🎬 ┃ Clips", "🎨 ┃ Art"],
-      voice: ["🎮 ┃ Lounge", "🎵 ┃ Music", "🛋 ┃ AFK"],
-    },
-    colum: {
       info: ["📢 ┃ News", "📋 ┃ Rule", "🔗 ┃ Links"],
       general: ["💬 ┃ General", "🎬 ┃ Clips", "🎨 ┃ Art"],
       voice: ["🎮 ┃ Lounge", "🎵 ┃ Music", "🛋 ┃ AFK"],
