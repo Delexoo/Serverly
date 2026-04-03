@@ -117,11 +117,33 @@ function includesForTier(tier, goal, serverMode) {
   return list;
 }
 
-function buildOrderEmailText(meta, customerEmail) {
+function thankYouPageUrl(checkoutSessionId) {
+  const base = `${clientUrl}/thank-you.html`;
+  return checkoutSessionId
+    ? `${base}?session_id=${encodeURIComponent(checkoutSessionId)}`
+    : base;
+}
+
+function buildOrderEmailText(meta, customerEmail, extras) {
+  extras = extras || {};
+  const checkoutSessionId = extras.checkoutSessionId || "";
+  const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
   const tier = meta.tier || "simple";
   const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
   const lines = [
     "Thank you for your order!",
+    "",
+    "NEXT STEPS (bookmark this page):",
+    thankYouPageUrl(checkoutSessionId),
+    "",
+    "Emails at " + customerEmail + ":",
+    "• Stripe — payment receipt (enable under Dashboard → Settings → Customer emails → Successful payments if you don’t see it).",
+    stripeInvoiceUrl
+      ? "• Stripe — hosted invoice: " + stripeInvoiceUrl
+      : "• Stripe — hosted invoice link when your account sends invoices for this Checkout session.",
+    "• Serverly — this email is your order snapshot (wizard choices + what’s included).",
+    "",
+    "Checkout reference: " + (checkoutSessionId || "(n/a)") + "",
     "",
     "Here is a copy of what you selected (same as your on-site summary).",
     "We’ll deliver your full server layout on the timeline for your tier.",
@@ -212,8 +234,21 @@ app.post(
         session.customer_details?.email || session.customer_email || meta.customer_email || "";
       if (email) {
         try {
-          const body = buildOrderEmailText(meta, email);
-          await sendOrderEmail(email, "Your Serverly order summary", body);
+          let stripeInvoiceUrl = "";
+          if (stripe && session.invoice) {
+            try {
+              const invId = typeof session.invoice === "string" ? session.invoice : session.invoice.id;
+              const inv = await stripe.invoices.retrieve(invId);
+              if (inv.hosted_invoice_url) stripeInvoiceUrl = inv.hosted_invoice_url;
+            } catch (invErr) {
+              console.warn("Could not load Stripe invoice for email:", invErr.message);
+            }
+          }
+          const body = buildOrderEmailText(meta, email, {
+            checkoutSessionId: session.id,
+            stripeInvoiceUrl,
+          });
+          await sendOrderEmail(email, "Your Serverly order — next steps & summary", body);
         } catch (e) {
           console.error("Send email failed:", e);
         }
@@ -267,11 +302,17 @@ app.post("/create-checkout-session", async (req, res) => {
         : "";
 
   try {
+    const thankYouPage = `${clientUrl}/thank-you.html`;
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       allow_promotion_codes: true,
       customer_email: emailStr,
-      invoice_creation: { enabled: true },
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          footer: `Next steps & layout guide: ${thankYouPage}`,
+        },
+      },
       line_items: [
         {
           price_data: {
@@ -285,7 +326,7 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${clientUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${thankYouPage}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/?checkout=cancel`,
       metadata: {
         tier,

@@ -1376,7 +1376,13 @@
   (function handleCheckoutReturn() {
     var q = new URLSearchParams(window.location.search);
     var c = q.get("checkout");
-    if (c === "success" || c === "cancel") {
+    if (c === "success") {
+      var sid = q.get("session_id");
+      var dest = "thank-you.html" + (sid ? "?session_id=" + encodeURIComponent(sid) : "");
+      window.location.replace(dest);
+      return;
+    }
+    if (c === "cancel") {
       try {
         var raw = sessionStorage.getItem("discordStudioWizard");
         if (raw) {
@@ -1396,21 +1402,10 @@
             state.channelPatternLabel = saved.channelPatternLabel || null;
           }
         }
-      } catch (e) {}
-      if (c === "success") {
-        state.checkoutReady = false;
-      } else {
-        state.checkoutReady = true;
-      }
+      } catch (e2) {}
+      state.checkoutReady = true;
       setStep(7);
-      if (c === "success") {
-        flashCheckout(
-          "Payment received. Check your email for Stripe’s receipt (and invoice if your account sends them). With webhook + SMTP configured on our server, you’ll also get your Serverly order summary—we’ll deliver your full layout on the tier timeline.",
-          "success"
-        );
-      } else {
-        flashCheckout("Checkout was canceled. You can pay from the summary whenever you’re ready.", "error");
-      }
+      flashCheckout("Checkout was canceled. You can pay from the summary whenever you’re ready.", "error");
       window.history.replaceState({}, "", window.location.pathname);
     }
   })();

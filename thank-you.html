@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Thank you for your Serverly order — how to claim your Discord server layout." />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="robots" content="noindex" />
+  <title>Thank you — Serverly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="thank-you-body">
+  <a class="skip-link" href="#thank-you-main">Skip to main content</a>
+
+  <header class="site-header thank-you-header">
+    <a class="logo logo-link" href="index.html">
+      <span class="logo-mark">◆</span>
+      Serverly
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-ghost btn-sm" href="index.html">Wizard home</a>
+    </div>
+  </header>
+
+  <main class="thank-you-main" id="thank-you-main">
+    <div class="thank-you-inner">
+      <p class="badge thank-you-badge">
+        <span class="badge-icon" aria-hidden="true">✓</span>
+        Payment received
+      </p>
+      <h1 class="thank-you-title">Thank you for your order</h1>
+      <p class="thank-you-lead">
+        Stripe sends a <strong>payment receipt</strong> and, when your account is set up for it, a <strong>hosted invoice</strong> to the email you used at checkout. We also email an <strong>order summary</strong> from Serverly (same address) when our server is configured — check spam just in case.
+      </p>
+
+      <div class="thank-you-ref summary-card" id="thank-you-ref" hidden>
+        <p class="thank-you-ref-label">Checkout reference (for support)</p>
+        <p class="thank-you-ref-id mono" id="thank-you-session-id"></p>
+      </div>
+
+      <section class="summary-card thank-you-card" aria-labelledby="claim-heading">
+        <h2 class="section-title section-title-tight" id="claim-heading">How to claim your Discord server layout</h2>
+        <p class="thank-you-card-lead">
+          Serverly delivers a <strong>blueprint</strong> (channels, categories, roles, and setup notes) — not a Discord account and not automatic bot installs. You create or reset the server in Discord, then apply the layout we send.
+        </p>
+        <ol class="thank-you-steps">
+          <li>
+            <strong>Watch your email</strong> for Stripe’s receipt and invoice link, plus our order summary with your wizard choices.
+          </li>
+          <li>
+            <strong>In the Discord app</strong>, create a <strong>new server</strong> or use an empty / reset server you’re ready to structure. You stay the owner — we never need your password.
+          </li>
+          <li>
+            <strong>Wait for delivery</strong> on your package timeline. We’ll send the full layout document (or agreed format) to the same email you paid with, unless we contact you for a different address.
+          </li>
+          <li>
+            <strong>Implement the blueprint</strong>: add categories, channels, and roles to match the guide. Treat it like a detailed template — copy names and structure, then tweak for your community.
+          </li>
+          <li>
+            <strong>Optional:</strong> pin rules, welcome copy, and bot invites using the notes we include. Live hands-on fixes aren’t part of this package unless offered separately.
+          </li>
+        </ol>
+      </section>
+
+      <p class="thank-you-footnote">
+        Questions? Reply to your order email or start again from the <a href="index.html">wizard</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer thank-you-footer">
+    <p><strong>Serverly</strong> — Build your Discord server yourself with our layouts &amp; templates. Not affiliated with Discord Inc.</p>
+  </footer>
+
+  <script>
+    (function () {
+      var id = new URLSearchParams(window.location.search).get("session_id");
+      var box = document.getElementById("thank-you-ref");
+      var el = document.getElementById("thank-you-session-id");
+      if (id && box && el) {
+        el.textContent = id;
+        box.hidden = false;
+      }
+    })();
+  </script>
+</body>
+</html>
