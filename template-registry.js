@@ -8,8 +8,9 @@
 const TEMPLATE_ENV_KEYS = {
   /** Wizard card "Column" → data-pattern="bold-column" */
   "advanced:content_creator:bold-column": "CONTENT_CREATOR_COLUMN",
-  /** Wizard card "Regular text" → data-pattern="regular-text" */
+  /** Wizard card "Regular text" → data-pattern="regular-text" (Advanced or Basic) */
   "advanced:content_creator:regular-text": "CONTENT_CREATOR_REGULAR_TEXT",
+  "simple:content_creator:regular-text": "CONTENT_CREATOR_REGULAR_TEXT",
 };
 
 function resolveDiscordTemplateUrl(fields) {
