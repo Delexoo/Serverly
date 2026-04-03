@@ -401,15 +401,12 @@
     var n = rawName;
     var e = demoEmojiForName(n);
     var lower = n.toLowerCase();
-    var idx = typeof laneIndex === "number" ? laneIndex : 0;
     if (!patternId) {
       return isVoice ? n : e + " | " + n;
     }
     switch (patternId) {
       case "regular-text":
         return n;
-      case "bracket":
-        return toMathBoldText("「" + e + "」" + lower);
       case "bar-divider":
         return toMathBoldText(e + " | " + n);
       case "flourish":
@@ -424,59 +421,8 @@
         return toMathBoldText(e + "·" + lower.replace(/\s+/g, ""));
       case "em-dash":
         return toMathBoldText(e + " — " + lower);
-      case "parentheses":
-        return toMathBoldText("(" + e + ") " + lower);
-      case "star-accent":
-        return toMathBoldText("☆│" + lower);
-      case "slash-path":
-        return toMathBoldText(e + "/" + lower.replace(/\s+/g, ""));
-      case "fullwidth-pipe":
-        return toMathBoldText(e + "｜" + n);
-      case "double-line":
-        return toMathBoldText("║" + e + "║ " + n);
-      case "minimal-caps":
-        return toMathBoldText(n.toUpperCase().replace(/\s+/g, " "));
-      case "arrow-tail":
-        return toMathBoldText(e + "→" + lower.replace(/\s+/g, ""));
-      case "tilde-wave":
-        return toMathBoldText(e + "〜" + lower.replace(/\s+/g, ""));
-      case "bullet-ring":
-        return toMathBoldText("●│" + lower.replace(/\s+/g, ""));
-      case "plus-gate":
-        return toMathBoldText("➕│" + lower.replace(/\s+/g, ""));
       case "sparkle-dot":
         return toMathBoldText("✧・" + lower.replace(/\s+/g, ""));
-      case "angle-quotes":
-        return toMathBoldText("‹" + e + "› " + lower);
-      case "double-colon":
-        return toMathBoldText(e + "::" + lower.replace(/\s+/g, ""));
-      case "equals-bar":
-        return toMathBoldText("═" + e + "═" + lower.replace(/\s+/g, ""));
-      case "lightning-bolt":
-        return toMathBoldText("⚡・" + lower.replace(/\s+/g, ""));
-      case "box-branch":
-        return toMathBoldText("╰" + e + "╯" + lower.replace(/\s+/g, ""));
-      case "low-line-pad":
-        return toMathBoldText("▁" + lower.replace(/\s+/g, "") + "▁");
-      case "infinity-tag":
-        return toMathBoldText("∞│" + lower.replace(/\s+/g, ""));
-      case "diamond-frame":
-        return toMathBoldText("◇" + lower.replace(/\s+/g, "") + "◇");
-      case "numbered-lanes": {
-        var k = (idx % 98) + 1;
-        var numStr = k < 10 ? "0" + k : String(k);
-        return toMathBoldText(numStr + "┊" + lower.replace(/\s+/g, ""));
-      }
-      case "prefix-tag":
-        return toMathBoldText(isVoice ? "[vc] " + lower : "[ch] " + lower);
-      case "wave-dash":
-        return toMathBoldText(e + "〜〜" + lower.replace(/\s+/g, ""));
-      case "minimal-lowercase":
-        return toMathBoldText(lower.replace(/\s+/g, "-"));
-      case "section-sign":
-        return toMathBoldText("§" + e + "§" + lower.replace(/\s+/g, ""));
-      case "musical-note":
-        return toMathBoldText("♪│" + lower.replace(/\s+/g, ""));
       default:
         return toMathBoldText(isVoice ? n : e + " | " + n);
     }
@@ -507,11 +453,6 @@
       info: ["announcements", "rules", "links"],
       general: ["general", "clips", "art"],
       voice: ["lounge", "music", "afk"],
-    },
-    bracket: {
-      info: ["「📢」announcements", "「📋」rules", "「🔗」links"],
-      general: ["「💬」general", "「🎬」clips", "「🎨」art"],
-      voice: ["「🎮」lounge", "「🎵」music", "「🛋」afk"],
     },
     "bar-divider": {
       info: ["📢┊ Announcements", "📋┊ Rules", "🔗┊ Links"],
@@ -548,130 +489,10 @@
       general: ["💬 — chat", "🎬 — clips", "🎨 — art"],
       voice: ["🎮 — lounge", "🎵 — music", "🛋 — afk"],
     },
-    parentheses: {
-      info: ["(📢) announcements", "(📋) rules", "(🔗) links"],
-      general: ["(💬) general", "(🎮) lfg", "(🎨) art"],
-      voice: ["(🎮) lobby", "(🎵) music", "(🛋) afk"],
-    },
-    "star-accent": {
-      info: ["☆│announcements", "☆│rules", "☆│links"],
-      general: ["☆│general", "☆│chat", "☆│media"],
-      voice: ["☆│lobby", "☆│music", "☆│afk"],
-    },
-    "slash-path": {
-      info: ["📢/announcements", "📋/rules", "🔗/links"],
-      general: ["💬/general", "🎨/art", "📢/updates"],
-      voice: ["🎮/lobby", "🎵/music", "🛋/afk"],
-    },
-    "fullwidth-pipe": {
-      info: ["📢｜announcements", "📋｜rules", "🔗｜links"],
-      general: ["💬｜general", "🎮｜gaming", "📸｜shots"],
-      voice: ["🎮｜lobby", "🎵｜music", "🛋｜afk"],
-    },
-    "double-line": {
-      info: ["║📢║ announcements", "║📋║ rules", "║🔗║ links"],
-      general: ["║💬║ general", "║🎵║ music", "║✨║ misc"],
-      voice: ["║🎮║ lobby", "║🎵║ music", "║🛋║ afk"],
-    },
-    "minimal-caps": {
-      info: ["ANNOUNCEMENTS", "RULES", "LINKS"],
-      general: ["GENERAL", "CLIPS", "ART"],
-      voice: ["LOBBY", "MUSIC", "AFK"],
-    },
-    "arrow-tail": {
-      info: ["📢→announcements", "📋→rules", "🔗→links"],
-      general: ["💬→general", "🎮→lfg", "🎨→art"],
-      voice: ["🎮→lobby", "🎵→music", "🛋→afk"],
-    },
-    "tilde-wave": {
-      info: ["📢〜announcements", "📋〜rules", "🔗〜links"],
-      general: ["💬〜chat", "🎮〜party", "🎨〜studio"],
-      voice: ["🎮〜lobby", "🎵〜music", "🛋〜afk"],
-    },
-    "bullet-ring": {
-      info: ["●│announcements", "●│rules", "●│links"],
-      general: ["●│general", "●│welcome", "●│chat"],
-      voice: ["●│lobby", "●│music", "●│afk"],
-    },
-    "plus-gate": {
-      info: ["➕│announcements", "➕│rules", "➕│links"],
-      general: ["➕│welcome", "➕│general", "➕│clips"],
-      voice: ["➕│lobby", "➕│music", "➕│afk"],
-    },
     "sparkle-dot": {
       info: ["✧・announcements", "✧・rules", "✧・links"],
       general: ["✧・general", "✧・lounge", "✧・gaming"],
       voice: ["✧・lobby", "✧・music", "✧・afk"],
-    },
-    "angle-quotes": {
-      info: ["‹📢› announcements", "‹📋› rules", "‹🔗› links"],
-      general: ["‹💬› general", "‹🎮› lobby", "‹🎨› art"],
-      voice: ["‹🎮› lobby", "‹🎵› music", "‹🛋› afk"],
-    },
-    "double-colon": {
-      info: ["📢::announcements", "📋::rules", "🔗::links"],
-      general: ["💬::chat", "🎮::squad", "📢::feed"],
-      voice: ["🎮::lobby", "🎵::music", "🛋::afk"],
-    },
-    "equals-bar": {
-      info: ["═📢═announcements", "═📋═rules", "═🔗═links"],
-      general: ["═💬═general", "═🎮═lobby", "═📣═news"],
-      voice: ["═🎮═lobby", "═🎵═music", "═🛋═afk"],
-    },
-    "lightning-bolt": {
-      info: ["⚡・announcements", "⚡・rules", "⚡・links"],
-      general: ["⚡・general", "⚡・clips", "⚡・hype"],
-      voice: ["⚡・lobby", "⚡・music", "⚡・afk"],
-    },
-    "box-branch": {
-      info: ["╰📢╯announcements", "╰📋╯rules", "╰🔗╯links"],
-      general: ["╰💬╯general", "╰🎮╯party", "╰🎨╯studio"],
-      voice: ["╰🎮╯lobby", "╰🎵╯music", "╰🛋╯afk"],
-    },
-    "low-line-pad": {
-      info: ["▁announcements▁", "▁rules▁", "▁links▁"],
-      general: ["▁general▁", "▁chat▁", "▁gaming▁"],
-      voice: ["▁lobby▁", "▁music▁", "▁afk▁"],
-    },
-    "infinity-tag": {
-      info: ["∞│announcements", "∞│rules", "∞│links"],
-      general: ["∞│general", "∞│chat", "∞│media"],
-      voice: ["∞│lobby", "∞│music", "∞│afk"],
-    },
-    "diamond-frame": {
-      info: ["◇announcements◇", "◇rules◇", "◇links◇"],
-      general: ["◇general◇", "◇welcome◇", "◇rules◇"],
-      voice: ["◇lobby◇", "◇music◇", "◇afk◇"],
-    },
-    "numbered-lanes": {
-      info: ["01┊announcements", "02┊rules", "03┊links"],
-      general: ["01┊general", "02┊chat", "03┊gaming"],
-      voice: ["01┊lobby", "02┊music", "03┊afk"],
-    },
-    "prefix-tag": {
-      info: ["[info] announcements", "[info] rules", "[info] links"],
-      general: ["[chat] general", "[chat] clips", "[chat] art"],
-      voice: ["[vc] lobby", "[vc] music", "[vc] afk"],
-    },
-    "wave-dash": {
-      info: ["📢〜〜announcements", "📋〜〜rules", "🔗〜〜links"],
-      general: ["💬〜〜chat", "🎮〜〜party", "📢〜〜ping"],
-      voice: ["🎮〜〜lobby", "🎵〜〜music", "🛋〜〜afk"],
-    },
-    "minimal-lowercase": {
-      info: ["announcements-info", "rules-doc", "useful-links"],
-      general: ["general-chat", "clips-share", "art-wip"],
-      voice: ["voice-lobby", "music-room", "hang-afk"],
-    },
-    "section-sign": {
-      info: ["§📢§announcements", "§📋§rules", "§🔗§links"],
-      general: ["§💬§general", "§🎮§games", "§🎨§art"],
-      voice: ["§🎮§lobby", "§🎵§music", "§🛋§afk"],
-    },
-    "musical-note": {
-      info: ["♪│announcements", "♪│rules", "♪│links"],
-      general: ["♪│general", "♪│chat", "♪│requests"],
-      voice: ["♪│lobby", "♪│stage", "♪│afk"],
     },
   };
 
