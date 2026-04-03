@@ -1405,7 +1405,7 @@
       setStep(7);
       if (c === "success") {
         flashCheckout(
-          "Payment received. Check your inbox for your order summary—we’ll deliver your full server layout on the tier timeline.",
+          "Payment received. Check your email for Stripe’s receipt (and invoice if your account sends them). With webhook + SMTP configured on our server, you’ll also get your Serverly order summary—we’ll deliver your full layout on the tier timeline.",
           "success"
         );
       } else {

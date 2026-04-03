@@ -16,6 +16,14 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const clientUrl = (process.env.CLIENT_URL || "http://localhost:5500").replace(/\/$/, "");
 const port = parseInt(process.env.PORT || "3000", 10);
 
+function originFromSiteUrl(url) {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
+}
+
 if (!stripeSecret) {
   console.warn("Warning: STRIPE_SECRET_KEY is not set.");
 }
@@ -161,7 +169,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || clientUrl || true,
+    origin: process.env.CORS_ORIGIN || originFromSiteUrl(clientUrl) || true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
@@ -248,6 +256,7 @@ app.post("/create-checkout-session", async (req, res) => {
       mode: "payment",
       allow_promotion_codes: true,
       customer_email: emailStr,
+      invoice_creation: { enabled: true },
       line_items: [
         {
           price_data: {
@@ -261,7 +270,7 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${clientUrl}/?checkout=success`,
+      success_url: `${clientUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/?checkout=cancel`,
       metadata: {
         tier,
