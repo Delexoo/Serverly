@@ -227,14 +227,14 @@
       .replace(/"/g, "&quot;");
   }
 
-  /** Full server layout: categories and channels (single source for summary list + Discord demo). Total: 58 channels. */
+  /** Full server layout: categories and channels (single source for summary list + Discord demo). Total: 58 channels — order matches product spec. */
   var CHANNEL_TREE = [
     {
       title: "New !",
       locked: false,
       channels: [
         { name: "Welcome", voice: false, locked: false },
-        { name: "Rules", voice: false, locked: false },
+        { name: "Rule", voice: false, locked: false },
         { name: "Roles", voice: false, locked: false },
       ],
     },
@@ -274,26 +274,6 @@
       ],
     },
     {
-      title: "Creator",
-      locked: false,
-      channels: [
-        { name: "Tools-and-Apps", voice: false, locked: true },
-        { name: "Creator-Events", voice: false, locked: true },
-        { name: "Monthly-Highlights", voice: false, locked: true },
-        { name: "Thumbnail-Contests", voice: false, locked: true },
-        { name: "Editing-Room", voice: false, locked: true },
-        { name: "Live-Feedback", voice: false, locked: true },
-        { name: "Hire-Me", voice: false, locked: true },
-        { name: "Team-Up", voice: false, locked: true },
-        { name: "Appeals", voice: false, locked: true },
-        { name: "Coffee-Chat", voice: false, locked: true },
-        { name: "Watch-Party", voice: false, locked: true },
-        { name: "Support-VC", voice: false, locked: true },
-        { name: "Creator Lounge", voice: true, locked: true },
-        { name: "Production Room", voice: true, locked: true },
-      ],
-    },
-    {
       title: "Voice Chat",
       locked: false,
       channels: [
@@ -314,7 +294,7 @@
       channels: [
         { name: "Restricted-Users", voice: false, locked: true },
         { name: "Muted-Users", voice: false, locked: true },
-        { name: "Judgment VC", voice: true, locked: true },
+        { name: "Jugement VC", voice: true, locked: true },
       ],
     },
     {
@@ -341,12 +321,32 @@
         { name: "Brand-Deals", voice: false, locked: true },
       ],
     },
+    {
+      title: "Creator",
+      locked: false,
+      channels: [
+        { name: "Tools-and-Apps", voice: false, locked: true },
+        { name: "Creator-Events", voice: false, locked: true },
+        { name: "Monthly-Highlights", voice: false, locked: true },
+        { name: "Thumbnail-Contests", voice: false, locked: true },
+        { name: "Editing-Room", voice: false, locked: true },
+        { name: "Live-Feedback", voice: false, locked: true },
+        { name: "Hire-Me", voice: false, locked: true },
+        { name: "Team-Up", voice: false, locked: true },
+        { name: "Appeals", voice: false, locked: true },
+        { name: "Coffee-Chat", voice: false, locked: true },
+        { name: "Watch-Party", voice: false, locked: true },
+        { name: "Support-VC", voice: false, locked: true },
+        { name: "Creator Lounge", voice: true, locked: true },
+        { name: "Production Room", voice: true, locked: true },
+      ],
+    },
   ];
 
   function demoEmojiForName(name) {
     var m = {
       Welcome: "😄",
-      Rules: "📜",
+      Rule: "📜",
       Roles: "🎭",
       Announcements: "📢",
       Giveaway: "🎉",
@@ -390,7 +390,7 @@
       AFK: "💤",
       "Restricted-Users": "🔻",
       "Muted-Users": "🚫",
-      "Judgment VC": "🔨",
+      "Jugement VC": "🔨",
       Admin: "👑",
       "Server-Ideas": "⛔",
       "Staff-Information": "❗",
@@ -471,47 +471,47 @@
   /** Each style: Information + General (text) + Voice Chat (voice), 3 channels each. */
   var PATTERN_PREVIEW_DATA = {
     "regular-text": {
-      info: ["announcements", "rules", "links"],
+      info: ["announcements", "rule", "links"],
       general: ["general", "clips", "art"],
       voice: ["lounge", "music", "afk"],
     },
     "bar-divider": {
-      info: ["📢┊ Announcements", "📋┊ Rules", "🔗┊ Links"],
+      info: ["📢┊ Announcements", "📋┊ Rule", "🔗┊ Links"],
       general: ["💬┊ General", "🎬┊ Clips", "🎨┊ Art"],
       voice: ["🎮┊ Lounge", "🎵┊ Music", "🛋┊ AFK"],
     },
     flourish: {
-      info: ["✦𝐈𝐧𝐟𝐨✦", "✦𝐑𝐮𝐥𝐞𝐬✦", "✦𝐋𝐢𝐧𝐤𝐬✦"],
+      info: ["✦𝐈𝐧𝐟𝐨✦", "✦𝐑𝐮𝐥𝐞✦", "✦𝐋𝐢𝐧𝐤𝐬✦"],
       general: ["✦𝐆𝐞𝐧𝐞𝐫𝐚𝐥✦", "✦𝐂𝐥𝐢𝐩𝐬✦", "✦𝐀𝐫𝐭✦"],
       voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
     },
     "bold-column": {
-      info: ["📢┃News", "📋┃Rules", "🔗┃Links"],
+      info: ["📢┃News", "📋┃Rule", "🔗┃Links"],
       general: ["💬┃General", "🎬┃Clips", "🎨┃Art"],
       voice: ["🎮┃Lounge", "🎵┃Music", "🛋┃AFK"],
     },
     "corner-brackets": {
-      info: ["【📢】announcements", "【📋】rules", "【🔗】links"],
+      info: ["【📢】announcements", "【📋】rule", "【🔗】links"],
       general: ["【💬】general", "【🎬】clips", "【🎨】art"],
       voice: ["【🎮】lounge", "【🎵】music", "【🛋】afk"],
     },
     chevrons: {
-      info: ["《📢》announcements", "《📋》rules", "《🔗》links"],
+      info: ["《📢》announcements", "《📋》rule", "《🔗》links"],
       general: ["《💬》general", "《🎬》clips", "《🎨》art"],
       voice: ["《🎮》lounge", "《🎵》music", "《🛋》afk"],
     },
     "dot-separator": {
-      info: ["📢·announcements", "📋·rules", "🔗·links"],
+      info: ["📢·announcements", "📋·rule", "🔗·links"],
       general: ["💬·general", "🎬·clips", "🎨·art"],
       voice: ["🎮·lounge", "🎵·music", "🛋·afk"],
     },
     "em-dash": {
-      info: ["📢 — alerts", "📋 — rules", "🔗 — links"],
+      info: ["📢 — alerts", "📋 — rule", "🔗 — links"],
       general: ["💬 — chat", "🎬 — clips", "🎨 — art"],
       voice: ["🎮 — lounge", "🎵 — music", "🛋 — afk"],
     },
     "sparkle-dot": {
-      info: ["✧・announcements", "✧・rules", "✧・links"],
+      info: ["✧・announcements", "✧・rule", "✧・links"],
       general: ["✧・general", "✧・lounge", "✧・gaming"],
       voice: ["✧・lobby", "✧・music", "✧・afk"],
     },
@@ -873,7 +873,6 @@
             : ch.voice
               ? '<span class="discord-demo-ch-icon" aria-hidden="true">🔊</span>'
               : '<span class="discord-demo-ch-hash">#</span>') +
-          (regularTextMode ? "" : ch.locked ? '<span class="discord-demo-ch-lock" aria-hidden="true">🔒</span>' : "") +
           '<span class="discord-demo-ch-label">' +
           escapeHtml(label) +
           "</span></div>";

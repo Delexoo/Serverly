@@ -1173,11 +1173,6 @@ button.style-card.pattern-select {
   opacity: 0.9;
 }
 
-.discord-demo-ch-lock {
-  font-size: 0.65rem;
-  opacity: 0.85;
-}
-
 .discord-demo-ch-label {
   flex: 1;
   min-width: 0;
