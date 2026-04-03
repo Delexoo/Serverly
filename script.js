@@ -319,12 +319,6 @@
         { name: "Self-Promote", voice: false, locked: true },
         { name: "Content-Ideas", voice: false, locked: true },
         { name: "Brand-Deals", voice: false, locked: true },
-      ],
-    },
-    {
-      title: "Creator",
-      locked: false,
-      channels: [
         { name: "Tools-and-Apps", voice: false, locked: true },
         { name: "Creator-Events", voice: false, locked: true },
         { name: "Monthly-Highlights", voice: false, locked: true },
@@ -675,8 +669,20 @@
     return a;
   }
 
+  /** Discord client default avatars (colored circles + logo) — index 0..5 from CDN. */
+  function demoDiscordDefaultAvatarIndex(seed) {
+    var s = String(seed || "0");
+    var h = 0;
+    var i;
+    for (i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h) % 6;
+  }
+
   function demoAvatarUrl(seed) {
-    return "https://picsum.photos/seed/" + encodeURIComponent(seed) + "/64/64";
+    var idx = demoDiscordDefaultAvatarIndex(seed);
+    return "https://cdn.discordapp.com/embed/avatars/" + idx + ".png";
   }
 
   function demoStatusHtml(status) {
@@ -700,7 +706,7 @@
 
   function buildDemoUserRoster() {
     var shuffled = demoShuffle(DEMO_PROFILES);
-    var rest = shuffled.slice(0, 12);
+    var rest = shuffled.slice(0, 28);
     var cycle = [
       "online",
       "idle",
@@ -709,6 +715,14 @@
       "offline",
       "invisible",
       "online",
+      "idle",
+      "dnd",
+      "streaming",
+      "offline",
+      "invisible",
+      "online",
+      "idle",
+      "dnd",
     ];
     var members = rest.map(function (p, i) {
       return {
@@ -744,13 +758,6 @@
     return (
       '<div class="discord-demo-rail" aria-hidden="true">' +
       '<span class="discord-demo-rail-icon discord-demo-rail-icon--active" title="This server"></span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--1" title="Game Hub">GH</span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--2" title="Music Lounge">🎵</span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--3" title="Art Studio">AR</span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--4" title="Sports">⚽</span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--5" title="Developers">Dev</span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--6" title="Study group">📚</span>' +
-      '<span class="discord-demo-rail-fake discord-demo-rail-fake--7" title="Clips">▶</span>' +
       "</div>"
     );
   }
@@ -1019,7 +1026,11 @@
         '<div class="discord-demo-msg discord-demo-msg--user">' +
         '<span class="discord-demo-msg-bubble">' +
         escapeHtml(raw) +
-        "</span></div>";
+        "</span>" +
+        '<img class="discord-demo-msg-avatar discord-demo-msg-avatar--img" src="' +
+        escapeHtml(demoAvatarUrl("you-self")) +
+        '" alt="" width="24" height="24" loading="lazy" decoding="async" />' +
+        "</div>";
       msgList.insertAdjacentHTML("beforeend", userRow);
       if (welcomeWrap) welcomeWrap.classList.add("discord-demo-welcome--faded");
       msgList.scrollTop = msgList.scrollHeight;
@@ -1027,7 +1038,9 @@
       setTimeout(function () {
         var botRow =
           '<div class="discord-demo-msg discord-demo-msg--bot">' +
-          '<span class="discord-demo-msg-avatar" aria-hidden="true">✨</span>' +
+          '<img class="discord-demo-msg-avatar discord-demo-msg-avatar--img" src="' +
+          escapeHtml(demoAvatarUrl("serverly-bot-reply")) +
+          '" alt="" width="24" height="24" loading="lazy" decoding="async" />' +
           '<span class="discord-demo-msg-bubble discord-demo-msg-bubble--bot">' +
           escapeHtml(reply) +
           "</span></div>";
