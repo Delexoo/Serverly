@@ -13,7 +13,22 @@ const nodemailer = require("nodemailer");
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const clientUrl = (process.env.CLIENT_URL || "http://localhost:5500").replace(/\/$/, "");
+
+function buildPublicSiteBaseUrl() {
+  const raw = (process.env.CLIENT_URL || "http://localhost:5500").trim().replace(/\/$/, "");
+  const extraPath = (process.env.CLIENT_SITE_PATH || "").replace(/^\/+|\/+$/g, "").trim();
+  if (!extraPath) return raw;
+  try {
+    const u = new URL(raw);
+    const pathEmpty = !u.pathname || u.pathname === "/";
+    if (pathEmpty) return `${u.origin}/${extraPath}`.replace(/\/$/, "");
+  } catch {
+    /* keep raw */
+  }
+  return raw;
+}
+
+const clientUrl = buildPublicSiteBaseUrl();
 const port = parseInt(process.env.PORT || "3000", 10);
 
 function originFromSiteUrl(url) {
@@ -297,5 +312,5 @@ app.get("/health", (_req, res) => {
 
 app.listen(port, () => {
   console.log(`Checkout API listening on http://localhost:${port}`);
-  console.log(`CLIENT_URL (redirects): ${clientUrl}`);
+  console.log(`Stripe return / CORS site base: ${clientUrl}`);
 });
