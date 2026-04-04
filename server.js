@@ -8,6 +8,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const Stripe = require("stripe");
 const nodemailer = require("nodemailer");
 const { resolveDiscordTemplateUrl } = require("./template-registry.js");
@@ -81,6 +82,34 @@ function originFromSiteUrl(url) {
   }
 }
 
+function buildCorsOriginOption() {
+  const siteOrigin = originFromSiteUrl(clientUrl).replace(/\/$/, "");
+  const allow = new Set();
+  (process.env.CORS_ORIGIN || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\/$/, ""))
+    .filter(Boolean)
+    .forEach((o) => allow.add(o));
+  if (siteOrigin.startsWith("http")) allow.add(siteOrigin);
+  [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ].forEach((o) => allow.add(o));
+  return function corsOriginCallback(origin, callback) {
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/$/, "");
+    if (allow.has(normalized)) return callback(null, true);
+    console.warn("[CORS] blocked origin:", origin);
+    return callback(null, false);
+  };
+}
+
+const CHECKOUT_GENERIC_ERROR = "Checkout could not be started. Please try again in a moment.";
+
 if (!stripeSecret) {
   console.warn("Warning: STRIPE_SECRET_KEY is not set.");
 }
@@ -90,7 +119,7 @@ const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 const TIERS = {
   simple: { amount: 1000, name: "Serverly — Basic server layout" },
   advanced: { amount: 2000, name: "Serverly — Advanced server layout" },
-  professional: { amount: 5000, name: "Serverly — Professional (subscription & hands-on)" },
+  professional: { amount: 5000, name: "Serverly — Professional (hands-on)" },
 };
 
 const GOAL_LABELS = {
@@ -151,7 +180,6 @@ function includesForTier(tier, goal, serverMode) {
     ],
     professional: [
       "Everything in Advanced",
-      "Subscription-based Discord bot setups",
       "24/7 Discord moderation",
       "1:1 helper / mentor",
       "High-quality, white-glove service",
@@ -388,10 +416,27 @@ async function sendOrderEmail(to, subject, text, html) {
 }
 
 const app = express();
+app.set("trust proxy", 1);
+
+const checkoutIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Math.max(1, parseInt(process.env.CHECKOUT_RATE_LIMIT_MAX || "40", 10)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many checkout attempts from this network. Please try again later." },
+});
+
+const orderInstantIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Math.max(1, parseInt(process.env.ORDER_INSTANT_RATE_LIMIT_MAX || "80", 10)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again later." },
+});
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || originFromSiteUrl(clientUrl) || true,
+    origin: buildCorsOriginOption(),
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
@@ -448,13 +493,18 @@ app.post(
 
 app.use(express.json());
 
-app.get("/order-instant", async (req, res) => {
+app.get("/order-instant", orderInstantIpLimiter, async (req, res) => {
   const sessionId = typeof req.query.session_id === "string" ? req.query.session_id.trim() : "";
   if (!sessionId || !stripe) {
     return res.status(400).json({ error: "Missing session_id or Stripe not configured." });
   }
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const paid =
+      session.payment_status === "paid" || session.payment_status === "no_payment_required";
+    if (!paid) {
+      return res.status(403).json({ error: "Payment not confirmed for this session." });
+    }
     const meta = session.metadata || {};
     let discordTemplateUrl = (meta.discord_template_url || "").toString().trim();
     if (!discordTemplateUrl) {
@@ -471,7 +521,7 @@ app.get("/order-instant", async (req, res) => {
   }
 });
 
-app.post("/create-checkout-session", async (req, res) => {
+app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
   if (!stripe) {
     return res.status(500).json({ error: "Stripe is not configured on the server." });
   }
@@ -504,7 +554,9 @@ app.post("/create-checkout-session", async (req, res) => {
   const ghPagesErr = githubPagesMissingProjectPathError();
   if (ghPagesErr) {
     console.error(ghPagesErr);
-    return res.status(500).json({ error: ghPagesErr });
+    return res.status(500).json({
+      error: "Checkout is not available right now. If this continues, contact support.",
+    });
   }
 
   const t = TIERS[tier];
@@ -565,8 +617,8 @@ app.post("/create-checkout-session", async (req, res) => {
 
     return res.json({ url: session.url });
   } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: e.message || "Stripe error" });
+    console.error("create-checkout-session:", e);
+    return res.status(500).json({ error: CHECKOUT_GENERIC_ERROR });
   }
 });
 

@@ -305,30 +305,80 @@ main,
   border: 0;
 }
 
-.hero-value-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 auto 1.75rem;
-  max-width: 520px;
+/* Welcome: rotating value line + star; viewport height animates smoothly */
+.hero-value-rotator {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  max-width: min(22rem, 100%);
+  margin: 0 auto 1.25rem;
+  padding: 0.55rem 0.85rem;
   text-align: left;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
+  line-height: 1.38;
   color: var(--text-muted);
+  background: var(--accent-soft);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
 }
 
-.hero-value-list li {
-  position: relative;
-  padding-left: 1.35rem;
-  margin-bottom: 0.45rem;
-  line-height: 1.45;
+.hero-value-rotator-star {
+  flex-shrink: 0;
+  margin-top: 0.06em;
+  font-size: 0.75rem;
+  color: var(--accent);
+  line-height: 1.35;
 }
 
-.hero-value-list li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
+.hero-value-rotator-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  transition: height 0.52s cubic-bezier(0.32, 0.72, 0.28, 1);
+}
+
+.hero-value-rotator:not(.hero-value-rotator--ready) .hero-value-rotator-viewport,
+.hero-value-rotator:not(.hero-value-rotator--ready) .hero-value-rotator-track {
+  transition: none !important;
+}
+
+.hero-value-rotator-track {
+  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0.28, 1);
+  transform: translate3d(0, 0, 0);
+}
+
+.hero-value-rotator-track--static .hero-value-rotator-static-row strong {
   color: var(--accent);
   font-weight: 700;
-  font-size: 0.85rem;
+}
+
+.hero-value-rotator-slide {
+  margin: 0;
+  padding: 0;
+}
+
+.hero-value-rotator-slide strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hero-value-rotator-track--static {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transform: none !important;
+}
+
+.hero-value-rotator-static-row {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-value-rotator-viewport,
+  .hero-value-rotator-track {
+    transition: none !important;
+  }
 }
 
 .hero-cta {
@@ -2384,6 +2434,99 @@ button.style-card.pattern-select {
   display: block;
 }
 
+/* Single-screen wizard app: viewport-locked layout, no page scroll (scroll inside step if needed) */
+html.wizard-app {
+  height: 100%;
+  overflow: hidden;
+}
+
+html.wizard-app body.wizard-app {
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+html.wizard-app body.wizard-app .site-header {
+  flex-shrink: 0;
+}
+
+html.wizard-app body.wizard-app .wizard-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+  min-height: 0;
+}
+
+html.wizard-app body.wizard-app .wizard-pages {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* One step visible at a time: stack steps in the same slot (avoids flex + display:none glitches) */
+html.wizard-app body.wizard-app .wizard-page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  padding: 0;
+  z-index: 0;
+  animation: none;
+  background: var(--bg);
+}
+
+html.wizard-app body.wizard-app .wizard-page.is-active {
+  display: flex;
+  z-index: 1;
+}
+
+html.wizard-app body.wizard-app .wizard-page > .wizard-inner,
+html.wizard-app body.wizard-app .wizard-page > .wizard-inner-wide {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+html.wizard-app body.wizard-app #step-welcome > .hero {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+html.wizard-app body.wizard-app .site-footer {
+  flex-shrink: 0;
+  padding: 0.45rem 1rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
 @keyframes wizardIn {
   from {
     opacity: 0;
@@ -2495,7 +2638,7 @@ button.style-card.pattern-select {
 
 /* —— Package tier step —— */
 .packages-step {
-  padding-bottom: 2.5rem;
+  padding-bottom: 0.25rem;
 }
 
 .packages-step-header {
@@ -2517,6 +2660,332 @@ button.style-card.pattern-select {
 
 .packages-step-lead strong {
   color: var(--text);
+}
+
+/* Package tier — pricing (readable spacing; scrolls on short viewports) */
+.packages-step-pricing {
+  background: #fafafa;
+  border-radius: 0;
+  padding: 0.65rem 0.85rem 0.85rem;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1200px;
+}
+
+html.wizard-app body.wizard-app .wizard-page#step-packages > .wizard-inner-wide.packages-step-pricing {
+  padding: 0.65rem 0.85rem 0.85rem;
+}
+
+.packages-step-pricing .packages-step-header {
+  margin-bottom: 0.95rem;
+}
+
+.packages-step-pricing .wizard-step-hint {
+  color: #71717a;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.packages-step-pricing .packages-step-title {
+  font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1.1;
+  color: #0a0a0a;
+}
+
+.packages-step-pricing .tier-cards-grid--pricing {
+  gap: clamp(0.85rem, 2vw, 1.35rem);
+  max-width: 1120px;
+}
+
+.packages-step-pricing .tier-card {
+  position: relative;
+  padding: 1.1rem 1rem 1.15rem;
+  border-radius: 16px;
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  box-shadow: none;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.packages-step-pricing .tier-card.is-picked {
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 1px #0a0a0a;
+}
+
+.packages-step-pricing .price-card-featured {
+  transform: none;
+  border-color: #e5e5e5;
+  box-shadow: none;
+}
+
+.packages-step-pricing .tier-card.card-hover:hover {
+  transform: none;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  border-color: #d4d4d8;
+}
+
+.packages-step-pricing .tier-card--simple,
+.packages-step-pricing .tier-card--featured,
+.packages-step-pricing .tier-card--pro {
+  border-top: none;
+}
+
+.packages-step-pricing .tier-card-icon {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0 0 0.55rem;
+  color: #0a0a0a;
+}
+
+.packages-step-pricing .tier-card-icon-svg {
+  width: 48px;
+  height: 48px;
+  display: block;
+}
+
+.packages-step-pricing .tier-popular-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #52525b;
+}
+
+.packages-step-pricing .tier-soon-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.packages-step-pricing .tier-card-head {
+  border-bottom: none;
+  margin-bottom: 0.7rem;
+  padding-bottom: 0;
+  text-align: left;
+}
+
+.packages-step-pricing .tier-card .price-name {
+  font-size: clamp(1.1rem, 1.9vw, 1.28rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.15rem;
+  color: #0a0a0a;
+}
+
+.packages-step-pricing .tier-card .price-tag {
+  margin: 0 0 0.55rem;
+  max-width: none;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #52525b;
+}
+
+.packages-step-pricing .tier-price-label {
+  display: none;
+}
+
+.packages-step-pricing .tier-price-block {
+  align-items: flex-start;
+  text-align: left;
+  padding: 0;
+  margin-bottom: 0.5rem;
+  background: transparent;
+  border: none;
+}
+
+.packages-step-pricing .tier-price-block--accent {
+  background: transparent;
+  border: none;
+}
+
+.packages-step-pricing .tier-price-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.1rem 0.35rem;
+  margin: 0;
+  line-height: 1;
+}
+
+.packages-step-pricing .tier-price-currency {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: -0.03em;
+}
+
+.packages-step-pricing .tier-price-nums {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #0a0a0a;
+  font-variant-numeric: tabular-nums;
+}
+
+.packages-step-pricing .price-card-featured .tier-price-nums {
+  color: #0a0a0a;
+}
+
+.packages-step-pricing .tier-price-period {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #71717a;
+  margin-left: 0.15rem;
+}
+
+.packages-step-pricing .tier-price-secondary {
+  margin: 0.2rem 0 0;
+  font-size: 0.7rem;
+  color: #71717a;
+  line-height: 1.3;
+}
+
+.packages-step-pricing .tier-card--simple .tier-card-head .price-name {
+  margin-bottom: 0.25rem;
+}
+
+.packages-step-pricing .wizard-pricing .price-card .btn {
+  margin-top: 0;
+  margin-bottom: 0.65rem;
+}
+
+.packages-step-pricing .btn-tier-pick {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  border-radius: 9999px;
+  padding: 0.55rem 0.85rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-outline {
+  border: 1px solid #0a0a0a;
+  background: #fff;
+  color: #0a0a0a;
+  box-shadow: none;
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-outline:hover:not(:disabled) {
+  background: #fafafa;
+  color: #0a0a0a;
+  border-color: #0a0a0a;
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-outline:active:not(:disabled) {
+  transform: none;
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-solid {
+  border: 1px solid #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-solid:hover:not(:disabled) {
+  background: #262626;
+  border-color: #262626;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-solid:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.packages-step-pricing .btn-tier-pick--pricing-muted {
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+  color: #a1a1aa;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.packages-step-pricing .tier-includes-kicker {
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 0.4rem;
+  line-height: 1.3;
+}
+
+.packages-step-pricing .tier-feature-list--rich {
+  margin-bottom: 0 !important;
+  text-align: left;
+}
+
+.packages-step-pricing .tier-feature-list--rich li {
+  color: #3f3f46;
+  padding-left: 1.15rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.packages-step-pricing .tier-feature-list--rich li:last-child {
+  margin-bottom: 0;
+}
+
+.packages-step-pricing .tier-feature-list--rich li::before {
+  color: #d4d4d8;
+  font-weight: 500;
+  font-size: 0.7rem;
+  top: 0.1em;
+}
+
+.packages-step-pricing .tier-card--soon.card-hover:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.packages-step-pricing .packages-footnote {
+  color: #71717a;
+  max-width: 40rem;
+  margin: 0.75rem auto 0;
+  text-align: center;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+/* Short viewports: slightly tighter, still readable */
+@media (max-height: 780px) {
+  html.wizard-app .packages-step-pricing .packages-step-header {
+    margin-bottom: 0.55rem;
+  }
+
+  html.wizard-app .packages-step-pricing .tier-card {
+    padding: 0.85rem 0.75rem 0.9rem;
+  }
+
+  html.wizard-app .packages-step-pricing .tier-feature-list--rich li {
+    font-size: 0.7rem;
+    margin-bottom: 0.22rem;
+    line-height: 1.32;
+  }
+}
+
+.packages-step-pricing .tier-card--soon {
+  opacity: 0.78;
 }
 
 .packages-trust-row {
@@ -3062,6 +3531,36 @@ button.style-card.pattern-select {
   padding-top: 2rem;
 }
 
+/* Welcome: center the hero in the step (fills height under single-screen layout).
+   Do NOT set display here — #step-welcome beats .wizard-page { display: none } and the landing screen would stay visible on other steps. */
+#step-welcome {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem 1rem;
+  box-sizing: border-box;
+}
+
+#step-welcome .hero.hero-wizard.hero-welcome-centered {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  padding-top: 0;
+}
+
+#step-welcome .hero-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 600px) {
+  #step-welcome {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-muted);
@@ -3168,6 +3667,158 @@ button.style-card.pattern-select {
   margin-right: auto;
 }
 
+/* Scroll-step polish: channel styles (flow step 5) + summary (flow step 6) */
+html.wizard-app body.wizard-app .wizard-page#step-styles > .wizard-inner-wide,
+html.wizard-app body.wizard-app .wizard-page#step-finish > .wizard-inner-wide {
+  padding: 1rem 1.25rem 2.75rem;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+#step-styles .wizard-inner-wide::-webkit-scrollbar,
+#step-finish .wizard-inner-wide::-webkit-scrollbar {
+  width: 8px;
+}
+
+#step-styles .wizard-inner-wide::-webkit-scrollbar-track,
+#step-finish .wizard-inner-wide::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#step-styles .wizard-inner-wide::-webkit-scrollbar-thumb,
+#step-finish .wizard-inner-wide::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+#step-styles .section-alt-wizard {
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
+  border-color: rgba(226, 232, 240, 0.98);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.85) inset,
+    var(--shadow);
+  padding: 1.35rem 1.2rem 1.85rem;
+  margin-bottom: 0.35rem;
+}
+
+#step-styles .wizard-step-hint {
+  text-align: center;
+}
+
+#step-styles .wizard-micro-hint {
+  margin-bottom: 1rem;
+}
+
+#step-styles .section-title-wizard {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+#step-styles .section-lead-wizard {
+  margin-bottom: 1.35rem;
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#step-styles .style-grid {
+  gap: 1rem 1.15rem;
+  padding-bottom: 0.35rem;
+}
+
+#step-styles .style-card.pattern-card {
+  border-radius: var(--radius);
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.3s var(--ease),
+    transform 0.3s var(--ease);
+}
+
+#step-styles .style-card.card-hover:hover {
+  transform: translateY(-4px);
+}
+
+#step-styles .sidebar-mock-pattern {
+  border-radius: 8px;
+}
+
+/* Summary + FAQ + contact */
+#step-finish .finish-step-head {
+  margin-bottom: 1.35rem;
+}
+
+#step-finish .finish-step-head .wizard-sub-tight {
+  max-width: 42rem;
+}
+
+html.wizard-app body.wizard-app #step-finish .section {
+  padding: 0;
+  max-width: 640px;
+}
+
+#step-finish #faq.section {
+  margin-top: 1.5rem;
+  padding: 1.45rem 1.2rem 1.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+#step-finish #faq .section-title {
+  text-align: left;
+  font-size: clamp(1.25rem, 2.5vw, 1.45rem);
+  margin-bottom: 1rem;
+}
+
+#step-finish #faq .faq-list {
+  margin: 0;
+  max-width: none;
+  gap: 0.55rem;
+}
+
+#step-finish .faq-item {
+  background: var(--bg);
+  border-color: rgba(226, 232, 240, 0.95);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+#step-finish .faq-item[open] {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+#step-finish .faq-item summary {
+  padding: 0.8rem 0;
+}
+
+#step-finish .faq-item p {
+  padding-right: 0.25rem;
+}
+
+#step-finish .faq-item.card-hover:hover {
+  transform: translateY(-2px);
+}
+
+#step-finish .section.cta-block {
+  padding: 1.75rem 1rem 2rem;
+  margin-top: 0.25rem;
+}
+
+#step-finish .section.cta-block .section-lead {
+  margin-bottom: 1.25rem;
+}
+
+#step-finish .summary-card-rich,
+#step-finish .summary-card {
+  margin-bottom: 0;
+}
+
+#step-finish .summary-checkout-cta {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+}
+
 .mobile-drawer {
   display: none;
   position: fixed;
@@ -3264,6 +3915,10 @@ body.drawer-open {
 
   .pricing-grid {
     grid-template-columns: 1fr;
+  }
+
+  .packages-step-pricing .tier-card {
+    padding: 1rem 0.9rem 1.05rem;
   }
 
   .choice-grid,

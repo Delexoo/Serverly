@@ -70,7 +70,7 @@
   var TIER_TITLES = {
     simple: "Basic — gets the job done",
     advanced: "Advanced — Basic + presets & polish",
-    professional: "Professional — subscription care (coming soon)",
+    professional: "Professional — hands-on care (coming soon)",
   };
 
   /** Naming styles for Advanced summary demo (matches wizard style step). */
@@ -121,7 +121,6 @@
       ],
       professional: [
         "Everything in Advanced",
-        "Subscription-based Discord bot setups",
         "24/7 Discord moderation",
         "1:1 helper / mentor",
         "High-quality, white-glove service",
@@ -187,7 +186,12 @@
     if (progressFill) {
       progressFill.style.width = ((flowPos + 1) / totalSteps) * 100 + "%";
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (document.body.classList.contains("wizard-app")) {
+      var ap = pages[n];
+      if (ap) ap.scrollTop = 0;
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     if (n === 5) renderSummary();
     if (n === 3) syncPatternSelectionUI();
     if (n === 3) syncPatternTierGate();
@@ -205,6 +209,133 @@
       syncCheckoutPanel();
     }
     closeDrawer();
+    syncHeroValueRotator(n);
+  }
+
+  /** Welcome hero: vertical slide + smooth viewport height (paused off welcome). */
+  var HERO_VALUE_ROTATOR_LINES = [
+    { k: "Monetize", v: "paid-access ready channels and roles." },
+    { k: "Growth", v: "scalable structure without chaos." },
+    { k: "Affordable", v: "pricing starts at $10." },
+    { k: "Optimal", v: "layouts tuned for engagement." },
+    { k: "Easy", v: "quick wizard with live demo." },
+  ];
+  var heroRotatorTimeoutId = null;
+  var heroRotatorIndex = 0;
+  var HERO_ROTATOR_DISPLAY_MS = 2800;
+
+  function heroRotatorLineHtml(i) {
+    var row = HERO_VALUE_ROTATOR_LINES[i];
+    if (!row) return "";
+    return (
+      "<strong>" +
+      escapeHtml(row.k) +
+      ":</strong> " +
+      escapeHtml(row.v)
+    );
+  }
+
+  function clearHeroRotator() {
+    if (heroRotatorTimeoutId != null) {
+      clearTimeout(heroRotatorTimeoutId);
+      heroRotatorTimeoutId = null;
+    }
+  }
+
+  function syncHeroValueRotator(pageIndex) {
+    var viewport = document.getElementById("hero-value-rotator-viewport");
+    var track = document.getElementById("hero-value-rotator-track");
+    var root = document.getElementById("hero-value-rotator");
+    if (!viewport || !track || !root) return;
+
+    if (pageIndex !== 0) {
+      clearHeroRotator();
+      track.innerHTML = "";
+      track.className = "hero-value-rotator-track";
+      track.style.transform = "";
+      viewport.style.height = "";
+      root.classList.remove("hero-value-rotator--ready");
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      clearHeroRotator();
+      track.className = "hero-value-rotator-track hero-value-rotator-track--static";
+      track.innerHTML = HERO_VALUE_ROTATOR_LINES.map(function (row) {
+        return (
+          "<span class=\"hero-value-rotator-static-row\"><strong>" +
+          escapeHtml(row.k) +
+          ":</strong> " +
+          escapeHtml(row.v) +
+          "</span>"
+        );
+      }).join("");
+      track.style.transform = "";
+      viewport.style.height = "";
+      root.classList.add("hero-value-rotator--ready");
+      return;
+    }
+
+    clearHeroRotator();
+    root.classList.remove("hero-value-rotator--ready");
+    track.className = "hero-value-rotator-track";
+    track.innerHTML = "";
+    track.style.transform = "";
+
+    var n = HERO_VALUE_ROTATOR_LINES.length;
+    var i;
+    for (i = 0; i < n; i++) {
+      var slide = document.createElement("p");
+      slide.className = "hero-value-rotator-slide";
+      slide.innerHTML = heroRotatorLineHtml(i);
+      track.appendChild(slide);
+    }
+
+    var slides = track.querySelectorAll(".hero-value-rotator-slide");
+    var heights = [];
+    var positions = [];
+    var cum = 0;
+    for (i = 0; i < slides.length; i++) {
+      positions.push(cum);
+      heights.push(slides[i].offsetHeight);
+      cum += slides[i].offsetHeight;
+    }
+
+    function scheduleAdvance() {
+      clearHeroRotator();
+      heroRotatorTimeoutId = setTimeout(advance, HERO_ROTATOR_DISPLAY_MS);
+    }
+
+    function advance() {
+      if (state.step !== 0) return;
+      var next = (heroRotatorIndex + 1) % n;
+      viewport.style.height = Math.ceil(heights[next]) + "px";
+      track.style.transform =
+        "translate3d(0, -" + positions[next] + "px, 0)";
+      heroRotatorIndex = next;
+      scheduleAdvance();
+    }
+
+    heroRotatorIndex = 0;
+    viewport.style.height = Math.ceil(heights[0]) + "px";
+    track.style.transform = "translate3d(0, 0, 0)";
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        for (i = 0; i < slides.length; i++) {
+          heights[i] = slides[i].offsetHeight;
+        }
+        cum = 0;
+        for (i = 0; i < slides.length; i++) {
+          positions[i] = cum;
+          cum += heights[i];
+        }
+        viewport.style.height = Math.ceil(heights[0]) + "px";
+        track.style.transform = "translate3d(0, 0, 0)";
+        root.classList.add("hero-value-rotator--ready");
+        scheduleAdvance();
+      });
+    });
   }
 
   function syncPatternSelectionUI() {

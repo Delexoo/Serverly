@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="wizard-app">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="wizard-app">
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
   <header class="site-header">
@@ -51,24 +51,22 @@
 
     <div class="wizard-page is-active" data-step="0" id="step-welcome" aria-label="Welcome">
     <section class="hero hero-wizard hero-welcome-centered">
-      <p class="badge fade-in">
-        <span class="badge-icon" aria-hidden="true">✦</span>
-        Your server, professionally structured for growth
+      <p class="visually-hidden" id="hero-value-sr-summary">
+        Highlights: Monetize — paid-access ready channels and roles. Growth — scalable structure without chaos. Affordable — pricing starts at $10. Optimal — layouts tuned for engagement. Easy — quick wizard with live demo.
       </p>
+      <div class="hero-value-rotator" id="hero-value-rotator" aria-hidden="true">
+        <span class="hero-value-rotator-star" aria-hidden="true">✦</span>
+        <div class="hero-value-rotator-viewport" id="hero-value-rotator-viewport">
+          <div class="hero-value-rotator-track" id="hero-value-rotator-track"></div>
+        </div>
+      </div>
       <h1 class="hero-title fade-in delay-1">
         Build your own Discord server.<br />
-        <span class="text-accent">You design it. We build it.</span>
+        <span class="text-accent">Design it. Click. Done.</span>
       </h1>
       <p class="hero-lead fade-in delay-2">
         You create the server in your account; we deliver the full layout—channels, roles, flows, and tier-based monetization notes—not a blank doc. Live server fixes aren’t bookable yet; hands-on help is optional.
       </p>
-      <ul class="hero-value-list fade-in delay-2" aria-label="What you get">
-        <li><strong>Monetize:</strong> paid-access ready channels and roles.</li>
-        <li><strong>Growth:</strong> scalable structure without chaos.</li>
-        <li><strong>Affordable:</strong> pricing starts at $10.</li>
-        <li><strong>Optimal:</strong> layouts tuned for engagement.</li>
-        <li><strong>Easy:</strong> quick wizard with live demo.</li>
-      </ul>
       <div class="hero-cta fade-in delay-3">
         <button type="button" class="btn btn-primary btn-lg" data-wizard-next>Start Here</button>
       </div>
@@ -183,31 +181,36 @@
         <button type="button" class="style-card card-hover pattern-card pattern-select" data-pattern="sparkle-dot" data-pattern-label="Sparkle dot" aria-pressed="false">
           <h3 class="style-label">Sparkle dot</h3>
           <div class="sidebar-mock sidebar-mock-pattern"></div>
-          </button>
-        </div>
-      </div>
-    </div>
+        </button>
+              </div>
+            </div>
+          </div>
 
     <div class="wizard-page" data-step="4" id="step-packages" aria-label="Choose package">
-      <div class="wizard-inner wizard-inner-wide packages-step">
+      <div class="wizard-inner wizard-inner-wide packages-step packages-step-pricing">
         <header class="packages-step-header">
           <p class="wizard-step-hint">Step 2 of 7</p>
-          <h2 class="wizard-question packages-step-title wizard-question-tight">Pick your outcome</h2>
+          <h2 class="wizard-question packages-step-title wizard-question-tight">Pricing</h2>
         </header>
 
-        <div class="pricing-grid wizard-pricing tier-cards-grid">
+        <div class="pricing-grid wizard-pricing tier-cards-grid tier-cards-grid--pricing">
         <article class="price-card tier-card tier-card--simple card-hover">
+          <div class="tier-card-icon" aria-hidden="true">
+            <svg class="tier-card-icon-svg" viewBox="0 0 64 64" width="44" height="44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10" y="8" width="44" height="48" rx="5" stroke="currentColor" stroke-width="1.35"/><path d="M18 22h28M18 31h22M18 40h26" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg>
+          </div>
           <div class="tier-card-head">
             <h3 class="price-name">Basic</h3>
             <p class="price-tag">Clear plan, fast</p>
             <div class="tier-price-block" aria-label="Package price">
-              <span class="tier-price-label">From</span>
-              <span class="tier-price-nums">$10</span>
+              <p class="tier-price-line">
+                <span class="tier-price-currency">$</span><span class="tier-price-nums">10</span><span class="tier-price-period">one-time</span>
+              </p>
             </div>
-            <div class="tier-meta-row">
-              <span class="tier-pill">⚡ Instant delivery</span>
-            </div>
+            <p class="tier-price-secondary">Instant delivery</p>
           </div>
+          <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-outline" data-package-tier="simple" aria-label="Get Basic, from $10 one-time">
+            Get Basic
+          </button>
           <p class="tier-includes-kicker">What you get</p>
           <ul class="price-features tier-feature-list tier-feature-list--rich">
             <li>Full functional Discord layout</li>
@@ -215,28 +218,28 @@
             <li>Basic roles</li>
             <li>Basic text &amp; voice setup</li>
           </ul>
-          <button type="button" class="btn btn-outline btn-block btn-tier-pick" data-package-tier="simple">
-            <span class="btn-tier-main">Choose Basic</span>
-            <span class="btn-tier-sub">$10</span>
-          </button>
         </article>
 
         <article class="price-card price-card-featured tier-card tier-card--featured card-hover">
-          <div class="ribbon">Popular</div>
+          <div class="tier-card-icon" aria-hidden="true">
+            <svg class="tier-card-icon-svg" viewBox="0 0 64 64" width="44" height="44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10" y="8" width="44" height="48" rx="5" stroke="currentColor" stroke-width="1.35"/><path d="M18 22h28M18 31h16" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/><path d="M22 42l7 7 16-20" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
           <div class="tier-card-head">
             <h3 class="price-name">Advanced</h3>
+            <p class="tier-popular-label">Popular</p>
             <p class="price-tag">Creator polish &amp; flow</p>
             <div class="tier-price-block tier-price-block--accent" aria-label="Package price">
-              <span class="tier-price-label">From</span>
-              <span class="tier-price-nums">$20</span>
+              <p class="tier-price-line">
+                <span class="tier-price-currency">$</span><span class="tier-price-nums">20</span><span class="tier-price-period">one-time</span>
+              </p>
             </div>
-            <div class="tier-meta-row">
-              <span class="tier-pill">⚡ Instant delivery</span>
-            </div>
+            <p class="tier-price-secondary">Instant delivery</p>
           </div>
-          <p class="tier-includes-kicker">What you get</p>
+          <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-solid" data-package-tier="advanced" aria-label="Get Advanced, from $20 one-time">
+            Get Advanced
+          </button>
+          <p class="tier-includes-kicker">Everything in Basic, plus:</p>
           <ul class="price-features tier-feature-list tier-feature-list--rich">
-            <li>Everything in Basic</li>
             <li>50+ channels</li>
             <li>Custom channel names</li>
             <li>Growth-focused channel architecture</li>
@@ -247,42 +250,37 @@
             <li>Monetization-ready server flow ideas</li>
             <li>Priority polish and delivery</li>
           </ul>
-          <button type="button" class="btn btn-primary btn-block btn-tier-pick" data-package-tier="advanced">
-            <span class="btn-tier-main">Choose Advanced</span>
-            <span class="btn-tier-sub">$20</span>
-          </button>
         </article>
 
         <article class="price-card tier-card tier-card--pro tier-card--soon" aria-disabled="true">
-          <div class="ribbon ribbon--soon">Coming soon</div>
+          <div class="tier-card-icon" aria-hidden="true">
+            <svg class="tier-card-icon-svg" viewBox="0 0 64 64" width="44" height="44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 44h32v8H16z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/><path d="M20 34h24v8H20z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/><path d="M24 24h16v8H24z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/><circle cx="32" cy="14" r="5" stroke="currentColor" stroke-width="1.35"/></svg>
+          </div>
           <div class="tier-card-head">
             <h3 class="price-name">Professional</h3>
-            <p class="price-tag">Subscription bots, moderation &amp; 1:1 care</p>
+            <p class="tier-soon-label">Coming soon</p>
+            <p class="price-tag">Moderation &amp; 1:1 care</p>
             <div class="tier-price-block" aria-label="Package price">
-              <span class="tier-price-label">From</span>
-              <span class="tier-price-nums">$50</span>
+              <p class="tier-price-line">
+                <span class="tier-price-currency">$</span><span class="tier-price-nums">50</span><span class="tier-price-period">TBD</span>
+              </p>
             </div>
-            <div class="tier-meta-row">
-              <span class="tier-pill">⏱ TBD</span>
-            </div>
+            <p class="tier-price-secondary">Not bookable yet</p>
           </div>
-          <p class="tier-includes-kicker">Planned scope (not bookable yet)</p>
+          <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-muted" disabled aria-disabled="true">
+            Coming soon
+          </button>
+          <p class="tier-includes-kicker">Everything in Advanced, plus:</p>
           <ul class="price-features tier-feature-list tier-feature-list--rich">
-            <li>Everything in Advanced</li>
-            <li>Subscription-based Discord bot setups</li>
             <li>24/7 Discord moderation</li>
             <li>1:1 helper / mentor</li>
             <li>High-quality, white-glove service</li>
             <li>Priority support &amp; iteration</li>
           </ul>
-          <button type="button" class="btn btn-outline btn-block btn-tier-pick" disabled aria-disabled="true">
-            <span class="btn-tier-main">Coming soon</span>
-            <span class="btn-tier-sub">—</span>
-          </button>
         </article>
       </div>
 
-        <p class="packages-footnote">Most people start with <strong>Basic</strong> or <strong>Advanced</strong>. <strong>Professional</strong> is coming soon for subscription bot setups, 24/7 moderation, and 1:1 mentorship.</p>
+        <p class="packages-footnote">Most people start with <strong>Basic</strong> or <strong>Advanced</strong>. <strong>Professional</strong> is coming soon for 24/7 moderation and 1:1 mentorship.</p>
       </div>
     </div>
 
@@ -346,7 +344,7 @@
       </div>
     </div>
 
-    <div class="wizard-page" data-step="6" id="step-checkout" aria-label="Checkout">
+    <div class="wizard-page" data-step="7" id="step-checkout" aria-label="Checkout">
       <div class="wizard-inner wizard-inner-wide">
         <div class="finish-step-head">
           <p class="wizard-step-hint">Step 7 of 7</p>
@@ -381,7 +379,7 @@
   </main>
 
   <footer class="site-footer">
-    <p><strong>Serverly</strong> — Build your Discord server yourself with our layouts &amp; templates (channels, roles &amp; flows you apply). Not affiliated with Discord Inc.</p>
+    <p>Not affiliated with Discord Inc.</p>
   </footer>
 
   <script>
