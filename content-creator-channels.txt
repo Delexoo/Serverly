@@ -1,0 +1,158 @@
+Serverly - Content creator layout channel list
+Source: CHANNEL_TREE in script.js (used for wizard demo + summary; 58 channels total)
+
+────────────────────────────────────────
+Category: New !
+────────────────────────────────────────
+Welcome
+Rule
+Roles
+
+────────────────────────────────────────
+Category: Information
+────────────────────────────────────────
+Announcements
+Giveaway
+Pick-Your-Role
+Polls
+Links
+New-Posts
+Partnerships
+
+────────────────────────────────────────
+Category: General
+────────────────────────────────────────
+General
+Off-Topic
+Game-Chat
+Clips
+Tech
+Art
+Questions
+Feedback
+
+────────────────────────────────────────
+Category: BOT
+────────────────────────────────────────
+Bots
+CMD
+
+────────────────────────────────────────
+Category: Voice Chat (voice channels)
+────────────────────────────────────────
+Lounge
+Duo #1
+Duo #2
+Squad #1
+Squad #2
+Crew Lounge
+Music
+Stream
+AFK
+
+────────────────────────────────────────
+Category: Advisory (locked)
+────────────────────────────────────────
+Restricted-Users
+Muted-Users
+Jugement VC (voice)
+
+────────────────────────────────────────
+Category: Staff (locked)
+────────────────────────────────────────
+Admin
+Server-Ideas
+Staff-Information
+Test-Bot
+Bye-Bye
+Staff VC (voice)
+Recording (voice)
+Streaming (voice)
+Friends (voice)
+
+────────────────────────────────────────
+Category: Extra Channels (locked)
+────────────────────────────────────────
+Self-Promote
+Content-Ideas
+Brand-Deals
+Tools-and-Apps
+Creator-Events
+Monthly-Highlights
+Thumbnail-Contests
+Editing-Room
+Live-Feedback
+Hire-Me
+Team-Up
+Appeals
+Coffee-Chat
+Watch-Party
+Support-VC
+Creator Lounge (voice)
+Production Room (voice)
+
+────────────────────────────────────────
+Flat list: text channels only (names only)
+────────────────────────────────────────
+Welcome
+Rule
+Roles
+Announcements
+Giveaway
+Pick-Your-Role
+Polls
+Links
+New-Posts
+Partnerships
+General
+Off-Topic
+Game-Chat
+Clips
+Tech
+Art
+Questions
+Feedback
+Bots
+CMD
+Restricted-Users
+Muted-Users
+Admin
+Server-Ideas
+Staff-Information
+Test-Bot
+Bye-Bye
+Self-Promote
+Content-Ideas
+Brand-Deals
+Tools-and-Apps
+Creator-Events
+Monthly-Highlights
+Thumbnail-Contests
+Editing-Room
+Live-Feedback
+Hire-Me
+Team-Up
+Appeals
+Coffee-Chat
+Watch-Party
+Support-VC
+
+────────────────────────────────────────
+Flat list: voice channels only (names only)
+────────────────────────────────────────
+Lounge
+Duo #1
+Duo #2
+Squad #1
+Squad #2
+Crew Lounge
+Music
+Stream
+AFK
+Jugement VC
+Staff VC
+Recording
+Streaming
+Friends
+Creator Lounge
+Production Room

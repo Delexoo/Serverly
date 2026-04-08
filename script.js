@@ -21,11 +21,14 @@
     channelPattern: null,
     channelPatternLabel: null,
     checkoutReady: false,
+    /** Lane index (string) → edited label text for Custom pattern demo sidebar */
+    channelCustomByLane: {},
   };
 
   var patternPickLabelEl = document.getElementById("pattern-pick-label");
   var styleTierNoteEl = document.getElementById("style-tier-note");
   var patternSelectButtons = document.querySelectorAll(".pattern-select[data-pattern]");
+  var patternCustomCard = document.getElementById("pattern-custom-card");
   var checkoutPanel = document.getElementById("checkout-panel");
   var checkoutFlash = document.getElementById("checkout-flash");
   var checkoutTierLabel = document.getElementById("checkout-tier-label");
@@ -37,7 +40,7 @@
   var flashCheckoutTimer = null;
 
   var SERVER_MODE_LABELS = {
-    update: "Update current server (in progress—not available)",
+    update: "Update current server (in progress, not available)",
     fresh: "New server template (new or reset server)",
   };
 
@@ -68,9 +71,9 @@
   };
 
   var TIER_TITLES = {
-    simple: "Basic — gets the job done",
-    advanced: "Advanced — Basic + presets & polish",
-    professional: "Professional — hands-on care (coming soon)",
+    simple: "Basic: gets the job done",
+    advanced: "Advanced: Basic + presets & polish",
+    professional: "Professional: hands-on care (coming soon)",
   };
 
   /** Naming styles for Advanced summary demo (matches wizard style step). */
@@ -84,6 +87,7 @@
     { id: "dot-separator", label: "Dot separator" },
     { id: "em-dash", label: "Em dash" },
     { id: "sparkle-dot", label: "Sparkle dot" },
+    { id: "custom", label: "Custom" },
   ];
 
   function serverModeNote(mode) {
@@ -95,7 +99,7 @@
 
   function tierLeadNote(tier) {
     if (tier === "advanced")
-      return "Advanced adds presets, patterns, VIP roles, and announce/ticket lanes.";
+      return "Advanced adds presets, patterns, and deeper layout polish.";
     return "";
   }
 
@@ -103,21 +107,20 @@
     var base = {
       simple: [
         "Full functional Discord layout",
+        "41+ channels",
         "Regular channel names",
         "Basic roles",
         "Basic text & voice setup",
       ],
       advanced: [
         "Everything in Basic",
-        "50+ channels",
+        "55+ channels",
         "Custom channel names",
         "Growth-focused channel architecture",
         "Advanced role hierarchy and permissions map",
-        "Announcement, ticket, and conversion lanes",
-        "VIP/private room strategy",
         "Layout fit for your niche",
         "Monetization-ready server flow ideas",
-        "Priority polish and delivery",
+        "Extra channels",
       ],
       professional: [
         "Everything in Advanced",
@@ -187,19 +190,22 @@
       progressFill.style.width = ((flowPos + 1) / totalSteps) * 100 + "%";
     }
     if (document.body.classList.contains("wizard-app")) {
-      var ap = pages[n];
-      if (ap) ap.scrollTop = 0;
+      window.scrollTo(0, 0);
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
     if (n === 5) renderSummary();
-    if (n === 3) syncPatternSelectionUI();
-    if (n === 3) syncPatternTierGate();
+    if (n === 3) {
+      renderPatternStylePreviews();
+      syncPatternSelectionUI();
+      syncPatternTierGate();
+    }
     if (n === 4) syncPackagePickUI();
     if (n === 5) {
       syncPackagePickUI();
       syncPatternSelectionUI();
       syncPatternTierGate();
+      updateFinishStepLead();
     }
     if (n === 6) {
       state.checkoutReady = true;
@@ -254,30 +260,17 @@
       track.className = "hero-value-rotator-track";
       track.style.transform = "";
       viewport.style.height = "";
-      root.classList.remove("hero-value-rotator--ready");
-      return;
-    }
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      clearHeroRotator();
-      track.className = "hero-value-rotator-track hero-value-rotator-track--static";
-      track.innerHTML = HERO_VALUE_ROTATOR_LINES.map(function (row) {
-        return (
-          "<span class=\"hero-value-rotator-static-row\"><strong>" +
-          escapeHtml(row.k) +
-          ":</strong> " +
-          escapeHtml(row.v) +
-          "</span>"
-        );
-      }).join("");
-      track.style.transform = "";
-      viewport.style.height = "";
-      root.classList.add("hero-value-rotator--ready");
+      root.classList.remove("hero-value-rotator--ready", "hero-value-rotator--reduced-motion");
       return;
     }
 
     clearHeroRotator();
     root.classList.remove("hero-value-rotator--ready");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      root.classList.add("hero-value-rotator--reduced-motion");
+    } else {
+      root.classList.remove("hero-value-rotator--reduced-motion");
+    }
     track.className = "hero-value-rotator-track";
     track.innerHTML = "";
     track.style.transform = "";
@@ -345,6 +338,9 @@
       btn.classList.toggle("is-selected", !!on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    if (patternCustomCard) {
+      patternCustomCard.classList.toggle("is-selected", state.channelPattern === "custom");
+    }
     if (patternPickLabelEl) {
       patternPickLabelEl.textContent = state.channelPatternLabel || "none selected (optional)";
     }
@@ -371,7 +367,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  /** Full server layout: categories and channels (single source for summary list + Discord demo). Total: 58 channels — order matches product spec. */
+  /** Full server layout: categories and channels (single source for summary list + Discord demo). Total: 58 channels; order matches product spec. */
   var CHANNEL_TREE = [
     {
       title: "New !",
@@ -481,10 +477,19 @@
     },
   ];
 
+  function totalDemoChannelCount() {
+    var n = 0;
+    var i;
+    for (i = 0; i < CHANNEL_TREE.length; i++) {
+      n += CHANNEL_TREE[i].channels.length;
+    }
+    return n;
+  }
+
   function demoEmojiForName(name) {
     var m = {
-      Welcome: "😄",
-      Rule: "📜",
+      Welcome: "👋",
+      Rule: "📋",
       Roles: "🎭",
       Announcements: "📢",
       Giveaway: "🎉",
@@ -556,6 +561,38 @@
     });
   }
 
+  /** Mathematical Sans-Serif Bold Italic (e.g. ✦𝖜𝖊𝖑𝖈𝖔𝖒𝖊✦) for Flourish wrap */
+  function toMathSansSerifBoldItalic(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z0-9]/g, function (ch) {
+      var code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1d56c + (code - 65));
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1d586 + (code - 97));
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0x1d7ec + (code - 48));
+      return ch;
+    });
+  }
+
+  function flourishWrapLabel(inner) {
+    return "✦" + toMathSansSerifBoldItalic(inner) + "✦";
+  }
+
+  /** Mathematical Monospace (e.g. 👋┊𝚆𝚎𝚕𝚌𝚘𝚖𝚎) for Bar divider */
+  function toMathMonospace(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z0-9]/g, function (ch) {
+      var code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1d670 + (code - 65));
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1d68a + (code - 97));
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0x1d7f6 + (code - 48));
+      return ch;
+    });
+  }
+
+  function barDividerLabel(rawName) {
+    return demoEmojiForName(rawName) + "┊" + toMathMonospace(rawName);
+  }
+
   function formatChannelDemoLabel(patternId, rawName, isVoice, laneIndex) {
     var n = rawName;
     var e = demoEmojiForName(n);
@@ -569,9 +606,9 @@
           .toLowerCase()
           .replace(/\s+/g, "-");
       case "bar-divider":
-        return toMathBoldText(e + " ┊ " + n);
+        return barDividerLabel(n);
       case "flourish":
-        return toMathBoldText("✦" + n + "✦");
+        return flourishWrapLabel(n);
       case "bold-column":
         return e + " ┃ " + n;
       case "corner-brackets":
@@ -581,9 +618,13 @@
       case "dot-separator":
         return toMathBoldText(e + "·" + lower.replace(/\s+/g, ""));
       case "em-dash":
-        return toMathBoldText(e + " — " + lower);
+        return toMathBoldText(e + " - " + lower);
       case "sparkle-dot":
         return toMathBoldText("✧・" + lower.replace(/\s+/g, ""));
+      case "custom":
+        return String(n)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
       default:
         return toMathBoldText(isVoice ? n : e + " | " + n);
     }
@@ -608,91 +649,180 @@
     return CHANNEL_TREE[0] && CHANNEL_TREE[0].channels[0] ? CHANNEL_TREE[0].channels[0] : { name: "general", voice: false, locked: false };
   }
 
-  /** Each style: Information + General (text) + Voice Chat (voice), 3 channels each. */
+  /** Labels for style-step mini previews: New !, Information, General, Voice Chat (matches CHANNEL_TREE). */
+  function makePatternPreviewBlock(patternId) {
+    function lab(name, voice) {
+      return formatChannelDemoLabel(patternId, name, voice, 0);
+    }
+    return {
+      newSection: [lab("Welcome", false), lab("Rule", false), lab("Roles", false)],
+      information: [lab("Announcements", false), lab("Giveaway", false), lab("Pick-Your-Role", false)],
+      generalText: [lab("General", false), lab("Off-Topic", false), lab("Game-Chat", false)],
+      voice: [lab("Lounge", true), lab("Music", true), lab("AFK", true)],
+    };
+  }
+
   var PATTERN_PREVIEW_DATA = {
-    "regular-text": {
-      info: ["announcements", "giveaway", "pick-your-role"],
-      general: ["the-yard", "off-topic", "game-chat"],
-      voice: ["lounge", "music", "afk"],
-    },
-    "bar-divider": {
-      info: ["📢 ┊ Announcements", "📋 ┊ Rule", "🔗 ┊ Links"],
-      general: ["💬 ┊ General", "🎬 ┊ Clips", "🎨 ┊ Art"],
-      voice: ["🎮 ┊ Lounge", "🎵 ┊ Music", "🛋 ┊ AFK"],
-    },
-    flourish: {
-      info: ["✦𝐈𝐧𝐟𝐨✦", "✦𝐑𝐮𝐥𝐞✦", "✦𝐋𝐢𝐧𝐤𝐬✦"],
-      general: ["✦𝐆𝐞𝐧𝐞𝐫𝐚𝐥✦", "✦𝐂𝐥𝐢𝐩𝐬✦", "✦𝐀𝐫𝐭✦"],
-      voice: ["✦𝐋𝐨𝐛𝐛𝐲✦", "✦𝐌𝐮𝐬𝐢𝐜✦", "✦𝐀𝐅𝐊✦"],
-    },
-    "bold-column": {
-      info: ["📢 ┃ News", "📋 ┃ Rule", "🔗 ┃ Links"],
-      general: ["💬 ┃ General", "🎬 ┃ Clips", "🎨 ┃ Art"],
-      voice: ["🎮 ┃ Lounge", "🎵 ┃ Music", "🛋 ┃ AFK"],
-    },
-    "corner-brackets": {
-      info: ["【📢】announcements", "【📋】rule", "【🔗】links"],
-      general: ["【💬】general", "【🎬】clips", "【🎨】art"],
-      voice: ["【🎮】lounge", "【🎵】music", "【🛋】afk"],
-    },
-    chevrons: {
-      info: ["《📢》announcements", "《📋》rule", "《🔗》links"],
-      general: ["《💬》general", "《🎬》clips", "《🎨》art"],
-      voice: ["《🎮》lounge", "《🎵》music", "《🛋》afk"],
-    },
-    "dot-separator": {
-      info: ["📢·announcements", "📋·rule", "🔗·links"],
-      general: ["💬·general", "🎬·clips", "🎨·art"],
-      voice: ["🎮·lounge", "🎵·music", "🛋·afk"],
-    },
-    "em-dash": {
-      info: ["📢 — alerts", "📋 — rule", "🔗 — links"],
-      general: ["💬 — chat", "🎬 — clips", "🎨 — art"],
-      voice: ["🎮 — lounge", "🎵 — music", "🛋 — afk"],
-    },
-    "sparkle-dot": {
-      info: ["✧・announcements", "✧・rule", "✧・links"],
-      general: ["✧・general", "✧・lounge", "✧・gaming"],
-      voice: ["✧・lobby", "✧・music", "✧・afk"],
-    },
+    "regular-text": makePatternPreviewBlock("regular-text"),
+    "bar-divider": makePatternPreviewBlock("bar-divider"),
+    flourish: makePatternPreviewBlock("flourish"),
+    "bold-column": makePatternPreviewBlock("bold-column"),
+    "corner-brackets": makePatternPreviewBlock("corner-brackets"),
+    chevrons: makePatternPreviewBlock("chevrons"),
+    "dot-separator": makePatternPreviewBlock("dot-separator"),
+    "em-dash": makePatternPreviewBlock("em-dash"),
+    "sparkle-dot": makePatternPreviewBlock("sparkle-dot"),
+    custom: makePatternPreviewBlock("custom"),
   };
 
+  /** Global lane index (same order as summary Discord demo) for a channel by category title + name. */
+  function globalLaneIndexForChannel(categoryTitle, channelName, expectVoice) {
+    var lane = 0;
+    var ci, cj, cat, ch;
+    for (ci = 0; ci < CHANNEL_TREE.length; ci++) {
+      cat = CHANNEL_TREE[ci];
+      if (cat.title !== categoryTitle) {
+        lane += cat.channels.length;
+        continue;
+      }
+      for (cj = 0; cj < cat.channels.length; cj++) {
+        ch = cat.channels[cj];
+        if (ch.name === channelName && !!ch.voice === !!expectVoice) return lane;
+        lane += 1;
+      }
+    }
+    return null;
+  }
+
+  /** Custom card mini-preview: categories + channels (Discord-like), inputs keyed by demo lane. */
+  function buildCustomPatternSidebarEditableHtml() {
+    var d = PATTERN_PREVIEW_DATA.custom;
+    var groups = [
+      {
+        title: "New !",
+        voice: false,
+        items: [
+          { name: "Welcome", def: d.newSection[0] },
+          { name: "Rule", def: d.newSection[1] },
+          { name: "Roles", def: d.newSection[2] },
+        ],
+      },
+      {
+        title: "Information",
+        voice: false,
+        items: [
+          { name: "Announcements", def: d.information[0] },
+          { name: "Giveaway", def: d.information[1] },
+          { name: "Pick-Your-Role", def: d.information[2] },
+        ],
+      },
+      {
+        title: "General",
+        voice: false,
+        items: [
+          { name: "General", def: d.generalText[0] },
+          { name: "Off-Topic", def: d.generalText[1] },
+          { name: "Game-Chat", def: d.generalText[2] },
+        ],
+      },
+      {
+        title: "Voice Chat",
+        voice: true,
+        items: [
+          { name: "Lounge", def: d.voice[0] },
+          { name: "Music", def: d.voice[1] },
+          { name: "AFK", def: d.voice[2] },
+        ],
+      },
+    ];
+    var gi, gr, ii, it, rows;
+    rows =
+      '<div class="disc-channel-list disc-channel-list--discord-regular pattern-mock-channel-list pattern-mock-channel-list--rows" dir="ltr">';
+    for (gi = 0; gi < groups.length; gi++) {
+      gr = groups[gi];
+      rows += '<div class="disc-category">';
+      rows +=
+        '<div class="disc-category-head pattern-mock-category-head" role="presentation">' +
+        '<span class="disc-chevron" aria-hidden="true">▼</span>' +
+        '<span class="disc-category-title">' +
+        escapeHtml(gr.title) +
+        "</span>" +
+        '<span class="disc-category-add" aria-hidden="true">+</span>' +
+        "</div>";
+      rows += '<div class="disc-channel-list">';
+      for (ii = 0; ii < gr.items.length; ii++) {
+        it = gr.items[ii];
+        rows += gr.voice
+          ? '<div class="disc-ch-row disc-ch-row-voice pattern-mock-pill"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
+            escapeHtml(it.def) +
+            "</span></div>"
+          : '<div class="disc-ch-row pattern-mock-pill"><span class="disc-hash">#</span><span class="disc-ch-text">' +
+            escapeHtml(it.def) +
+            "</span></div>";
+      }
+      rows += "</div></div>";
+    }
+    rows += "</div>";
+    return rows;
+  }
+
+  /** Style-step sidebar mock: Discord-like categories (New !, Information, General, Voice Chat). */
   function buildPatternSidebarHtml(patternId) {
     var data = PATTERN_PREVIEW_DATA[patternId];
     if (!data) return "";
-    var regularTextMode = patternId === "regular-text";
-    function categoryBlock(title, labels, voice) {
-      var rows = "";
-      for (var i = 0; i < labels.length; i++) {
-        var t = labels[i];
-        if (voice) {
-          rows +=
-            '<div class="disc-ch-row disc-ch-row-voice"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
+    var regularTextMode = patternId === "regular-text" || patternId === "custom";
+    var listCls =
+      "disc-channel-list pattern-mock-channel-list pattern-mock-channel-list--rows" +
+      (regularTextMode
+        ? " disc-channel-list--discord-regular"
+        : patternId === "flourish"
+          ? " pattern-mock-channel-list--flourish"
+          : patternId === "bar-divider"
+            ? " pattern-mock-channel-list--bar-divider"
+            : " mono");
+    function channelRows(items, isVoice) {
+      var h = '<div class="disc-channel-list">';
+      var i, t;
+      for (i = 0; i < items.length; i++) {
+        t = items[i];
+        if (isVoice) {
+          h +=
+            '<div class="disc-ch-row disc-ch-row-voice pattern-mock-pill"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
             escapeHtml(t) +
             "</span></div>";
         } else {
-          rows +=
-            '<div class="disc-ch-row"><span class="disc-hash">#</span><span class="disc-ch-text">' +
+          h +=
+            '<div class="disc-ch-row pattern-mock-pill"><span class="disc-hash">#</span><span class="disc-ch-text">' +
             escapeHtml(t) +
             "</span></div>";
         }
       }
+      h += "</div>";
+      return h;
+    }
+    function categoryBlock(title, items, isVoice) {
       return (
         '<div class="disc-category">' +
-        '<div class="disc-category-head"><span class="disc-chevron" aria-hidden="true">▼</span><span class="disc-category-title">' +
+        '<div class="disc-category-head pattern-mock-category-head" role="presentation">' +
+        '<span class="disc-chevron" aria-hidden="true">▼</span>' +
+        '<span class="disc-category-title">' +
         escapeHtml(title) +
-        "</span></div>" +
-        '<div class="disc-channel-list' +
-        (regularTextMode ? " disc-channel-list--discord-regular" : " mono") +
-        '" dir="ltr">' +
-        rows +
-        "</div></div>"
+        "</span>" +
+        '<span class="disc-category-add" aria-hidden="true">+</span>' +
+        "</div>" +
+        channelRows(items, isVoice) +
+        "</div>"
       );
     }
     return (
-      categoryBlock("Information", data.info, false) +
-      categoryBlock("General", data.general, false) +
-      categoryBlock("Voice Chat", data.voice, true)
+      '<div class="' +
+      listCls +
+      '" dir="ltr">' +
+      categoryBlock("New !", data.newSection, false) +
+      categoryBlock("Information", data.information, false) +
+      categoryBlock("General", data.generalText, false) +
+      categoryBlock("Voice Chat", data.voice, true) +
+      "</div>"
     );
   }
 
@@ -703,6 +833,8 @@
       if (!id || !mock) return;
       mock.innerHTML = buildPatternSidebarHtml(id);
     });
+    var customMock = document.querySelector("#pattern-custom-card .pattern-custom-soon-mock");
+    if (customMock) customMock.innerHTML = buildCustomPatternSidebarEditableHtml();
   }
 
   function slugToLabel(slug) {
@@ -730,6 +862,108 @@
       return String(state.channelPatternLabel).trim();
     if (state.channelPattern) return slugToLabel(state.channelPattern);
     return "";
+  }
+
+  function patternBaseLabelFromId(id) {
+    var i, o;
+    for (i = 0; i < DEMO_PATTERN_OPTIONS.length; i++) {
+      o = DEMO_PATTERN_OPTIONS[i];
+      if (o.id === id) return o.label;
+    }
+    return id ? slugToLabel(id) : "Regular text";
+  }
+
+  function defaultLaneDisplay(patternId, channelName, isVoice, lane) {
+    return formatChannelDemoLabel(patternId, channelName, isVoice, lane);
+  }
+
+  function summaryChannelTreeForTier(packageTier) {
+    if (packageTier === "simple") {
+      return CHANNEL_TREE.filter(function (cat) {
+        return cat.title !== "Extra Channels";
+      });
+    }
+    return CHANNEL_TREE;
+  }
+
+  function previewHasDeviations(patternId) {
+    if (!patternId) return false;
+    var lane = 0;
+    var ci, cj, cat, ch, def, stored, st;
+    for (ci = 0; ci < CHANNEL_TREE.length; ci++) {
+      cat = CHANNEL_TREE[ci];
+      for (cj = 0; cj < cat.channels.length; cj++) {
+        ch = cat.channels[cj];
+        def = defaultLaneDisplay(patternId, ch.name, ch.voice, lane);
+        stored = state.channelCustomByLane[String(lane)];
+        st = stored != null ? String(stored).trim() : "";
+        if (st !== "" && st !== def) return true;
+        lane += 1;
+      }
+    }
+    return false;
+  }
+
+  function syncNamingLabelFromPreview() {
+    var id = state.channelPattern || "regular-text";
+    var prev = String(state.channelPatternLabel || "");
+    if (id === "custom" && /^Custom (?:\u2014|-) /.test(prev)) {
+      if (!previewHasDeviations(id)) return;
+      state.channelPatternLabel = prev + " · preview customized";
+      return;
+    }
+    var base = patternBaseLabelFromId(id);
+    state.channelPatternLabel = previewHasDeviations(id) ? base + " · preview customized" : base;
+  }
+
+  function buildChannelPreviewBlob(patternId, packageTier) {
+    var pid = patternId || "regular-text";
+    var tree = summaryChannelTreeForTier(packageTier || state.packageTier);
+    var lane = 0;
+    var lines = [];
+    var ci, cj, cat, ch, def, stored, shown;
+    for (ci = 0; ci < tree.length; ci++) {
+      cat = tree[ci];
+      for (cj = 0; cj < cat.channels.length; cj++) {
+        ch = cat.channels[cj];
+        def = defaultLaneDisplay(pid, ch.name, ch.voice, lane);
+        stored = state.channelCustomByLane[String(lane)];
+        shown = stored != null && String(stored).trim() !== "" ? String(stored).trim() : def;
+        lines.push(ch.name + "\t" + shown);
+        lane += 1;
+      }
+    }
+    return lines.join("\n");
+  }
+
+  function chunkPreviewForMetadata(blob, maxChunk) {
+    maxChunk = maxChunk || 480;
+    if (!blob) return [];
+    var out = [];
+    var i = 0;
+    while (i < blob.length) {
+      var end = Math.min(i + maxChunk, blob.length);
+      if (end < blob.length) {
+        var nl = blob.lastIndexOf("\n", end - 1);
+        if (nl >= i + Math.floor(maxChunk * 0.5)) end = nl + 1;
+      }
+      out.push(blob.slice(i, end));
+      i = end;
+    }
+    return out.slice(0, 12);
+  }
+
+  function updateSummaryDemoNamingUi(container) {
+    if (!container) return;
+    syncNamingLabelFromPreview();
+    var strong = container.querySelector("[data-summary-selected-style]");
+    if (strong) strong.textContent = summaryPatternDisplay();
+    container.querySelectorAll("[data-demo-pattern-btn]").forEach(function (chip) {
+      var cid = chip.getAttribute("data-demo-pattern-btn");
+      var on = cid === (state.channelPattern || "regular-text");
+      chip.classList.toggle("demo-pattern-chip--active", on);
+      chip.setAttribute("aria-pressed", on ? "true" : "false");
+    });
   }
 
   var DEMO_PROFILES = [
@@ -810,7 +1044,7 @@
     return a;
   }
 
-  /** Discord client default avatars (colored circles + logo) — index 0..5 from CDN. */
+  /** Discord client default avatars (colored circles + logo); index 0..5 from CDN. */
   function demoDiscordDefaultAvatarIndex(seed) {
     var s = String(seed || "0");
     var h = 0;
@@ -987,7 +1221,7 @@
         '<div class="discord-demo-members-section">' +
         '<div class="discord-demo-members-head">' +
         escapeHtml(labels[key]) +
-        " — " +
+        ", " +
         users.length +
         "</div>";
       for (ui = 0; ui < users.length; ui++) {
@@ -1019,7 +1253,7 @@
     var active = basicTierLocked ? "regular-text" : activePatternId || "regular-text";
     var i;
     var groupLabel = basicTierLocked
-      ? "Preview channel naming style (Basic includes Regular text only; other styles unlock with Advanced)"
+      ? "Preview channel naming style (Basic includes Regular text only; other presets unlock with Advanced)"
       : "Preview channel naming style";
     var out =
       '<div class="demo-pattern-switcher' +
@@ -1054,13 +1288,14 @@
     out += "</div>";
     if (basicTierLocked) {
       out +=
-        '<p class="demo-pattern-switcher-upsell">Try other naming styles with <strong>Advanced</strong> ($20).</p>';
+        '<p class="demo-pattern-switcher-upsell">Try other preset naming styles with <strong>Advanced</strong> ($20).</p>';
     }
     out += "</div>";
     return out;
   }
 
   function buildDiscordDemoHtml(patternId, displayLabel, packageTier) {
+    var tree = summaryChannelTreeForTier(packageTier);
     var lab =
       displayLabel && String(displayLabel).trim()
         ? displayLabel.trim()
@@ -1069,23 +1304,30 @@
           : "";
     var hasPattern = !!patternId;
     var lead = hasPattern
-      ? '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing. Style selected: <strong>' +
+      ? '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing. Naming style: <strong data-summary-selected-style>' +
         escapeHtml(lab) +
         "</strong>.</p>"
       : '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing.</p>';
+    if (hasPattern) {
+      lead +=
+        '<p class="summary-custom-demo-hint summary-demo-edit-hint">Channel names are shown as part of your selected style preview.</p>';
+      if (packageTier === "simple") {
+        lead +=
+          '<p class="summary-custom-demo-hint">Basic preview includes core channels only (41+). The Extra Channels category is Advanced.</p>';
+      }
+    }
     var patternBar = "";
     if (packageTier === "advanced" || packageTier === "simple") {
       patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text", packageTier === "simple");
     }
 
     var defCh = findDefaultDemoChannel();
-    var regularTextMode = patternId === "regular-text";
     var laneCounter = 0;
     var defLaneIndex = 0;
     var catHtml = "";
     var ci;
-    for (ci = 0; ci < CHANNEL_TREE.length; ci++) {
-      var cat = CHANNEL_TREE[ci];
+    for (ci = 0; ci < tree.length; ci++) {
+      var cat = tree[ci];
       var rowsHtml = "";
       var j;
       for (j = 0; j < cat.channels.length; j++) {
@@ -1097,7 +1339,8 @@
           ch.locked === defCh.locked;
         if (isDef) defLaneIndex = laneCounter;
         var defCls = isDef ? " discord-demo-ch--default is-active" : "";
-        var label = formatChannelDemoLabel(patternId, ch.name, ch.voice, laneCounter);
+        var label = defaultLaneDisplay(patternId, ch.name, ch.voice, laneCounter);
+        var labelInner = escapeHtml(label);
         laneCounter += 1;
         var vCls = ch.voice ? " discord-demo-ch--voice" : "";
         var lk = ch.locked ? "true" : "false";
@@ -1116,7 +1359,7 @@
             ? '<span class="discord-demo-ch-icon" aria-hidden="true">🔊</span>'
             : '<span class="discord-demo-ch-hash">#</span>') +
           '<span class="discord-demo-ch-label">' +
-          escapeHtml(label) +
+          labelInner +
           "</span></div>";
       }
       catHtml +=
@@ -1133,7 +1376,7 @@
         "</div></div>";
     }
 
-    var defLabel = formatChannelDemoLabel(patternId, defCh.name, defCh.voice, defLaneIndex);
+    var defLabel = defaultLaneDisplay(patternId, defCh.name, defCh.voice, defLaneIndex);
     var defText = defCh.voice ? defLabel : "# " + defLabel;
     var defHeader = defText;
     var defWelcome = "Welcome to " + defText + "!";
@@ -1223,7 +1466,8 @@
       var voice = row.getAttribute("data-voice") === "true";
       var li = laneMap[name];
       if (typeof li !== "number") li = 0;
-      var label = formatChannelDemoLabel(patternId, name, voice, li);
+      var rawLabel = row.querySelector(".discord-demo-ch-label");
+      var label = rawLabel ? rawLabel.textContent || "" : formatChannelDemoLabel(patternId, name, voice, li);
       var shownLabel = voice ? label : "# " + label;
       var headerText = shownLabel;
       var welcome = "Welcome to " + shownLabel + "!";
@@ -1346,6 +1590,30 @@
     );
   }
 
+  function updateFinishStepLead() {
+    var el = document.getElementById("finish-step-lead");
+    if (!el) return;
+    if (!hasSummaryContent()) {
+      el.textContent =
+        "Finish the steps above to see your channel count, layout, and a Discord-style preview.";
+      return;
+    }
+    var nCh = totalDemoChannelCount();
+    var layoutName =
+      state.layoutType && LAYOUT_TYPE_LABELS[state.layoutType]
+        ? LAYOUT_TYPE_LABELS[state.layoutType]
+        : null;
+    var layoutPhrase = layoutName
+      ? "the <strong>" + escapeHtml(layoutName) + "</strong> layout"
+      : "the <strong>layout you chose</strong> in this wizard";
+    el.innerHTML =
+      "You’re getting <strong>" +
+      nCh +
+      " channels</strong> with " +
+      layoutPhrase +
+      ". <strong>View the demo below</strong> to see what you’re getting. It’s a preview, not your live server. Use <strong>Edit</strong> on any step to change something, then <strong>Continue to checkout</strong>.";
+  }
+
   function syncCheckoutPanel() {
     if (!checkoutPanel) return;
     var hasAny = hasSummaryContent();
@@ -1367,7 +1635,7 @@
     }
     if (checkoutAmount) {
       checkoutAmount.textContent =
-        tier && PACKAGE_PRICE_HINTS[tier] ? PACKAGE_PRICE_HINTS[tier] + " USD" : "—";
+        tier && PACKAGE_PRICE_HINTS[tier] ? PACKAGE_PRICE_HINTS[tier] + " USD" : "-";
     }
     if (checkoutSubmit) {
       checkoutSubmit.disabled = !tier || !api;
@@ -1394,11 +1662,16 @@
       state.channelPattern = "regular-text";
       state.channelPatternLabel = "Regular text";
     }
+    if (state.packageTier === "simple" && state.channelPattern !== "regular-text") {
+      state.channelPattern = "regular-text";
+      state.channelPatternLabel = "Regular text";
+    }
 
+    syncNamingLabelFromPreview();
     var styleLabel = summaryPatternDisplay();
 
     var incomplete = !state.packageTier
-      ? '<p class="summary-disclaimer">You haven’t chosen a package tier yet—go back to step 2 to pick <strong>Basic</strong> or <strong>Advanced</strong>.</p>'
+      ? '<p class="summary-disclaimer">You haven’t chosen a package tier yet. Go back to step 2 to pick <strong>Basic</strong> or <strong>Advanced</strong>.</p>'
       : "";
 
     var html =
@@ -1420,6 +1693,7 @@
     state.channelPattern = null;
     state.channelPatternLabel = null;
     state.checkoutReady = false;
+    state.channelCustomByLane = {};
     document.querySelectorAll(".price-card.is-picked").forEach(function (card) {
       card.classList.remove("is-picked");
     });
@@ -1443,6 +1717,12 @@
 
   document.querySelectorAll("[data-choice-key]").forEach(function (btn) {
     btn.addEventListener("click", function () {
+      if (
+        btn.disabled ||
+        btn.classList.contains("choice-card--disabled") ||
+        btn.getAttribute("aria-disabled") === "true"
+      )
+        return;
       var key = btn.getAttribute("data-choice-key");
       var val = btn.getAttribute("data-choice-value");
       if (key === "serverMode") {
@@ -1471,8 +1751,10 @@
       if (state.channelPattern === id) {
         state.channelPattern = null;
         state.channelPatternLabel = null;
+        state.channelCustomByLane = {};
         syncPatternSelectionUI();
       } else {
+        if (state.channelPattern !== id) state.channelCustomByLane = {};
         state.channelPattern = id;
         state.channelPatternLabel = lab;
         syncPatternSelectionUI();
@@ -1480,6 +1762,16 @@
       }
     });
   });
+
+  if (patternCustomCard) {
+    patternCustomCard.addEventListener("click", function (e) {
+      state.channelPattern = "custom";
+      if (!/^Custom (?:\u2014|-) /.test(String(state.channelPatternLabel || ""))) {
+        state.channelPatternLabel = "Custom";
+      }
+      syncPatternSelectionUI();
+    });
+  }
 
   document.querySelectorAll("[data-package-tier]").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -1490,6 +1782,7 @@
       if (t === "simple") {
         state.channelPattern = "regular-text";
         state.channelPatternLabel = "Regular text";
+        state.channelCustomByLane = {};
       }
       document.querySelectorAll("[data-package-tier]").forEach(function (b) {
         var card = b.closest(".price-card");
@@ -1520,6 +1813,8 @@
       }
       checkoutSubmit.disabled = true;
       flashCheckout("Redirecting to secure Stripe Checkout…", "info");
+      syncNamingLabelFromPreview();
+      var previewChunks = chunkPreviewForMetadata(buildChannelPreviewBlob(state.channelPattern, state.packageTier));
       fetch(api + "/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1530,6 +1825,7 @@
           layoutType: state.layoutType,
           channelPattern: state.channelPattern,
           channelPatternLabel: state.channelPatternLabel,
+          channelPreviewChunks: previewChunks,
         }),
       })
         .then(function (r) {
@@ -1550,6 +1846,7 @@
                   packageTier: state.packageTier,
                   channelPattern: state.channelPattern,
                   channelPatternLabel: state.channelPatternLabel,
+                  channelPreviewChunks: previewChunks,
                 })
               );
             } catch (e) {}
@@ -1626,11 +1923,12 @@
       var btn = e.target.closest("[data-demo-pattern-btn]");
       if (!btn || !summaryEl.contains(btn)) return;
       var id = btn.getAttribute("data-demo-pattern-btn");
+      var labAttr = btn.getAttribute("data-demo-pattern-label");
       if (state.packageTier === "simple") {
         e.preventDefault();
         if (!id || id === "regular-text") return;
         flashCheckout(
-          "Other channel naming styles are included in Advanced ($20). Pick Advanced in step 2 to unlock them.",
+          "Only Regular text is included in Basic. Pick Advanced in step 2 to unlock other naming styles.",
           "info"
         );
         return;
@@ -1638,10 +1936,18 @@
       if (state.packageTier !== "advanced") return;
       e.preventDefault();
       if (!id) return;
-      var labAttr = btn.getAttribute("data-demo-pattern-label");
-      state.channelPattern = id;
-      state.channelPatternLabel =
-        labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
+      if (state.channelPattern !== id) state.channelCustomByLane = {};
+      if (id === "custom") {
+        var prevAdv = String(state.channelPatternLabel || "");
+        var chipAdv =
+          labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
+        state.channelPattern = "custom";
+        state.channelPatternLabel = /^Custom (?:\u2014|-) /.test(prevAdv) ? prevAdv : chipAdv;
+      } else {
+        state.channelPattern = id;
+        state.channelPatternLabel =
+          labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
+      }
       syncPatternSelectionUI();
       renderSummary();
     });

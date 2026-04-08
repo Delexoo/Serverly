@@ -3,34 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Serverly — build your own Discord server with guided layouts: channels, roles, flows, and tier-based monetization from $10. You create the server; we supply the design. Live server fixes coming soon." />
-  <meta name="theme-color" content="#2563eb" />
-  <title>Serverly — Build your Discord server</title>
+  <meta name="description" content="Serverly: build your own Discord server with guided layouts: channels, roles, flows, and tier-based monetization from $10. You create the server; we supply the design. Live server fixes coming soon." />
+  <meta name="theme-color" content="#5865F2" />
+  <title>Serverly: Build your Discord server</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="wizard-app">
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <header class="site-header">
-    <button type="button" class="logo logo-btn" id="wizard-home" aria-label="Restart from beginning">
-      <span class="logo-mark">◆</span>
-      Serverly
-    </button>
-    <div class="wizard-progress" id="wizard-progress" role="status" aria-live="polite">
-      <span class="progress-label" id="progress-label">Step 1 of 7</span>
-      <div class="progress-track" aria-hidden="true">
-        <div class="progress-fill" id="progress-fill"></div>
+  <header class="site-header site-header--wizard">
+    <div class="site-header-shell">
+      <div class="site-header-inner">
+        <div class="site-header-top">
+          <button type="button" class="logo logo-btn" id="wizard-home" aria-label="Restart from beginning">
+            <span class="logo-mark" aria-hidden="true">◆</span>
+            <span class="logo-wordmark">Serverly</span>
+          </button>
+          <div class="site-header-progress-inline">
+            <div class="wizard-progress" id="wizard-progress" role="status" aria-live="polite">
+              <span class="progress-label" id="progress-label">Step 1 of 7</span>
+              <div class="progress-track" aria-hidden="true">
+                <div class="progress-fill" id="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+          <div class="site-header-tools">
+            <button type="button" class="btn btn-back-wizard" id="wizard-back" hidden>
+              <span class="btn-back-wizard-icon" aria-hidden="true">←</span>
+              Back
+            </button>
+            <button type="button" class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+              <span></span><span></span><span></span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="header-actions">
-      <button type="button" class="btn btn-ghost btn-sm" id="wizard-back" hidden>← Back</button>
-    </div>
-    <button type="button" class="nav-toggle" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
   </header>
 
   <div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
@@ -52,7 +63,7 @@
     <div class="wizard-page is-active" data-step="0" id="step-welcome" aria-label="Welcome">
     <section class="hero hero-wizard hero-welcome-centered">
       <p class="visually-hidden" id="hero-value-sr-summary">
-        Highlights: Monetize — paid-access ready channels and roles. Growth — scalable structure without chaos. Affordable — pricing starts at $10. Optimal — layouts tuned for engagement. Easy — quick wizard with live demo.
+        Highlights: Monetize, paid-access ready channels and roles. Growth, scalable structure without chaos. Affordable, pricing starts at $10. Optimal, layouts tuned for engagement. Easy, quick wizard with live demo.
       </p>
       <div class="hero-value-rotator" id="hero-value-rotator" aria-hidden="true">
         <span class="hero-value-rotator-star" aria-hidden="true">✦</span>
@@ -61,11 +72,11 @@
         </div>
       </div>
       <h1 class="hero-title fade-in delay-1">
-        Build your own Discord server.<br />
-        <span class="text-accent">Design it. Click. Done.</span>
+        <strong>Build your own Discord server.</strong><br />
+        <span class="text-accent"><strong>Design it. Click. Done.</strong></span>
       </h1>
       <p class="hero-lead fade-in delay-2">
-        You create the server in your account; we deliver the full layout—channels, roles, flows, and tier-based monetization notes—not a blank doc. Live server fixes aren’t bookable yet; hands-on help is optional.
+        You create the server in your account; we deliver the full layout (channels, roles, flows, and tier-based monetization notes), not a blank doc. Live server fixes aren’t bookable yet; hands-on help is optional.
       </p>
       <div class="hero-cta fade-in delay-3">
         <button type="button" class="btn btn-primary btn-lg" data-wizard-next>Start Here</button>
@@ -81,17 +92,17 @@
           <div
             class="choice-card choice-card--goal choice-card--disabled"
             role="group"
-            aria-label="Update current server. In progress—not available yet."
+            aria-label="Update current server. In progress, not available yet."
           >
             <span class="choice-soon-badge">In progress</span>
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🔧</span></span>
             <span class="choice-title">Fix or update my current server</span>
-            <span class="choice-tagline">We’re building this service—it’s not available to book yet.</span>
+            <span class="choice-tagline">We’re building this service. It’s not available to book yet.</span>
           </div>
           <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="serverMode" data-choice-value="fresh">
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">📋</span></span>
             <span class="choice-title">New server template</span>
-            <span class="choice-tagline">Pre-built structure: channels, roles &amp; flows—apply on a fresh or reset server</span>
+            <span class="choice-tagline">Pre-built structure: channels, roles &amp; flows. Apply on a fresh or reset server.</span>
           </button>
         </div>
       </div>
@@ -107,31 +118,56 @@
             <span class="choice-title">Content creator</span>
             <span class="choice-tagline">Built for content loops, clips, and announcements</span>
           </button>
-          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="business">
+          <div
+            class="choice-card choice-card--goal choice-card--disabled"
+            role="group"
+            aria-label="Businesses layout. Coming soon."
+          >
+            <span class="choice-soon-badge">Coming soon</span>
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">💼</span></span>
             <span class="choice-title">Businesses</span>
             <span class="choice-tagline">Client-ready structure with clean support lanes</span>
-          </button>
-          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="education">
+          </div>
+          <div
+            class="choice-card choice-card--goal choice-card--disabled"
+            role="group"
+            aria-label="Education layout. Coming soon."
+          >
+            <span class="choice-soon-badge">Coming soon</span>
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🎓</span></span>
             <span class="choice-title">Education</span>
             <span class="choice-tagline">Class channels, resources, and discussion flow</span>
-          </button>
-          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="startup">
+          </div>
+          <div
+            class="choice-card choice-card--goal choice-card--disabled"
+            role="group"
+            aria-label="Startup workspace layout. Coming soon."
+          >
+            <span class="choice-soon-badge">Coming soon</span>
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🚀</span></span>
             <span class="choice-title">Startup workspace</span>
             <span class="choice-tagline">Ops-friendly team channels for fast execution</span>
-          </button>
-          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="coaching">
+          </div>
+          <div
+            class="choice-card choice-card--goal choice-card--disabled"
+            role="group"
+            aria-label="Coaching layout. Coming soon."
+          >
+            <span class="choice-soon-badge">Coming soon</span>
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🧠</span></span>
             <span class="choice-title">Coaching</span>
             <span class="choice-tagline">Member journey, check-ins, and accountability rooms</span>
-          </button>
-          <button type="button" class="choice-card choice-card--goal card-hover" data-choice-key="layoutType" data-choice-value="private">
+          </div>
+          <div
+            class="choice-card choice-card--goal choice-card--disabled"
+            role="group"
+            aria-label="Private servers layout. Coming soon."
+          >
+            <span class="choice-soon-badge">Coming soon</span>
             <span class="choice-icon-wrap" aria-hidden="true"><span class="choice-icon-emoji">🏡</span></span>
             <span class="choice-title">Private servers</span>
             <span class="choice-tagline">Tighter access and private community flow</span>
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -142,7 +178,7 @@
         <p class="wizard-micro-hint" id="style-tier-note">Advanced unlocks all channel naming styles.</p>
         <h2 class="section-title section-title-wizard">Choose a design for your channel names.</h2>
         <p class="section-lead section-lead-wizard section-lead-short">
-          Pick a channel-name design style. Each card previews Information, General, and Voice Chat. Tap one to save it to your summary. Advanced lets you mix styles across categories.
+          Pick a channel-name design style. Each card shows a compact Discord-style sidebar with categories (New !, Information, General, Voice Chat). Tap one to save it to your summary. Advanced unlocks every naming preset.
         </p>
 
       <div class="style-grid">
@@ -182,9 +218,19 @@
           <h3 class="style-label">Sparkle dot</h3>
           <div class="sidebar-mock sidebar-mock-pattern"></div>
         </button>
-              </div>
-            </div>
-          </div>
+        <div
+          class="style-card pattern-card pattern-card--custom-soon"
+          id="pattern-custom-card"
+          role="group"
+          aria-label="Custom naming style"
+        >
+          <span class="pattern-soon-badge">Coming soon</span>
+          <h3 class="style-label style-label--custom-soon">Custom</h3>
+          <div class="sidebar-mock sidebar-mock-pattern pattern-custom-soon-mock" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
     <div class="wizard-page" data-step="4" id="step-packages" aria-label="Choose package">
       <div class="wizard-inner wizard-inner-wide packages-step packages-step-pricing">
@@ -203,21 +249,26 @@
             <p class="price-tag">Clear plan, fast</p>
             <div class="tier-price-block" aria-label="Package price">
               <p class="tier-price-line">
-                <span class="tier-price-currency">$</span><span class="tier-price-nums">10</span><span class="tier-price-period">one-time</span>
+                <span class="tier-price-currency">$</span><span class="tier-price-nums">10</span>
               </p>
             </div>
-            <p class="tier-price-secondary">Instant delivery</p>
           </div>
-          <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-outline" data-package-tier="simple" aria-label="Get Basic, from $10 one-time">
-            Get Basic
-          </button>
-          <p class="tier-includes-kicker">What you get</p>
-          <ul class="price-features tier-feature-list tier-feature-list--rich">
-            <li>Full functional Discord layout</li>
-            <li>Regular channel names</li>
-            <li>Basic roles</li>
-            <li>Basic text &amp; voice setup</li>
-          </ul>
+          <div class="tier-card-cta">
+            <p class="tier-price-secondary">Instant delivery</p>
+            <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-outline" data-package-tier="simple" aria-label="Get Basic, from $10">
+              Get Basic
+            </button>
+          </div>
+          <div class="tier-card-features">
+            <p class="tier-includes-kicker">What you get</p>
+            <ul class="price-features tier-feature-list tier-feature-list--rich">
+              <li>Full functional Discord layout</li>
+              <li>41+ channels</li>
+              <li>Regular channel names</li>
+              <li>Basic roles</li>
+              <li>Basic text &amp; voice setup</li>
+            </ul>
+          </div>
         </article>
 
         <article class="price-card price-card-featured tier-card tier-card--featured card-hover">
@@ -225,31 +276,35 @@
             <svg class="tier-card-icon-svg" viewBox="0 0 64 64" width="44" height="44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10" y="8" width="44" height="48" rx="5" stroke="currentColor" stroke-width="1.35"/><path d="M18 22h28M18 31h16" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/><path d="M22 42l7 7 16-20" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <div class="tier-card-head">
-            <h3 class="price-name">Advanced</h3>
-            <p class="tier-popular-label">Popular</p>
+            <div class="tier-card-title-row">
+              <h3 class="price-name">Advanced</h3>
+              <span class="tier-popular-tag">Popular</span>
+            </div>
             <p class="price-tag">Creator polish &amp; flow</p>
             <div class="tier-price-block tier-price-block--accent" aria-label="Package price">
               <p class="tier-price-line">
-                <span class="tier-price-currency">$</span><span class="tier-price-nums">20</span><span class="tier-price-period">one-time</span>
+                <span class="tier-price-currency">$</span><span class="tier-price-nums">20</span>
               </p>
             </div>
-            <p class="tier-price-secondary">Instant delivery</p>
           </div>
-          <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-solid" data-package-tier="advanced" aria-label="Get Advanced, from $20 one-time">
-            Get Advanced
-          </button>
-          <p class="tier-includes-kicker">Everything in Basic, plus:</p>
-          <ul class="price-features tier-feature-list tier-feature-list--rich">
-            <li>50+ channels</li>
-            <li>Custom channel names</li>
-            <li>Growth-focused channel architecture</li>
-            <li>Advanced role hierarchy and permissions map</li>
-            <li>Announcement, ticket, and conversion lanes</li>
-            <li>VIP/private room strategy</li>
-            <li>Layout fit for your niche</li>
-            <li>Monetization-ready server flow ideas</li>
-            <li>Priority polish and delivery</li>
-          </ul>
+          <div class="tier-card-cta">
+            <p class="tier-price-secondary">Instant delivery</p>
+            <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-solid" data-package-tier="advanced" aria-label="Get Advanced, from $20">
+              Get Advanced
+            </button>
+          </div>
+          <div class="tier-card-features">
+            <p class="tier-includes-kicker">Everything in Basic, plus:</p>
+            <ul class="price-features tier-feature-list tier-feature-list--rich">
+              <li>55+ channels</li>
+              <li>Custom channel names</li>
+              <li>Growth-focused channel architecture</li>
+              <li>Advanced role hierarchy and permissions map</li>
+              <li>Layout fit for your niche</li>
+              <li>Monetization-ready server flow ideas</li>
+              <li>Extra channels</li>
+            </ul>
+          </div>
         </article>
 
         <article class="price-card tier-card tier-card--pro tier-card--soon" aria-disabled="true">
@@ -265,22 +320,24 @@
                 <span class="tier-price-currency">$</span><span class="tier-price-nums">50</span><span class="tier-price-period">TBD</span>
               </p>
             </div>
-            <p class="tier-price-secondary">Not bookable yet</p>
           </div>
-          <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-muted" disabled aria-disabled="true">
-            Coming soon
-          </button>
-          <p class="tier-includes-kicker">Everything in Advanced, plus:</p>
-          <ul class="price-features tier-feature-list tier-feature-list--rich">
-            <li>24/7 Discord moderation</li>
-            <li>1:1 helper / mentor</li>
-            <li>High-quality, white-glove service</li>
-            <li>Priority support &amp; iteration</li>
-          </ul>
+          <div class="tier-card-cta">
+            <p class="tier-price-secondary">Not bookable yet</p>
+            <button type="button" class="btn btn-block btn-tier-pick btn-tier-pick--pricing-muted" disabled aria-disabled="true">
+              Coming soon
+            </button>
+          </div>
+          <div class="tier-card-features">
+            <p class="tier-includes-kicker">Everything in Advanced, plus:</p>
+            <ul class="price-features tier-feature-list tier-feature-list--rich">
+              <li>24/7 Discord moderation</li>
+              <li>1:1 helper / mentor</li>
+              <li>High-quality, white-glove service</li>
+              <li>Priority support &amp; iteration</li>
+            </ul>
+          </div>
         </article>
       </div>
-
-        <p class="packages-footnote">Most people start with <strong>Basic</strong> or <strong>Advanced</strong>. <strong>Professional</strong> is coming soon for 24/7 moderation and 1:1 mentorship.</p>
       </div>
     </div>
 
@@ -289,7 +346,7 @@
         <div class="finish-step-head">
         <p class="wizard-step-hint">Step 6 of 7</p>
         <h2 class="wizard-question wizard-question-tight">Your summary</h2>
-        <p class="wizard-sub wizard-sub-tight">Review everything below. The <strong>Discord-style preview</strong> scrolls, updates when you <strong>hover channels</strong>, and you can type in the message box—<strong>Enter</strong> shows a short note pointing you to checkout. It’s still a demo, not a live server. Use <strong>Edit</strong> to fix a step; when you’re ready, continue to checkout.</p>
+        <p class="wizard-sub wizard-sub-tight" id="finish-step-lead" aria-live="polite"></p>
         </div>
         <div class="summary-card summary-card-rich" id="wizard-summary" aria-live="polite">
           <p class="summary-placeholder">Go through the steps above to generate your recap and preview.</p>
@@ -308,17 +365,17 @@
         <details class="faq-item card-hover">
           <summary>Does this work for my existing server?</summary>
           <p>
-            Layouts are designed for a <strong>new server</strong> or a <strong>full reset</strong> so structure stays clean—same idea as a Discord template import, but with our channel list and notes.
+            Layouts are designed for a <strong>new server</strong> or a <strong>full reset</strong> so structure stays clean. Same idea as a Discord template import, but with our channel list and notes.
             <strong>Fixing a live server in place</strong> is <strong>in progress</strong> and <strong>not bookable yet</strong>.
           </p>
         </details>
         <details class="faq-item card-hover">
           <summary>Why pay vs free templates?</summary>
-          <p>Free lists rarely tie <strong>structure → engagement → monetization</strong> together. Our tiers bundle naming, roles, flows, and tier-specific patterns (VIP lanes, funnels, staff ops) with a clear deliverable and timeline—so you buy an <strong>outcome</strong>, not a bare channel list.</p>
+          <p>Free lists rarely tie <strong>structure → engagement → monetization</strong> together. Our tiers bundle naming, roles, flows, and tier-specific patterns (VIP lanes, funnels, staff ops) with a clear deliverable and timeline, so you buy an <strong>outcome</strong>, not a bare channel list.</p>
         </details>
         <details class="faq-item card-hover">
           <summary>Can I mix channel styles?</summary>
-          <p>Yes—especially on Advanced. (Professional will add hands-on setup and subscription-style support when it launches.)</p>
+          <p>Yes, especially on Advanced. (Professional will add hands-on setup and subscription-style support when it launches.)</p>
         </details>
         <details class="faq-item card-hover">
           <summary>What about bots?</summary>
@@ -330,15 +387,15 @@
         </details>
         <details class="faq-item card-hover">
           <summary>How does checkout work?</summary>
-          <p>You pay through Stripe on their secure page. Our payment server emails an order summary matching your questionnaire—<strong>instant confirmation</strong>. Your full layout ships on your tier’s timeline after any quick detail check.</p>
+          <p>You pay through Stripe on their secure page. Our payment server emails an order summary matching your questionnaire (<strong>instant confirmation</strong>). Your full layout ships on your tier’s timeline after any quick detail check.</p>
         </details>
       </div>
     </section>
 
     <section id="contact" class="section cta-block section-in-finish">
       <h2 class="section-title">Questions first?</h2>
-      <p class="section-lead">Prefer to talk before paying? Email us with your wizard summary—or pay above and we’ll follow up with your layout on the tier timeline.</p>
-      <a href="mailto:hello@example.com" class="btn btn-outline btn-lg">Email us</a>
+      <p class="section-lead">Prefer to talk before paying? Email us with your wizard summary, or pay above and we’ll follow up with your layout on the tier timeline.</p>
+      <a href="mailto:teambrilliantt@hotmail.com" class="btn btn-outline btn-lg">Email us</a>
       <p class="cta-fine-print">If you already paid via Stripe, you’ll get an order email automatically; no need to duplicate here.</p>
     </section>
       </div>
@@ -357,14 +414,14 @@
             Checkout is securely processed by Stripe. After payment, we email your order confirmation with your selected tier details. Your Discord server layout is delivered based on your package scope for a <strong>new or reset</strong> server. For stronger growth and monetization structure, most clients choose <strong>Advanced ($20)</strong>. Live server fix services are not currently bookable.
           </p>
           <div class="checkout-line" id="checkout-line">
-            <span class="checkout-tier" id="checkout-tier-label">—</span>
-            <span class="checkout-amount" id="checkout-amount">—</span>
+            <span class="checkout-tier" id="checkout-tier-label">-</span>
+            <span class="checkout-amount" id="checkout-amount">-</span>
           </div>
           <p class="checkout-note" id="checkout-api-note" hidden>
             Checkout API is not configured. Set <code>window.STRIPE_CHECKOUT_API</code> on this page (see <code>stripe-server/README.md</code>) and host the checkout API service.
           </p>
           <p class="checkout-note" id="checkout-tier-warning" hidden>
-            Choose <strong>Basic</strong> or <strong>Advanced</strong> in step 2 before paying—that locks in price and scope.
+            Choose <strong>Basic</strong> or <strong>Advanced</strong> in step 2 before paying. That locks in price and scope.
           </p>
           <label class="checkout-label" for="checkout-email">Business email for receipt and order details</label>
           <input type="email" class="checkout-input" id="checkout-email" name="checkout-email" autocomplete="email" placeholder="you@example.com" required />

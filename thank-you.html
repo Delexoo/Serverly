@@ -3,29 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Thank you for your Serverly order — receipt and next steps." />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="Thank you for your Serverly order: receipt and next steps." />
+  <meta name="theme-color" content="#5865F2" />
   <meta name="robots" content="noindex" />
-  <!-- Optional: same URL as DIGITAL_DELIVERY_URL on your Render server — shows “Instant access” on this page -->
+  <!-- Optional: same URL as DIGITAL_DELIVERY_URL on your Render server; shows “Instant access” on this page -->
   <meta name="serverly-digital-delivery-url" content="" />
   <!-- Optional override for checkout API base; defaults to the script below if empty. -->
   <meta name="serverly-checkout-api" content="" />
-  <title>Thank you — Serverly</title>
+  <title>Thank you - Serverly</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="thank-you-body">
   <a class="skip-link" href="#thank-you-main">Skip to main content</a>
 
-  <header class="site-header thank-you-header">
-    <a class="logo logo-link" href="index.html">
-      <span class="logo-mark">◆</span>
-      Serverly
-    </a>
-    <div class="header-actions">
-      <a class="btn btn-ghost btn-sm" href="index.html">Wizard home</a>
+  <header class="site-header site-header--thank-you thank-you-header">
+    <div class="site-header-shell">
+      <div class="site-header-inner">
+        <div class="site-header-top">
+          <a class="logo logo-link" href="index.html">
+            <span class="logo-mark" aria-hidden="true">◆</span>
+            <span class="logo-wordmark">Serverly</span>
+          </a>
+          <div class="site-header-tools">
+            <a class="btn btn-back-wizard btn-back-wizard--link" href="index.html">Wizard home</a>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -53,49 +59,8 @@
         <div class="thank-you-receipt-includes" id="thank-you-receipt-includes"></div>
       </section>
 
-      <p class="thank-you-receipt-fallback summary-card" id="thank-you-receipt-fallback" hidden>
-        We couldn’t load your choices from this browser (new device, private window, or storage cleared). Your <strong>paid package</strong> is still valid — use the checkout reference below and the email you used at Stripe for support.
-      </p>
-
-      <div class="thank-you-ref summary-card" id="thank-you-ref" hidden>
-        <p class="thank-you-ref-label">Checkout reference (for support)</p>
-        <p class="thank-you-ref-id mono" id="thank-you-session-id"></p>
-      </div>
-
-      <section class="summary-card thank-you-email-help" id="thank-you-email-help" aria-labelledby="email-help-heading">
-        <h2 class="section-title section-title-tight" id="email-help-heading">Didn’t get an email?</h2>
-        <ul class="thank-you-email-help-list">
-          <li><strong>Stripe receipt / invoice</strong> — In <a href="https://dashboard.stripe.com/settings/emails" rel="noopener noreferrer">Stripe Dashboard → Settings → Customer emails</a>, make sure receipts (and invoices, if you use them) are enabled. Check spam for the address you typed at checkout.</li>
-          <li><strong>Serverly order summary</strong> — That message is sent by your <strong>Render</strong> app after Stripe fires the webhook. You need: <code>STRIPE_WEBHOOK_SECRET</code> matching your live webhook, endpoint <code>https://YOUR-API.onrender.com/webhook</code>, event <code>checkout.session.completed</code>, plus <code>SMTP_HOST</code>, <code>EMAIL_FROM</code>, and mail credentials in Render. If any of those are missing, only Stripe’s mail will arrive.</li>
-        </ul>
-      </section>
-
-      <section class="summary-card thank-you-card" aria-labelledby="claim-heading">
-        <h2 class="section-title section-title-tight" id="claim-heading">How to claim your Discord server layout</h2>
-        <p class="thank-you-card-lead">
-          Serverly delivers a <strong>blueprint</strong> (channels, categories, roles, and setup notes) — not a Discord account and not automatic bot installs. You create or reset the server in Discord, then apply the layout we send.
-        </p>
-        <ol class="thank-you-steps">
-          <li>
-            <strong>Watch your email</strong> for Stripe’s receipt and invoice link, plus our order summary with your wizard choices (when SMTP + webhook are set up).
-          </li>
-          <li>
-            <strong>In the Discord app</strong>, create a <strong>new server</strong> or use an empty / reset server you’re ready to structure. You stay the owner — we never need your password.
-          </li>
-          <li>
-            <strong>Wait for delivery</strong> on your package timeline. We’ll send the full layout document (or agreed format) to the same email you paid with, unless we contact you for a different address.
-          </li>
-          <li>
-            <strong>Implement the blueprint</strong>: add categories, channels, and roles to match the guide. Treat it like a detailed template — copy names and structure, then tweak for your community.
-          </li>
-          <li>
-            <strong>Optional:</strong> pin rules, welcome copy, and bot invites using the notes we include. Live hands-on fixes aren’t part of this package unless offered separately.
-          </li>
-        </ol>
-      </section>
-
       <p class="thank-you-footnote">
-        Questions? Reply to your order email or start again from the <a href="index.html">wizard</a>.
+        Questions? Reply to your order email, write <a href="mailto:teambrilliantt@hotmail.com">teambrilliantt@hotmail.com</a>, or start again from the <a href="index.html">wizard</a>.
       </p>
     </div>
   </main>
@@ -134,21 +99,20 @@
         var base = {
           simple: [
             "Full functional Discord layout",
+            "41+ channels",
             "Regular channel names",
             "Basic roles",
             "Basic text & voice setup",
           ],
           advanced: [
             "Everything in Basic",
-            "50+ channels",
+            "55+ channels",
             "Custom channel names",
             "Growth-focused channel architecture",
             "Advanced role hierarchy and permissions map",
-            "Announcement, ticket, and conversion lanes",
-            "VIP/private room strategy",
             "Layout fit for your niche",
             "Monetization-ready server flow ideas",
-            "Priority polish and delivery",
+            "Extra channels",
           ],
           professional: [
             "Everything in Advanced",
@@ -189,12 +153,6 @@
       }
 
       var id = new URLSearchParams(window.location.search).get("session_id");
-      var box = document.getElementById("thank-you-ref");
-      var el = document.getElementById("thank-you-session-id");
-      if (id && box && el) {
-        el.textContent = id;
-        box.hidden = false;
-      }
 
       var metaInstant = document.querySelector('meta[name="serverly-digital-delivery-url"]');
       var instantUrlMeta =
@@ -215,16 +173,26 @@
         }
       }
 
-      function appendSecondaryTroubleshooting() {
+      var SUPPORT_MAILTO =
+        "mailto:teambrilliantt@hotmail.com?subject=" +
+        encodeURIComponent("Serverly order - didn't receive delivery") +
+        "&body=" +
+        encodeURIComponent(
+          "Hi, I completed a Serverly checkout and haven’t received my order or template link.\n\n" +
+            (id ? "Stripe session id: " + id + "\n\n" : "") +
+            "Thanks!"
+        );
+
+      function appendEmailSupportLink() {
         if (!claimActions) return;
         var sub = document.createElement("p");
         sub.className = "thank-you-claim-secondary-wrap";
-        var helpA = document.createElement("a");
-        helpA.className = "btn btn-outline btn-block";
-        helpA.href = "#thank-you-email-help";
-        helpA.textContent = "Didn’t get the email? Troubleshooting";
-        sub.appendChild(helpA);
+        var mailA = document.createElement("a");
+        mailA.className = "btn btn-outline btn-block";
+        mailA.href = SUPPORT_MAILTO;
+        mailA.textContent = "Didn’t receive anything?";
         claimActions.appendChild(sub);
+        sub.appendChild(mailA);
       }
 
       function appendClaimChrome(primaryHref, primaryLabel, leadText) {
@@ -236,7 +204,7 @@
         openBtn.rel = "noopener noreferrer";
         openBtn.textContent = primaryLabel;
         claimActions.appendChild(openBtn);
-        appendSecondaryTroubleshooting();
+        appendEmailSupportLink();
         if (claimHint) claimHint.textContent = "";
       }
 
@@ -245,13 +213,13 @@
         if (claimLead) {
           if (hasSessionId && hadApiBase) {
             claimLead.textContent =
-              "We couldn’t load your template on the first try. Tap the button to fetch it from your payment session, or check your order email for the same link.";
+              "Use the button to open your template, or find the link in your order email.";
           } else if (hasSessionId && !hadApiBase) {
             claimLead.textContent =
-              "Add your checkout API URL (meta serverly-checkout-api or window.STRIPE_CHECKOUT_API) so we can load your template. Until then, review what you purchased below and use the link in your order email.";
+              "Use the link in your order email to open your template. You can also add a checkout API URL on this page to load it automatically next time.";
           } else {
             claimLead.textContent =
-              "Open your template from the order email sent to the address you used at checkout. Below you can review what you purchased.";
+              "Use the link in the email sent to the address you used at checkout.";
           }
         }
 
@@ -285,8 +253,7 @@
                   claimBtn.disabled = false;
                   claimBtn.textContent = "Claim your Discord template";
                   if (claimHint) {
-                    claimHint.textContent =
-                      "We still couldn’t load your template. Confirm the matching env on Render (see template-registry.js — e.g. CONTENT_CREATOR_COLUMN or CONTENT_CREATOR_REGULAR_TEXT for Content creator + Regular text on Basic or Advanced), or use the link in your order email.";
+                    claimHint.textContent = "Check your order email for the template link.";
                   }
                 }
               })
@@ -305,25 +272,20 @@
           if (receiptEl && !receiptEl.hidden) {
             receiptEl.scrollIntoView({ behavior: "smooth", block: "start" });
             if (claimHint) {
-              claimHint.textContent =
-                "Your package and channel style are summarized above. Your Discord template link is in your Serverly order email.";
+              claimHint.textContent = "Your order summary is above. Use your order email for the template link.";
             }
           } else {
-            var helpEl = document.getElementById("thank-you-email-help");
-            if (helpEl) helpEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            var footEl = document.getElementById("thank-you-footnote");
+            if (footEl) footEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
             if (claimHint) {
-              claimHint.textContent =
-                "Find your template link in the email from Serverly (when SMTP is configured) or Stripe’s receipt.";
+              claimHint.textContent = "Check your order email for the template link.";
             }
           }
         });
 
         claimActions.appendChild(claimBtn);
-        appendSecondaryTroubleshooting();
-        if (claimHint && !claimHint.textContent) {
-          claimHint.innerHTML =
-            "Template links are loaded from your payment session (server) or your order email — not embedded in this page.";
-        }
+        appendEmailSupportLink();
+        if (claimHint && !claimHint.textContent) claimHint.textContent = "";
       }
 
       var metaApi = document.querySelector('meta[name="serverly-checkout-api"]');
@@ -359,7 +321,7 @@
           appendClaimChrome(
             discordUrl,
             "Claim Discord template",
-            "Your paid Discord server template is ready. Open it while signed into Discord — the same link is in your order email."
+            "Your paid Discord server template is ready. Open it while signed into Discord; the same link is in your order email."
           );
           return;
         }
@@ -375,7 +337,6 @@
       });
 
       var receipt = document.getElementById("thank-you-receipt");
-      var fallback = document.getElementById("thank-you-receipt-fallback");
       var emailLine = document.getElementById("thank-you-receipt-email-line");
       var dl = document.getElementById("thank-you-receipt-dl");
       var includesEl = document.getElementById("thank-you-receipt-includes");
@@ -404,7 +365,7 @@
         var tier = saved.packageTier;
         var tierLabel = PACKAGE_LABELS[tier] || tier;
         var price = PACKAGE_PRICE_HINTS[tier] || "";
-        addRow("Package", tierLabel + (price ? " — " + price + " USD" : ""));
+        addRow("Package", tierLabel + (price ? ", " + price + " USD" : ""));
 
         if (saved.layoutType && LAYOUT_TYPE_LABELS[saved.layoutType]) {
           addRow("Layout focus", LAYOUT_TYPE_LABELS[saved.layoutType]);
@@ -435,8 +396,6 @@
           includesEl.appendChild(h3);
           includesEl.appendChild(ul);
         }
-      } else if (fallback) {
-        fallback.hidden = false;
       }
     })();
   </script>

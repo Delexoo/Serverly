@@ -1,8 +1,8 @@
 /**
  * Stripe Checkout API for Serverly static site.
  *
- * POST /create-checkout-session — body: { tier, email, goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
- * POST /webhook — Stripe webhook (checkout.session.completed) → sends order email
+ * POST /create-checkout-session: body: { tier, email, goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
+ * POST /webhook: Stripe webhook (checkout.session.completed) sends order email
  */
 
 require("dotenv").config();
@@ -43,7 +43,7 @@ function warnIfGithubPagesMissingRepoPath() {
     const pathEmpty = !u.pathname || u.pathname === "/";
     if (u.hostname.endsWith(".github.io") && pathEmpty) {
       console.warn(
-        "[Serverly] CLIENT_URL is only %s — project sites need the repo name. Add env CLIENT_SITE_PATH=Serverly (or your repo) OR set CLIENT_URL=https://%s/Serverly. Otherwise Stripe sends buyers to %s/thank-you.html and GitHub shows “no site here”.",
+        "[Serverly] CLIENT_URL is only %s; project sites need the repo name. Add env CLIENT_SITE_PATH=Serverly (or your repo) OR set CLIENT_URL=https://%s/Serverly. Otherwise Stripe sends buyers to %s/thank-you.html and GitHub shows “no site here”.",
         u.origin,
         u.hostname,
         u.origin
@@ -117,9 +117,9 @@ if (!stripeSecret) {
 const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 
 const TIERS = {
-  simple: { amount: 1000, name: "Serverly — Basic server layout" },
-  advanced: { amount: 2000, name: "Serverly — Advanced server layout" },
-  professional: { amount: 5000, name: "Serverly — Professional (hands-on)" },
+  simple: { amount: 1000, name: "Serverly: Basic server layout" },
+  advanced: { amount: 2000, name: "Serverly: Advanced server layout" },
+  professional: { amount: 5000, name: "Serverly: Professional (hands-on)" },
 };
 
 const GOAL_LABELS = {
@@ -130,7 +130,7 @@ const GOAL_LABELS = {
 };
 
 const SERVER_LABELS = {
-  update: "Update current server (in progress—not available)",
+  update: "Update current server (in progress, not available)",
   fresh: "New server template (new or reset)",
 };
 
@@ -159,6 +159,7 @@ function includesForTier(tier, goal, serverMode) {
   const base = {
     simple: [
       "Full channel map",
+      "41+ channels",
       "Regular channel names",
       "Member, mod, admin roles",
       "Clean categories",
@@ -167,13 +168,11 @@ function includesForTier(tier, goal, serverMode) {
     ],
     advanced: [
       "Everything in Basic",
-      "50+ channels",
+      "55+ channels",
       "Custom channel names",
       "Rules channel blueprint",
       "High-traffic room presets",
       "One to two name patterns",
-      "Announce & ticket lanes",
-      "Creator, VIP, bot roles",
       "Voice & stage ideas",
       "Public-ready hierarchy",
       "Tier timeline delivery",
@@ -221,8 +220,14 @@ function buildOrderEmail(meta, customerEmail, extras) {
   const instantUrl = (metaDiscord || digitalDeliveryUrl || "").trim();
   const isDiscordTemplate = !!metaDiscord;
 
+  const chPrevParts = [];
+  for (let pi = 0; pi < 15; pi++) {
+    const pk = `ch_prev_${pi}`;
+    if (meta[pk] && String(meta[pk]).trim()) chPrevParts.push(String(meta[pk]));
+  }
+
   const lines = [
-    "YOUR DIGITAL PRODUCT — Serverly",
+    "YOUR DIGITAL PRODUCT: Serverly",
     "",
     "Thank you for your purchase. Here is what you bought and how you get it.",
     "",
@@ -230,7 +235,7 @@ function buildOrderEmail(meta, customerEmail, extras) {
 
   if (instantUrl) {
     lines.push(
-      "1) INSTANT ACCESS — your digital product",
+      "1) INSTANT ACCESS: your digital product",
       isDiscordTemplate
         ? "Open this link while signed into Discord to create a server from your purchased template (same link as your thank-you page):"
         : "Use this link right away for your starter resource or download:",
@@ -250,11 +255,11 @@ function buildOrderEmail(meta, customerEmail, extras) {
     thankYouPageUrl(checkoutSessionId),
     "",
     "Emails sent to " + customerEmail + ":",
-    "• Stripe — payment receipt (enable under Dashboard → Settings → Customer emails if missing).",
+    "• Stripe: payment receipt (enable under Dashboard → Settings → Customer emails if missing).",
     stripeInvoiceUrl
-      ? "• Stripe — hosted invoice: " + stripeInvoiceUrl
-      : "• Stripe — hosted invoice link when your account sends invoices for this Checkout session.",
-    "• Serverly — this message is your order record and spec snapshot.",
+      ? "• Stripe: hosted invoice: " + stripeInvoiceUrl
+      : "• Stripe: hosted invoice link when your account sends invoices for this Checkout session.",
+    "• Serverly: this message is your order record and spec snapshot.",
     "",
     "Checkout reference: " + (checkoutSessionId || "(n/a)") + "",
     "",
@@ -278,16 +283,24 @@ function buildOrderEmail(meta, customerEmail, extras) {
   }
   if (meta.size) lines.push(`Following / reach: ${SIZE_LABELS[meta.size] || meta.size}`);
   if (meta.channelPatternLabel) lines.push(`Naming style preference: ${meta.channelPatternLabel}`);
+  if (chPrevParts.length) {
+    lines.push(
+      "",
+      "Channel names as shown at checkout (left = canonical, tab = display):",
+      "",
+      chPrevParts.join("\n"),
+    );
+  }
   lines.push("", "---", "Included in this tier:", "");
   const inc = includesForTier(tier, meta.goal, effectiveServerMode(meta.serverMode));
   inc.forEach((x) => lines.push(`• ${x}`));
-  lines.push("", "— Serverly");
+  lines.push("", "- Serverly");
 
   const text = lines.join("\n");
 
   let html =
     '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
-  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your digital product — Serverly</h1>';
+  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your digital product: Serverly</h1>';
   html += "<p>Thank you for your purchase. Below is what you bought and how you get it.</p>";
 
   if (instantUrl) {
@@ -368,6 +381,12 @@ function buildOrderEmail(meta, customerEmail, extras) {
       "</dd>";
   }
   html += "</dl>";
+  if (chPrevParts.length) {
+    html +=
+      '<h2 style="font-size:1rem;margin:1rem 0 0.5rem">Channel names at checkout</h2><pre style="white-space:pre-wrap;word-break:break-word;font-size:0.82rem;line-height:1.45;background:#f8fafc;padding:0.75rem;border-radius:0.35rem;border:1px solid #e2e8f0;margin:0 0 1rem">' +
+      escapeHtml(chPrevParts.join("\n")) +
+      "</pre>";
+  }
 
   html += '<h2 style="font-size:1rem;margin:1rem 0 0.5rem">Included in this tier</h2><ul style="margin:0;padding-left:1.25rem">';
   inc.forEach((x) => {
@@ -375,7 +394,7 @@ function buildOrderEmail(meta, customerEmail, extras) {
   });
   html += "</ul>";
 
-  html += '<p style="margin:1.5rem 0 0;color:#64748b;font-size:0.9rem">— Serverly</p>';
+  html += '<p style="margin:1.5rem 0 0;color:#64748b;font-size:0.9rem">- Serverly</p>';
 
   html += "</body></html>";
 
@@ -478,7 +497,7 @@ app.post(
             checkoutSessionId: session.id,
             stripeInvoiceUrl,
           });
-          await sendOrderEmail(email, "Your Serverly digital order — layout & delivery", text, html);
+          await sendOrderEmail(email, "Your Serverly digital order: layout & delivery", text, html);
         } catch (e) {
           console.error("Send email failed:", e);
         }
@@ -535,6 +554,7 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
     size,
     channelPattern,
     channelPatternLabel,
+    channelPreviewChunks,
     layoutType,
   } = req.body || {};
 
@@ -574,6 +594,13 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
         ? "false"
         : "";
 
+  const previewMeta = {};
+  const rawChunks = Array.isArray(channelPreviewChunks) ? channelPreviewChunks : [];
+  for (let ci = 0; ci < Math.min(rawChunks.length, 12); ci++) {
+    const piece = String(rawChunks[ci] || "").slice(0, 500);
+    if (piece.trim()) previewMeta[`ch_prev_${ci}`] = piece;
+  }
+
   try {
     const thankYouPage = `${clientUrl}/thank-you.html`;
     const session = await stripe.checkout.sessions.create({
@@ -593,7 +620,7 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
             unit_amount: t.amount,
             product_data: {
               name: t.name,
-              description: "Discord server layout—channels, roles, flows & tier notes (implement like a Discord template)",
+              description: "Discord server layout: channels, roles, flows & tier notes (implement like a Discord template)",
             },
           },
           quantity: 1,
@@ -612,6 +639,7 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
         layout_type: layoutTypeMeta,
         discord_template_url: discordTemplateUrl,
         customer_email: emailStr,
+        ...previewMeta,
       },
     });
 
