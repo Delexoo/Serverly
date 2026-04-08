@@ -1,1 +1,1 @@
-https://delexoo.github.io/
+https://delexoo.github.io/Serverly/
