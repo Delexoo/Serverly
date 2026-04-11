@@ -1,7 +1,8 @@
 (function () {
   var pages = document.querySelectorAll(".wizard-page");
   var FLOW_PAGE_ORDER = [0, 1, 2, 3];
-  var totalSteps = FLOW_PAGE_ORDER.length || pages.length || 4;
+  /** Progress labels: 0 welcome, 1 server, 2 layout, 3 choose channel name style, 4 click channel / checkout. */
+  var totalSteps = 5;
   var backBtn = document.getElementById("wizard-back");
   var progressLabel = document.getElementById("progress-label");
   var progressFill = document.getElementById("progress-fill");
@@ -26,6 +27,8 @@
     channelCustomByLane: {},
     /** True after user picks a naming style in the finish-step demo (not auto-default). */
     namingPatternUserChosen: false,
+    /** True after user clicks a channel in the finish-step demo — unlocks checkout bar + final progress step. */
+    finishCheckoutEngaged: false,
   };
 
   var patternPickLabelEl = document.getElementById("pattern-pick-label");
@@ -145,6 +148,45 @@
     return FLOW_PAGE_ORDER[pos];
   }
 
+  /** Finish screen splits into step 3 (choose channel name style) and step 4 (click a channel → checkout). */
+  function effectiveProgressFlowPos() {
+    var base = flowPosForPage(state.step);
+    if (state.step === 3) {
+      if (state.namingPatternUserChosen || state.finishCheckoutEngaged) return 4;
+      return 3;
+    }
+    return base;
+  }
+
+  function syncFinishStepHeadline() {
+    var h = document.querySelector("#step-finish .wizard-question");
+    if (!h || state.step !== 3) return;
+    if (!hasSummaryContent()) {
+      h.textContent = "Choose a channel style.";
+      return;
+    }
+    if (isCheckoutStickyBarUnlocked()) {
+      h.textContent = "Checkout.";
+      return;
+    }
+    h.textContent = "Choose a channel style.";
+  }
+
+  function syncWizardProgress() {
+    var fp = effectiveProgressFlowPos();
+    if (progressLabel) progressLabel.textContent = "Step " + fp + " of " + totalSteps;
+    if (progressFill) {
+      var fillDenom = totalSteps - 1;
+      progressFill.style.width =
+        fillDenom <= 0 ? "100%" : (fp / fillDenom) * 100 + "%";
+    }
+    var finishHint = document.querySelector("#step-finish .wizard-step-hint-mono");
+    if (finishHint && state.step === 3) {
+      finishHint.textContent = "Step " + fp + " of " + totalSteps;
+    }
+    syncFinishStepHeadline();
+  }
+
   function syncPatternTierGate() {
     patternSelectButtons.forEach(function (btn) {
       btn.classList.remove("pattern-select--locked");
@@ -154,16 +196,22 @@
 
   function setStep(n) {
     if (n < 0 || n >= pages.length) return;
+    if (n !== 3) state.finishCheckoutEngaged = false;
     state.step = n;
     pages.forEach(function (page, i) {
       page.classList.toggle("is-active", i === n);
     });
-    var flowPos = flowPosForPage(n);
-    if (backBtn) backBtn.hidden = flowPos === 0;
-    if (progressLabel) progressLabel.textContent = "Step " + (flowPos + 1) + " of " + totalSteps;
-    if (progressFill) {
-      progressFill.style.width = ((flowPos + 1) / totalSteps) * 100 + "%";
+    /* Show Back from wizard page 1 onward (after landing); landing is page 0. */
+    if (backBtn) {
+      if (state.step < 1) {
+        backBtn.hidden = true;
+        backBtn.setAttribute("hidden", "");
+      } else {
+        backBtn.hidden = false;
+        backBtn.removeAttribute("hidden");
+      }
     }
+    syncWizardProgress();
     if (document.body.classList.contains("wizard-app")) {
       window.scrollTo(0, 0);
     } else {
@@ -723,7 +771,7 @@
   function formatChannelDemoLabel(patternId, rawName, isVoice, laneIndex) {
     var n = rawName;
     var e = demoEmojiForName(n);
-    var lower = n.toLowerCase();
+    var compact = String(n).replace(/\s+/g, "");
     if (!patternId) {
       return e + " | " + n;
     }
@@ -739,15 +787,15 @@
       case "bold-column":
         return e + " ┃ " + n;
       case "corner-brackets":
-        return toMathBoldText("【" + e + "】" + lower);
+        return toMathBoldText("【" + e + "】" + n);
       case "chevrons":
-        return toMathBoldText("《" + e + "》" + lower);
+        return toMathBoldText("《" + e + "》" + n);
       case "dot-separator":
-        return toMathBoldText(e + "·" + lower.replace(/\s+/g, ""));
+        return toMathBoldText(e + "·" + compact);
       case "em-dash":
-        return toMathBoldText(e + " - " + lower);
+        return toMathBoldText(e + " - " + n);
       case "sparkle-dot":
-        return toMathBoldText("✧・" + lower.replace(/\s+/g, ""));
+        return toMathBoldText("✧・" + compact);
       default:
         return toMathBoldText(isVoice ? n : e + " | " + n);
     }
@@ -962,7 +1010,11 @@
   }
 
   function syncNamingLabelFromPreview() {
-    var id = state.channelPattern || "regular-text";
+    if (!state.channelPattern) {
+      state.channelPatternLabel = null;
+      return;
+    }
+    var id = state.channelPattern;
     var base = patternBaseLabelFromId(id);
     state.channelPatternLabel = previewHasDeviations(id, state.layoutType)
       ? base + " · preview customized"
@@ -1013,7 +1065,7 @@
     if (strong) strong.textContent = summaryPatternDisplay();
     container.querySelectorAll("[data-demo-pattern-btn]").forEach(function (chip) {
       var cid = chip.getAttribute("data-demo-pattern-btn");
-      var on = cid === (state.channelPattern || "regular-text");
+      var on = state.namingPatternUserChosen && cid === state.channelPattern;
       chip.classList.toggle("demo-pattern-chip--active", on);
       chip.setAttribute("aria-pressed", on ? "true" : "false");
     });
@@ -1309,8 +1361,7 @@
     return '<div class="discord-demo-members-scroll">' + out + "</div>";
   }
 
-  function buildDemoPatternSwitcherHtml(activePatternId) {
-    var active = activePatternId || "regular-text";
+  function buildDemoPatternSwitcherHtml() {
     var i;
     var groupLabel = "Channel name style — choose one to update the preview";
     var legendId = "demo-pattern-legend";
@@ -1328,7 +1379,7 @@
       '<div class="demo-pattern-switcher-chips">';
     for (i = 0; i < DEMO_PATTERN_OPTIONS.length; i++) {
       var o = DEMO_PATTERN_OPTIONS[i];
-      var isOn = active === o.id;
+      var isOn = state.namingPatternUserChosen && state.channelPattern === o.id;
       var applyHint = "Preview: " + o.label;
       out +=
         '<button type="button" class="demo-pattern-chip' +
@@ -1528,20 +1579,21 @@
 
   function buildDiscordDemoHtml(patternId, displayLabel, packageTier, layoutType) {
     var tree = summaryChannelTreeForTier(packageTier, layoutType);
+    var renderPattern = patternId || "regular-text";
     var lab =
       displayLabel && String(displayLabel).trim()
         ? displayLabel.trim()
         : patternId
           ? slugToLabel(patternId)
           : "";
-    var hasPattern = !!patternId;
-    var lead = hasPattern
+    var hasPatternChoice = state.namingPatternUserChosen && !!patternId;
+    var lead = hasPatternChoice
       ? '<p class="preview-disclaimer summary-preview-bundle-lead">Demo · style <strong data-summary-selected-style>' +
         escapeHtml(lab) +
         "</strong></p>"
-      : '<p class="preview-disclaimer summary-preview-bundle-lead">Demo preview</p>';
-    var patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text");
-    var inner = buildDiscordDemoInnerHtml(patternId, tree, {
+      : '<p class="preview-disclaimer summary-preview-bundle-lead">Demo preview — pick a style above to see it in the channels.</p>';
+    var patternBar = buildDemoPatternSwitcherHtml();
+    var inner = buildDiscordDemoInnerHtml(renderPattern, tree, {
       serverLabel: "Your server",
       ariaLabel: "Discord-style layout preview",
     });
@@ -1796,6 +1848,11 @@
     for (r = 0; r < rows.length; r++) {
       rows[r].addEventListener("click", function () {
         updateFromRow(this);
+        if (state.step === 3 && hasSummaryContent()) {
+          state.finishCheckoutEngaged = true;
+          syncWizardProgress();
+          syncFinishCheckoutUi();
+        }
       });
     }
 
@@ -1917,6 +1974,11 @@
     return !!(state.serverMode && state.layoutType);
   }
 
+  /** Email + Stripe bar: after a style chip, or after clicking a channel in the demo (either unlocks). */
+  function isCheckoutStickyBarUnlocked() {
+    return state.namingPatternUserChosen || state.finishCheckoutEngaged;
+  }
+
   function updateFinishStepLead() {
     var el = document.getElementById("finish-step-lead");
     if (!el) return;
@@ -1924,13 +1986,14 @@
       el.textContent = "Complete the steps above for your recap and demo.";
       return;
     }
-    if (state.namingPatternUserChosen) {
-      el.innerHTML =
-        '<span class="finish-step-lead-status finish-step-lead-status--done">Style applied.</span>';
-    } else {
-      el.innerHTML =
-        'Pick a <strong>channel name style</strong> above the preview.';
+    if (isCheckoutStickyBarUnlocked()) {
+      el.innerHTML = state.namingPatternUserChosen
+        ? '<span class="finish-step-lead-status finish-step-lead-status--done">Style applied.</span> Enter your email in the bar below, then use <strong>Pay on Stripe</strong>.'
+        : '<span class="finish-step-lead-status finish-step-lead-status--done">Ready for checkout.</span> Enter your email in the bar below, then use <strong>Pay on Stripe</strong>.';
+      return;
     }
+    el.innerHTML =
+      'Pick a <strong>channel name style</strong> above the preview to open checkout. You can click channels in the sidebar to explore the layout.';
   }
 
   function isValidCheckoutEmail(s) {
@@ -1944,14 +2007,14 @@
     var emailInp = document.getElementById("sticky-checkout-email");
     var emailOk = emailInp && isValidCheckoutEmail(emailInp.value);
     var barReady =
-      state.step === 3 && hasSummaryContent() && state.namingPatternUserChosen;
+      state.step === 3 && hasSummaryContent() && isCheckoutStickyBarUnlocked();
     btn.disabled = !barReady || !api || !emailOk;
   }
 
   function syncCheckoutStickyHint() {
     var hint = document.getElementById("checkout-sticky-hint");
     if (!hint) return;
-    var shouldShow = state.step === 3 && hasSummaryContent() && state.namingPatternUserChosen;
+    var shouldShow = state.step === 3 && hasSummaryContent() && isCheckoutStickyBarUnlocked();
     if (!shouldShow) {
       hint.setAttribute("hidden", "");
       hint.setAttribute("aria-hidden", "true");
@@ -1967,7 +2030,7 @@
       clearTimeout(stickyBarShowTimer);
       stickyBarShowTimer = null;
     }
-    var shouldShow = state.step === 3 && hasSummaryContent() && state.namingPatternUserChosen;
+    var shouldShow = state.step === 3 && hasSummaryContent() && isCheckoutStickyBarUnlocked();
     if (!shouldShow) {
       checkoutStickyBar.classList.remove("checkout-sticky-bar--visible");
       document.body.classList.remove("checkout-sticky-bar-open");
@@ -1988,7 +2051,7 @@
         checkoutStickyBar &&
         state.step === 3 &&
         hasSummaryContent() &&
-        state.namingPatternUserChosen
+        isCheckoutStickyBarUnlocked()
       ) {
         checkoutStickyBar.classList.add("checkout-sticky-bar--visible");
       }
@@ -2003,9 +2066,10 @@
 
   /** Legacy sessions may still have pattern "custom"; product no longer offers it. */
   function coerceChannelPatternAwayFromLegacyCustom() {
-    if (!state.channelPattern || state.channelPattern === "custom") {
-      state.channelPattern = "regular-text";
-      state.channelPatternLabel = "Regular text";
+    if (state.channelPattern === "custom") {
+      state.channelPattern = null;
+      state.channelPatternLabel = null;
+      state.namingPatternUserChosen = false;
     }
   }
 
@@ -2018,6 +2082,7 @@
     if (!hasAny) {
       summaryEl.innerHTML =
         '<p class="summary-placeholder">Complete server setup and layout type above to open the live preview and naming styles.</p>';
+      if (state.step === 3) syncWizardProgress();
       syncFinishCheckoutUi();
       return;
     }
@@ -2030,6 +2095,7 @@
     var html = buildDiscordDemoHtml(state.channelPattern, styleLabel, tier, state.layoutType);
 
     summaryEl.innerHTML = html;
+    if (state.step === 3) syncWizardProgress();
     syncFinishCheckoutUi();
     requestAnimationFrame(function () {
       initDiscordDemoPreview(summaryEl);
@@ -2044,6 +2110,7 @@
     state.channelPatternLabel = null;
     state.channelCustomByLane = {};
     state.namingPatternUserChosen = false;
+    state.finishCheckoutEngaged = false;
     syncPatternSelectionUI();
     setStep(0);
   }
@@ -2081,6 +2148,8 @@
       if (state.layoutType !== val) {
         state.channelCustomByLane = {};
         state.namingPatternUserChosen = false;
+        state.channelPattern = null;
+        state.channelPatternLabel = null;
       }
       state.layoutType = val;
       nextStep();
@@ -2122,9 +2191,12 @@
     }
     flashCheckout("Redirecting to Stripe…", "info", true);
     coerceChannelPatternAwayFromLegacyCustom();
-    syncNamingLabelFromPreview();
+    var patId = state.channelPattern || "regular-text";
+    var patLab =
+      (state.channelPatternLabel && String(state.channelPatternLabel).trim()) ||
+      patternBaseLabelFromId(patId);
     var previewChunks = chunkPreviewForMetadata(
-      buildChannelPreviewBlob(state.channelPattern, state.packageTier, state.layoutType)
+      buildChannelPreviewBlob(patId, state.packageTier, state.layoutType)
     );
     fetch(api + "/create-checkout-session", {
       method: "POST",
@@ -2134,8 +2206,8 @@
         email: email,
         serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
         layoutType: state.layoutType,
-        channelPattern: state.channelPattern,
-        channelPatternLabel: state.channelPatternLabel,
+        channelPattern: patId,
+        channelPatternLabel: patLab,
         channelPreviewChunks: previewChunks,
       }),
     })
@@ -2155,8 +2227,8 @@
                   serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
                   layoutType: state.layoutType,
                   packageTier: state.packageTier,
-                  channelPattern: state.channelPattern,
-                  channelPatternLabel: state.channelPatternLabel,
+                  channelPattern: patId,
+                  channelPatternLabel: patLab,
                   channelPreviewChunks: previewChunks,
                 })
               );

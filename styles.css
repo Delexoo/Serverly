@@ -1528,9 +1528,8 @@ button.style-card.pattern-select {
 }
 
 .summary-preview-combined {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .outcome-h--preview-bundle {
@@ -1541,9 +1540,9 @@ button.style-card.pattern-select {
 }
 
 .summary-preview-heading {
-  margin-bottom: 0.65rem;
-  padding-bottom: 0.45rem;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .summary-preview-heading-hint {
@@ -5241,6 +5240,10 @@ html.wizard-app body.wizard-app #step-finish .section {
 #step-finish .summary-card-rich,
 #step-finish .summary-card {
   margin-bottom: 0;
+}
+
+#step-finish #wizard-summary.summary-card {
+  padding-top: 1.1rem;
 }
 
 .mobile-drawer {
