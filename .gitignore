@@ -1,0 +1,8 @@
+stripe-server/stripe.exe
+
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
