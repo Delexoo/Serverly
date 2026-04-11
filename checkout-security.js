@@ -73,6 +73,27 @@ function securityHeadersMiddleware(_req, res, next) {
   next();
 }
 
+/**
+ * For a production origin, allow the same host with the other protocol (http ↔ https).
+ * Skips localhost, IPs, github.io — so CLIENT_URL=https://store.com also allows http://store.com during HTTP-only rollout.
+ */
+function corsProtocolCompanionOrigins(originStr) {
+  const out = [];
+  try {
+    const u = new URL(originStr);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return out;
+    const host = u.hostname.toLowerCase();
+    if (!host || host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return out;
+    if (host.endsWith(".github.io") || host.endsWith(".localhost")) return out;
+    const port = u.port ? `:${u.port}` : "";
+    const other = u.protocol === "https:" ? "http:" : "https:";
+    out.push(`${other}//${host}${port}`);
+  } catch {
+    /* ignore */
+  }
+  return out;
+}
+
 function strictBrowserOriginMiddleware(req, res, next) {
   const on =
     process.env.STRICT_BROWSER_ORIGIN === "1" || process.env.STRICT_BROWSER_ORIGIN === "true";
@@ -95,4 +116,5 @@ module.exports = {
   safePublicHttpUrl,
   securityHeadersMiddleware,
   strictBrowserOriginMiddleware,
+  corsProtocolCompanionOrigins,
 };

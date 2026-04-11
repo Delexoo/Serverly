@@ -1588,10 +1588,10 @@
           : "";
     var hasPatternChoice = state.namingPatternUserChosen && !!patternId;
     var lead = hasPatternChoice
-      ? '<p class="preview-disclaimer summary-preview-bundle-lead">Demo · style <strong data-summary-selected-style>' +
+      ? '<p class="preview-disclaimer summary-preview-bundle-lead">You are purchasing · <strong data-summary-selected-style>' +
         escapeHtml(lab) +
         "</strong></p>"
-      : '<p class="preview-disclaimer summary-preview-bundle-lead">Demo preview — pick a style above to see it in the channels.</p>';
+      : '<p class="preview-disclaimer summary-preview-bundle-lead">Pick a channel name style above — that’s what you’re purchasing.</p>';
     var patternBar = buildDemoPatternSwitcherHtml();
     var inner = buildDiscordDemoInnerHtml(renderPattern, tree, {
       serverLabel: "Your server",

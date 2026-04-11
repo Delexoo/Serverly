@@ -20,6 +20,7 @@ const {
   safePublicHttpUrl,
   securityHeadersMiddleware,
   strictBrowserOriginMiddleware,
+  corsProtocolCompanionOrigins,
 } = require("./checkout-security.js");
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -126,10 +127,26 @@ function buildCorsOriginOption() {
     .split(",")
     .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean)
-    .forEach((o) => allow.add(o));
+    .forEach((o) => {
+      allow.add(o);
+      if (/^https?:\/\//i.test(o)) {
+        corsWwwApexCompanionOrigins(o).forEach((w) => allow.add(w));
+        corsProtocolCompanionOrigins(o).forEach((p) => allow.add(p));
+        corsProtocolCompanionOrigins(o).forEach((p) => {
+          corsWwwApexCompanionOrigins(p).forEach((w) => allow.add(w));
+        });
+      }
+    });
   if (siteOrigin.startsWith("http")) {
-    allow.add(siteOrigin);
-    corsWwwApexCompanionOrigins(siteOrigin).forEach((o) => allow.add(o));
+    const fromSite = new Set([siteOrigin]);
+    corsWwwApexCompanionOrigins(siteOrigin).forEach((o) => fromSite.add(o));
+    Array.from(fromSite).forEach((o) => {
+      corsProtocolCompanionOrigins(o).forEach((p) => fromSite.add(p));
+    });
+    Array.from(fromSite).forEach((o) => {
+      corsWwwApexCompanionOrigins(o).forEach((w) => fromSite.add(w));
+    });
+    fromSite.forEach((o) => allow.add(o));
   }
   const allowNull =
     process.env.CORS_ALLOW_NULL_ORIGIN === "1" ||
