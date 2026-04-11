@@ -1,1 +1,1 @@
-serverly.store
+https://serverly.store
