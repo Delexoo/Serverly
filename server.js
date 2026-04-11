@@ -91,6 +91,34 @@ function originFromSiteUrl(url) {
   }
 }
 
+/**
+ * Also allow www ↔ apex for simple registrable hosts (e.g. CLIENT_URL=https://serverly.store → allow https://www.serverly.store).
+ * Skips localhost, IPs, github.io, and deeper subdomains (app.example.com).
+ */
+function corsWwwApexCompanionOrigins(originStr) {
+  const out = [];
+  try {
+    const u = new URL(originStr);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return out;
+    const host = u.hostname.toLowerCase();
+    if (!host || host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return out;
+    if (host.endsWith(".github.io") || host.endsWith(".localhost")) return out;
+    const port = u.port ? `:${u.port}` : "";
+    const base = `${u.protocol}//`;
+    if (host.startsWith("www.")) {
+      const apex = host.slice(4);
+      if (apex) out.push(`${base}${apex}${port}`);
+      return out;
+    }
+    if (host.split(".").length === 2) {
+      out.push(`${base}www.${host}${port}`);
+    }
+  } catch {
+    /* ignore */
+  }
+  return out;
+}
+
 function buildCorsOriginOption() {
   const siteOrigin = originFromSiteUrl(clientUrl).replace(/\/$/, "");
   const allow = new Set();
@@ -99,7 +127,10 @@ function buildCorsOriginOption() {
     .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean)
     .forEach((o) => allow.add(o));
-  if (siteOrigin.startsWith("http")) allow.add(siteOrigin);
+  if (siteOrigin.startsWith("http")) {
+    allow.add(siteOrigin);
+    corsWwwApexCompanionOrigins(siteOrigin).forEach((o) => allow.add(o));
+  }
   const allowNull =
     process.env.CORS_ALLOW_NULL_ORIGIN === "1" ||
     process.env.CORS_ALLOW_NULL_ORIGIN === "true";
