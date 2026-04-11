@@ -26,16 +26,27 @@ const {
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+/**
+ * Base URL for Stripe return links (no trailing slash).
+ * github.io: CLIENT_SITE_PATH can add /Repo when CLIENT_URL is origin-only (project pages).
+ * Custom domains & localhost: use origin only — strips accidental /Serverly on CLIENT_URL and ignores CLIENT_SITE_PATH.
+ */
 function buildPublicSiteBaseUrl() {
   const raw = (process.env.CLIENT_URL || "http://localhost:5500").trim().replace(/\/$/, "");
   const extraPath = (process.env.CLIENT_SITE_PATH || "").replace(/^\/+|\/+$/g, "").trim();
-  if (!extraPath) return raw;
+  let u;
   try {
-    const u = new URL(raw);
-    const pathEmpty = !u.pathname || u.pathname === "/";
-    if (pathEmpty) return `${u.origin}/${extraPath}`.replace(/\/$/, "");
+    u = new URL(raw);
   } catch {
-    /* keep raw */
+    return raw;
+  }
+  const host = u.hostname.toLowerCase();
+  const isGithubIo = host === "github.io" || host.endsWith(".github.io");
+  if (!isGithubIo) {
+    return `${u.protocol}//${u.host}`.replace(/\/$/, "");
+  }
+  if (extraPath && (!u.pathname || u.pathname === "/")) {
+    return `${u.origin}/${extraPath}`.replace(/\/$/, "");
   }
   return raw;
 }
