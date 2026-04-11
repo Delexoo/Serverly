@@ -1879,18 +1879,25 @@
 
   function formatCheckoutFetchError(err) {
     var raw = err && err.message ? String(err.message) : "";
-    if (
+    var isNetFail =
       raw === "Failed to fetch" ||
       raw === "Load failed" ||
-      (err && err.name === "TypeError" && /fetch|Failed to load|network/i.test(raw))
-    ) {
+      (err && err.name === "TypeError" && /fetch|Failed to load|network/i.test(raw));
+    if (!isNetFail) return raw || "Checkout failed. Check the API URL and try again.";
+
+    var loc = typeof window !== "undefined" && window.location ? window.location : null;
+    if (loc && loc.protocol === "file:") {
       return (
-        "Could not reach checkout (often CORS). Don’t open this page as file://—use Live Server (e.g. port 5500). " +
-        "For a live site, add your page’s exact origin to CORS_ORIGIN on the API (Render env). " +
-        "From disk only: set CORS_ALLOW_NULL_ORIGIN=true on the API, or serve the folder over http://."
+        "Could not reach checkout from a local file (file://). Your real Stripe API must allow this: set CORS_ALLOW_NULL_ORIGIN=true on the checkout API (e.g. Render environment variables), save, redeploy, then try again. " +
+        "Browsers send Origin: null for file pages; the API only accepts that when that flag is on. For production traffic, prefer hosting the wizard on https:// and using CORS_ORIGIN instead."
       );
     }
-    return raw || "Checkout failed. Check the API URL and try again.";
+    var base =
+      "Could not reach checkout (often CORS). Add your page’s exact origin to CORS_ORIGIN on the checkout API (Render), or use http://localhost with a dev port the API already allows.";
+    if (loc && /^https?:$/i.test(loc.protocol)) {
+      base += " Your origin: " + loc.origin + " — paste that into CORS_ORIGIN if it’s missing.";
+    }
+    return base;
   }
 
   function flashCheckout(message, kind, persist) {
