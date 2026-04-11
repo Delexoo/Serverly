@@ -1,0 +1,412 @@
+# Serverly — Bold column (emoji ┃ raw name)
+# Pattern id: bold-column (see script.js formatChannelDemoLabel)
+# Source: channels.txt (canonical structure; this file is display names only.)
+Content Creator Layout:
+New (category)
+👋 ┃ Welcome
+📜 ┃ Rules
+🎭 ┃ Roles
+Information (category)
+📢 ┃ Announcements
+🎉 ┃ Giveaway
+🎯 ┃ Pick-your-role
+📊 ┃ Polls
+🔗 ┃ Links
+📰 ┃ New-posts
+🤝 ┃ Partnerships
+General (category)
+💬 ┃ General
+💭 ┃ Off-topic
+🎮 ┃ Gamer-chat
+🎬 ┃ Clips
+💻 ┃ Tech
+🎨 ┃ Art
+❓ ┃ Questions
+💬 ┃ Feedback
+BOT (category)
+🤖 ┃ Bots
+⌨️ ┃ Cmd
+Voice Chat (category)
+🛋️ ┃ Lounge
+🎧 ┃ Duo #1
+🎧 ┃ Duo #2
+👥 ┃ Squad #1
+👥 ┃ Squad #2
+🎭 ┃ Crew Lounge
+🎵 ┃ Music
+📺 ┃ Stream
+💤 ┃ AFK
+Advisory (category)
+🔒 ┃ Restricted-users
+🔇 ┃ Muted-users
+⚖️ ┃ Judgement VC
+Staff (category)
+👑 ┃ Admin
+💡 ┃ Server-ideas
+📑 ┃ Staff-information
+🧪 ┃ Test-bot
+👋 ┃ Bye-bye
+🎙️ ┃ Staff VC
+⏺️ ┃ Recording
+📡 ┃ Streaming
+👫 ┃ Friends
+Extra Channels (category)
+🗂️ ┃ Forum
+📣 ┃ Self-promote
+💡 ┃ Content-ideas
+🤝 ┃ Brand-deals
+🧰 ┃ Tools-and-apps
+📅 ┃ Creator-events
+⭐ ┃ Monthly-highlights
+🖼️ ┃ Thumbnail-contents
+✂️ ┃ Editing-room
+📣 ┃ Live-feedback
+💼 ┃ Hire-me
+🤝 ┃ Team-up
+⚖️ ┃ Appeals
+☕ ┃ Coffee-chat
+🍿 ┃ Watch-party
+🎧 ┃ Support-vc
+😂 ┃ Memes
+🖌️ ┃ Fanart
+📈 ┃ Level
+🔢 ┃ Counting
+⭐ ┃ Subscriber
+✨ ┃ Highlights
+🖼️ ┃ Gallery
+🐾 ┃ Pets
+📊 ┃ Management
+📷 ┃ Irl-photos
+📱 ┃ Our-socials
+📲 ┃ Social-media
+🌐 ┃ Website
+❔ ┃ Faq
+🎫 ┃ Ticket
+📝 ┃ Application
+⚖️ ┃ Appeal
+🎙️ ┃ Creator Lounge
+🎬 ┃ Production Room
+
+Business Layout:
+Staff Only (category)
+🛋️ ┃ Lounge
+📜 ┃ Logs
+📁 ┃ Assets
+⌨️ ┃ Commands
+🎙️ ┃ Admin VC
+Information (category)
+✅ ┃ Verification
+👋 ┃ Welcome
+📢 ┃ Announcements
+📅 ┃ Weekly-updates
+📊 ┃ Polls
+📜 ┃ Rules
+📚 ┃ Resources
+Network (category)
+💬 ┃ General
+💼 ┃ Business-chat
+📰 ┃ Media
+💭 ┃ Off-topic
+💡 ┃ Suggestions
+📋 ┃ Specifications
+📄 ┃ Docs
+Voice Chat (category)
+💬 ┃ General
+🤝 ┃ Meeting
+💤 ┃ AFK
+Support (category)
+🎫 ┃ Ticket
+📝 ┃ Apply
+❔ ┃ Faq
+🆘 ┃ Help
+Bots (category)
+🤖 ┃ Bot
+🤖 ┃ Bot-chat-1
+🤖 ┃ Bot-chat-2
+📦 ┃ Move-in
+🎙️ ┃ Bot voice 1
+🎙️ ┃ Bot voice 2
+Extras (category)
+🗂️ ┃ Forum
+📝 ┃ Application
+📋 ┃ Instructions
+📚 ┃ Tutorials
+📦 ┃ Product-info
+💡 ┃ Sales-tips
+🤝 ┃ Collabs
+🧠 ┃ Mindset-tips
+📈 ┃ Growth-strategies
+📣 ┃ Marketing-zone
+💼 ┃ Working-room
+🗺️ ┃ Server-planning
+📲 ┃ Social-media
+📱 ┃ Our-socials
+🌐 ┃ Website
+👋 ┃ Start-here
+📁 ┃ My-project
+💬 ┃ Project-feedback
+🤝 ┃ Client-work
+📅 ┃ Event-calendar
+🎟️ ┃ Live-events
+🛡️ ┃ Moderation-logs
+👥 ┃ Community
+📷 ┃ Irl-photos
+📊 ┃ Management
+📜 ┃ Guidelines
+🎉 ┃ Events
+💲 ┃ Prices
+⏰ ┃ Clock-in-out
+📦 ┃ Inventory
+😂 ┃ Memes
+💬 ┃ Discussion
+
+Education Layout:
+Staff Only (category)
+🛋️ ┃ Lounge
+📜 ┃ Logs
+📁 ┃ Assets
+⌨️ ┃ Commands
+🎙️ ┃ Admin VC
+Information (category)
+👋 ┃ Welcome
+📢 ┃ Announcements
+📚 ┃ Resources
+🆘 ┃ Help
+Lounge (category)
+💬 ┃ General
+😂 ┃ Memes
+📰 ┃ Media
+💭 ┃ Off-topic
+📌 ┃ Assign
+Voice Chat (category)
+💬 ┃ General
+🎓 ┃ Class
+💤 ┃ AFK
+STEM (category)
+🔬 ┃ Science
+💻 ┃ Technology
+⚙️ ┃ Engineering
+🔢 ┃ Mathematics
+Business (category)
+💵 ┃ Finance
+📣 ┃ Marketing
+📊 ┃ Management
+🚀 ┃ Entrepreneurship
+Arts & Design (category)
+🖼️ ┃ Visual-arts
+🎭 ┃ Performing-arts
+📰 ┃ Media
+🎨 ┃ Graphic-design
+Humanities (category)
+📜 ┃ History
+📖 ┃ Literature
+🤔 ┃ Philosophy
+🌍 ┃ Social-studies
+Language (category)
+📘 ┃ English
+🌐 ┃ Foreign-languages
+🔤 ┃ Linguistics
+Health & Medicine (category)
+💉 ┃ Nursing
+🧬 ┃ Biology
+🧠 ┃ Psychology
+🏥 ┃ Public-health
+Computer Science (category)
+💻 ┃ Programming
+🖥️ ┃ IT
+🔐 ┃ Cybersecurity
+🤖 ┃ AI
+Education (category)
+🍎 ┃ Teaching
+👶 ┃ Child-development
+📋 ┃ Education-leadership
+Law & Political Science (category)
+⚖️ ┃ Law
+🔍 ┃ Criminology
+🌐 ┃ International-relations
+🏛️ ┃ Public-policy
+Sports & Physical Education (category)
+🏃 ┃ Kinesiology
+🏅 ┃ Coaching
+⚽ ┃ Sports-management
+Performing Arts (category)
+🎵 ┃ Music
+🎭 ┃ Theater
+💃 ┃ Dance
+🎥 ┃ Film-production
+Architecture & Design (category)
+🏠 ┃ Interior
+🌳 ┃ Landscape
+🏭 ┃ Industrial
+🗺️ ┃ Urban-planning
+Media & Communication (category)
+📰 ┃ Journalism
+🎬 ┃ Film
+📻 ┃ Broadcasting
+Extras (category)
+🗂️ ┃ Forum
+📊 ┃ Polls
+📜 ┃ Rules
+📝 ┃ Application
+📋 ┃ Instructions
+📚 ┃ Tutorials
+🤝 ┃ Collabs
+💼 ┃ Working-room
+🌐 ┃ Website
+👋 ┃ Start-here
+📅 ┃ Event-calendar
+🎟️ ┃ Live-events
+🛡️ ┃ Moderation-logs
+👥 ┃ Community
+📷 ┃ Irl-photos
+📊 ┃ Management
+📦 ┃ Inventory
+📜 ┃ Guidelines
+🎉 ┃ Events
+😂 ┃ Memes
+💲 ┃ Prices
+💬 ┃ Discussion
+
+Startup Layout:
+Headquarters (category)
+🛋️ ┃ Lounge
+📐 ┃ Blueprints
+📄 ┃ Documentation
+🚀 ┃ Launch-announcements
+📅 ┃ Event-calendar
+🖥️ ┃ Dev-console
+📊 ┃ Polls
+📚 ┃ Resources
+📘 ┃ Company-handbook
+🚪 ┃ Executive Room
+Collaboration Zone (category)
+💡 ┃ Brainstorming
+📅 ┃ Planning
+💡 ┃ Suggestions
+🧪 ┃ Prototypes
+✅ ┃ Testing
+💬 ┃ Feedback
+💬 ┃ General
+☕ ┃ Coffee Corner
+🤝 ┃ Meeting
+💤 ┃ AFK
+Core Operations (category)
+👔 ┃ Founders-and-leadership
+⚖️ ┃ Legal-and-compliance
+🧾 ┃ Finance-and-accounting
+Design & Branding (category)
+🖼️ ┃ Ui
+🎨 ┃ Brand-identity
+✨ ┃ Branding
+Marketing & Growth (category)
+📲 ┃ Social-media
+📈 ┃ Seo
+📢 ┃ Ads
+👥 ┃ Community
+📊 ┃ Analytics
+Sales & Customer (category)
+💰 ┃ Sales
+🛟 ┃ Support
+🤝 ┃ Partnerships
+🔄 ┃ Retention
+Funding & Investment (category)
+💵 ┃ Investors
+📒 ┃ Budgeting
+📈 ┃ Revenue
+📉 ┃ Forecasting
+Planning & Strategy (category)
+🎯 ┃ Goals
+🔬 ┃ Research
+🏁 ┃ Competition
+⚠️ ┃ Risk
+Tech Infrastructure (category)
+⚙️ ┃ Devops
+🔐 ┃ Security
+🤖 ┃ Automation
+🐛 ┃ Bugs
+Extras (category)
+🗂️ ┃ Forum
+📝 ┃ Application
+📋 ┃ Instructions
+📚 ┃ Tutorials
+📦 ┃ Product-info
+💡 ┃ Sales-tips
+🤝 ┃ Collabs
+🧠 ┃ Mindset-tips
+📈 ┃ Growth-strategies
+🧭 ┃ Orientation
+📣 ┃ Marketing-zone
+💼 ┃ Working-room
+🗺️ ┃ Server-planning
+📲 ┃ Social-media
+📱 ┃ Our-socials
+🌐 ┃ Website
+👋 ┃ Start-here
+📁 ┃ My-project
+💬 ┃ Project-feedback
+🤝 ┃ Client-work
+📅 ┃ Event-calendar
+🎟️ ┃ Live-events
+🛡️ ┃ Moderation-logs
+👥 ┃ Community
+📷 ┃ Irl-photos
+📊 ┃ Management
+📜 ┃ Guidelines
+🎉 ┃ Events
+💲 ┃ Prices
+⏰ ┃ Clock-in-out
+📦 ┃ Inventory
+😂 ┃ Memes
+💬 ┃ Discussion
+
+Private Layout:
+Important (category)
+👋 ┃ Welcome
+📢 ┃ Announcements
+📜 ┃ Rules
+📊 ┃ Polls
+📚 ┃ Resources
+General (category)
+💬 ┃ General
+💭 ┃ Off-topic
+😂 ┃ Memes
+🎨 ┃ Art
+📰 ┃ Media
+✂️ ┃ Edits
+💬 ┃ Feedback
+⌨️ ┃ Cmd
+Voice Chat (category)
+🛋️ ┃ Lounge
+🎮 ┃ Game Night
+🎧 ┃ Duo #1
+🎧 ┃ Duo #2
+👥 ┃ Squad #1
+👥 ┃ Squad #2
+🎭 ┃ Crew Lounge
+📺 ┃ Stream
+🎵 ┃ Music
+💤 ┃ AFK
+Extra Channels (category)
+💡 ┃ Server-ideas
+🎉 ┃ Giveaway
+🔗 ┃ Links
+🤝 ┃ Partnerships
+🔇 ┃ Muted-users
+👋 ┃ Bye-bye
+🧰 ┃ Tools-and-apps
+⭐ ┃ Monthly-highlights
+✂️ ┃ Editing-room
+📣 ┃ Live-feedback
+📜 ┃ Logs
+👑 ┃ Admin
+🤝 ┃ Team-up
+⚖️ ┃ Appeals
+☕ ┃ Coffee-chat
+🍿 ┃ Watch-party
+💡 ┃ Plot-ideas
+🌍 ┃ Irl-stuff
+🔔 ┃ Updates
+❓ ┃ Questions
+💡 ┃ Suggestions
+🔒 ┃ Private VC
+⚖️ ┃ Judgement VC

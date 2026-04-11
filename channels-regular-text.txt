@@ -1,0 +1,412 @@
+# Serverly — Regular text (lowercase, hyphenated)
+# Pattern id: regular-text (see script.js formatChannelDemoLabel)
+# Source: channels.txt (canonical structure; this file is display names only.)
+Content Creator Layout:
+New (category)
+welcome
+rules
+roles
+Information (category)
+announcements
+giveaway
+pick-your-role
+polls
+links
+new-posts
+partnerships
+General (category)
+general
+off-topic
+gamer-chat
+clips
+tech
+art
+questions
+feedback
+BOT (category)
+bots
+cmd
+Voice Chat (category)
+lounge
+duo-#1
+duo-#2
+squad-#1
+squad-#2
+crew-lounge
+music
+stream
+afk
+Advisory (category)
+restricted-users
+muted-users
+judgement-vc
+Staff (category)
+admin
+server-ideas
+staff-information
+test-bot
+bye-bye
+staff-vc
+recording
+streaming
+friends
+Extra Channels (category)
+forum
+self-promote
+content-ideas
+brand-deals
+tools-and-apps
+creator-events
+monthly-highlights
+thumbnail-contents
+editing-room
+live-feedback
+hire-me
+team-up
+appeals
+coffee-chat
+watch-party
+support-vc
+memes
+fanart
+level
+counting
+subscriber
+highlights
+gallery
+pets
+management
+irl-photos
+our-socials
+social-media
+website
+faq
+ticket
+application
+appeal
+creator-lounge
+production-room
+
+Business Layout:
+Staff Only (category)
+lounge
+logs
+assets
+commands
+admin-vc
+Information (category)
+verification
+welcome
+announcements
+weekly-updates
+polls
+rules
+resources
+Network (category)
+general
+business-chat
+media
+off-topic
+suggestions
+specifications
+docs
+Voice Chat (category)
+general
+meeting
+afk
+Support (category)
+ticket
+apply
+faq
+help
+Bots (category)
+bot
+bot-chat-1
+bot-chat-2
+move-in
+bot-voice-1
+bot-voice-2
+Extras (category)
+forum
+application
+instructions
+tutorials
+product-info
+sales-tips
+collabs
+mindset-tips
+growth-strategies
+marketing-zone
+working-room
+server-planning
+social-media
+our-socials
+website
+start-here
+my-project
+project-feedback
+client-work
+event-calendar
+live-events
+moderation-logs
+community
+irl-photos
+management
+guidelines
+events
+prices
+clock-in-out
+inventory
+memes
+discussion
+
+Education Layout:
+Staff Only (category)
+lounge
+logs
+assets
+commands
+admin-vc
+Information (category)
+welcome
+announcements
+resources
+help
+Lounge (category)
+general
+memes
+media
+off-topic
+assign
+Voice Chat (category)
+general
+class
+afk
+STEM (category)
+science
+technology
+engineering
+mathematics
+Business (category)
+finance
+marketing
+management
+entrepreneurship
+Arts & Design (category)
+visual-arts
+performing-arts
+media
+graphic-design
+Humanities (category)
+history
+literature
+philosophy
+social-studies
+Language (category)
+english
+foreign-languages
+linguistics
+Health & Medicine (category)
+nursing
+biology
+psychology
+public-health
+Computer Science (category)
+programming
+it
+cybersecurity
+ai
+Education (category)
+teaching
+child-development
+education-leadership
+Law & Political Science (category)
+law
+criminology
+international-relations
+public-policy
+Sports & Physical Education (category)
+kinesiology
+coaching
+sports-management
+Performing Arts (category)
+music
+theater
+dance
+film-production
+Architecture & Design (category)
+interior
+landscape
+industrial
+urban-planning
+Media & Communication (category)
+journalism
+film
+broadcasting
+Extras (category)
+forum
+polls
+rules
+application
+instructions
+tutorials
+collabs
+working-room
+website
+start-here
+event-calendar
+live-events
+moderation-logs
+community
+irl-photos
+management
+inventory
+guidelines
+events
+memes
+prices
+discussion
+
+Startup Layout:
+Headquarters (category)
+lounge
+blueprints
+documentation
+launch-announcements
+event-calendar
+dev-console
+polls
+resources
+company-handbook
+executive-room
+Collaboration Zone (category)
+brainstorming
+planning
+suggestions
+prototypes
+testing
+feedback
+general
+coffee-corner
+meeting
+afk
+Core Operations (category)
+founders-and-leadership
+legal-and-compliance
+finance-and-accounting
+Design & Branding (category)
+ui
+brand-identity
+branding
+Marketing & Growth (category)
+social-media
+seo
+ads
+community
+analytics
+Sales & Customer (category)
+sales
+support
+partnerships
+retention
+Funding & Investment (category)
+investors
+budgeting
+revenue
+forecasting
+Planning & Strategy (category)
+goals
+research
+competition
+risk
+Tech Infrastructure (category)
+devops
+security
+automation
+bugs
+Extras (category)
+forum
+application
+instructions
+tutorials
+product-info
+sales-tips
+collabs
+mindset-tips
+growth-strategies
+orientation
+marketing-zone
+working-room
+server-planning
+social-media
+our-socials
+website
+start-here
+my-project
+project-feedback
+client-work
+event-calendar
+live-events
+moderation-logs
+community
+irl-photos
+management
+guidelines
+events
+prices
+clock-in-out
+inventory
+memes
+discussion
+
+Private Layout:
+Important (category)
+welcome
+announcements
+rules
+polls
+resources
+General (category)
+general
+off-topic
+memes
+art
+media
+edits
+feedback
+cmd
+Voice Chat (category)
+lounge
+game-night
+duo-#1
+duo-#2
+squad-#1
+squad-#2
+crew-lounge
+stream
+music
+afk
+Extra Channels (category)
+server-ideas
+giveaway
+links
+partnerships
+muted-users
+bye-bye
+tools-and-apps
+monthly-highlights
+editing-room
+live-feedback
+logs
+admin
+team-up
+appeals
+coffee-chat
+watch-party
+plot-ideas
+irl-stuff
+updates
+questions
+suggestions
+private-vc
+judgement-vc
