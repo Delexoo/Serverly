@@ -1,7 +1,7 @@
 (function () {
   var pages = document.querySelectorAll(".wizard-page");
   var FLOW_PAGE_ORDER = [0, 1, 2, 3];
-  /** Progress labels: 0 welcome, 1 server, 2 layout, 3 choose channel name style, 4 click channel / checkout. */
+  /** Progress labels: 0 welcome, 1 server, 2 layout, 3 choose channel name style, 4 checkout (after a style chip). */
   var totalSteps = 5;
   var backBtn = document.getElementById("wizard-back");
   var progressLabel = document.getElementById("progress-label");
@@ -25,10 +25,8 @@
     channelPatternLabel: null,
     /** Lane index (string) → edited label text for Custom pattern demo sidebar */
     channelCustomByLane: {},
-    /** True after user picks a naming style in the finish-step demo (not auto-default). */
+    /** True after user picks a naming style chip on the finish step (unlocks email/Stripe bar). */
     namingPatternUserChosen: false,
-    /** True after user clicks a channel in the finish-step demo — unlocks checkout bar + final progress step. */
-    finishCheckoutEngaged: false,
   };
 
   var patternPickLabelEl = document.getElementById("pattern-pick-label");
@@ -148,11 +146,11 @@
     return FLOW_PAGE_ORDER[pos];
   }
 
-  /** Finish screen splits into step 3 (choose channel name style) and step 4 (click a channel → checkout). */
+  /** Finish screen splits into step 3 (choose channel name style) and step 4 (after a style chip → checkout). */
   function effectiveProgressFlowPos() {
     var base = flowPosForPage(state.step);
     if (state.step === 3) {
-      if (state.namingPatternUserChosen || state.finishCheckoutEngaged) return 4;
+      if (state.namingPatternUserChosen) return 4;
       return 3;
     }
     return base;
@@ -196,7 +194,6 @@
 
   function setStep(n) {
     if (n < 0 || n >= pages.length) return;
-    if (n !== 3) state.finishCheckoutEngaged = false;
     state.step = n;
     pages.forEach(function (page, i) {
       page.classList.toggle("is-active", i === n);
@@ -1071,175 +1068,6 @@
     });
   }
 
-  var DEMO_PROFILES = [
-    { name: "Taylor Swift", seed: "taylor-swift-demo" },
-    { name: "Beyoncé", seed: "beyonce-demo" },
-    { name: "Drake", seed: "drake-demo" },
-    { name: "Rihanna", seed: "rihanna-demo" },
-    { name: "The Weeknd", seed: "weeknd-demo" },
-    { name: "Bad Bunny", seed: "badbunny-demo" },
-    { name: "Ariana Grande", seed: "ariana-demo" },
-    { name: "Zendaya", seed: "zendaya-demo" },
-    { name: "Chris Hemsworth", seed: "chris-hems-demo" },
-    { name: "Leonardo DiCaprio", seed: "leo-demo" },
-    { name: "Jennifer Lopez", seed: "jlo-demo" },
-    { name: "Dwayne Johnson", seed: "rock-demo" },
-    { name: "Billie Eilish", seed: "billie-eilish-demo" },
-    { name: "Dua Lipa", seed: "dua-lipa-demo" },
-    { name: "Ed Sheeran", seed: "ed-sheeran-demo" },
-    { name: "Bruno Mars", seed: "bruno-mars-demo" },
-    { name: "Selena Gomez", seed: "selena-gomez-demo" },
-    { name: "Miley Cyrus", seed: "miley-cyrus-demo" },
-    { name: "Shakira", seed: "shakira-demo" },
-    { name: "Lady Gaga", seed: "lady-gaga-demo" },
-    { name: "Post Malone", seed: "post-malone-demo" },
-    { name: "Travis Scott", seed: "travis-scott-demo" },
-    { name: "SZA", seed: "sza-demo" },
-    { name: "Doja Cat", seed: "doja-cat-demo" },
-    { name: "Olivia Rodrigo", seed: "olivia-rodrigo-demo" },
-    { name: "Kanye West", seed: "kanye-west-demo" },
-    { name: "Kendrick Lamar", seed: "kendrick-lamar-demo" },
-    { name: "Eminem", seed: "eminem-demo" },
-    { name: "Travis Kelce", seed: "travis-kelce-demo" },
-    { name: "LeBron James", seed: "lebron-james-demo" },
-    { name: "Cristiano Ronaldo", seed: "cr7-demo" },
-    { name: "Lionel Messi", seed: "messi-demo" },
-    { name: "Serena Williams", seed: "serena-williams-demo" },
-    { name: "Stephen Curry", seed: "stephen-curry-demo" },
-    { name: "Tom Holland", seed: "tom-holland-demo" },
-    { name: "Margot Robbie", seed: "margot-robbie-demo" },
-    { name: "Scarlett Johansson", seed: "scarlett-johansson-demo" },
-    { name: "Keanu Reeves", seed: "keanu-reeves-demo" },
-    { name: "Ryan Reynolds", seed: "ryan-reynolds-demo" },
-    { name: "Will Smith", seed: "will-smith-demo" },
-    { name: "Emma Stone", seed: "emma-stone-demo" },
-    { name: "Pedro Pascal", seed: "pedro-pascal-demo" },
-    { name: "Timothée Chalamet", seed: "timothee-chalamet-demo" },
-    { name: "Kim Kardashian", seed: "kim-kardashian-demo" },
-    { name: "Kylie Jenner", seed: "kylie-jenner-demo" },
-    { name: "MrBeast", seed: "mrbeast-demo" },
-    { name: "Logan Paul", seed: "logan-paul-demo" },
-    { name: "Neymar Jr", seed: "neymar-demo" },
-    { name: "Virat Kohli", seed: "virat-kohli-demo" },
-    { name: "Angelina Jolie", seed: "angelina-jolie-demo" },
-    { name: "Robert Downey Jr", seed: "rdj-demo" },
-    { name: "Megan Thee Stallion", seed: "meg-thee-stallion-demo" },
-    { name: "Ice Spice", seed: "ice-spice-demo" },
-    { name: "Sydney Sweeney", seed: "sydney-sweeney-demo" },
-  ];
-
-  /** Pairs shown as member list section titles (replaces former Idle / Do Not Disturb labels). */
-  var DEMO_ROLE_SECTION_PAIRS = [
-    ["Moderators", "VIP"],
-    ["Hosts", "Creators"],
-    ["Leads", "Partners"],
-    ["Staff", "Artists"],
-    ["Analysts", "Producers"],
-  ];
-
-  function demoShuffle(arr) {
-    var a = arr.slice();
-    var i;
-    for (i = a.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = a[i];
-      a[i] = a[j];
-      a[j] = t;
-    }
-    return a;
-  }
-
-  /** Discord client default avatars (colored circles + logo); index 0..5 from CDN. */
-  function demoDiscordDefaultAvatarIndex(seed) {
-    var s = String(seed || "0");
-    var h = 0;
-    var i;
-    for (i = 0; i < s.length; i++) {
-      h = (h * 31 + s.charCodeAt(i)) | 0;
-    }
-    return Math.abs(h) % 6;
-  }
-
-  function demoAvatarUrl(seed) {
-    var idx = demoDiscordDefaultAvatarIndex(seed);
-    return "https://cdn.discordapp.com/embed/avatars/" + idx + ".png";
-  }
-
-  function demoStatusHtml(status) {
-    var titles = {
-      online: "Online",
-      idle: "Idle",
-      dnd: "Do Not Disturb",
-      offline: "Offline",
-      invisible: "Invisible",
-      streaming: "Streaming",
-    };
-    var t = titles[status] || titles.offline;
-    return (
-      '<span class="discord-demo-status discord-demo-status--' +
-      status +
-      '" title="' +
-      escapeHtml(t) +
-      '" aria-hidden="true"></span>'
-    );
-  }
-
-  function buildDemoUserRoster() {
-    var shuffled = demoShuffle(DEMO_PROFILES);
-    var rest = shuffled.slice(0, 14);
-    var cycle = [
-      "online",
-      "idle",
-      "dnd",
-      "streaming",
-      "offline",
-      "online",
-      "idle",
-      "dnd",
-      "streaming",
-      "offline",
-      "online",
-      "idle",
-      "dnd",
-      "streaming",
-    ];
-    var members = rest.map(function (p, i) {
-      return {
-        name: p.name,
-        seed: p.seed + "-m" + i,
-        status: cycle[i % cycle.length],
-      };
-    });
-    var idleTrim = 0;
-    for (var mi = 0; mi < members.length && idleTrim < 2; mi++) {
-      if (members[mi].status === "idle") {
-        members[mi].status = "online";
-        idleTrim++;
-      }
-    }
-    return {
-      self: { name: "You", seed: "you-self", status: "online" },
-      members: members,
-    };
-  }
-
-  function buildDemoUserbarHtml(roster) {
-    return (
-      '<div class="discord-demo-userbar" aria-hidden="true">' +
-      '<div class="discord-demo-avatar-wrap">' +
-      '<img class="discord-demo-user-av discord-demo-user-av--img" src="' +
-      escapeHtml(demoAvatarUrl(roster.self.seed)) +
-      '" alt="" width="32" height="32" loading="eager" decoding="async" />' +
-      demoStatusHtml("online") +
-      "</div>" +
-      '<span class="discord-demo-user-meta">' +
-      "You" +
-      '<span class="discord-demo-user-sub">' +
-      escapeHtml("Online") +
-      "</span></span></div>"
-    );
-  }
-
   function buildDemoRailHtml() {
     return (
       '<div class="discord-demo-rail" aria-hidden="true">' +
@@ -1264,7 +1092,7 @@
     );
   }
 
-  /** Decorative mobile-only tab bar (CSS shows only under max-width breakpoint). */
+  /** Decorative bottom tab bar (Discord mobile chrome; shown on all viewports). */
   function buildDemoMobileTabbarHtml() {
     var homeSvg =
       '<svg class="discord-demo-tabbar-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/></svg>';
@@ -1294,71 +1122,6 @@
       "</button>" +
       "</nav>"
     );
-  }
-
-  function buildDemoMembersPanelHtml(roster) {
-    var selfRow = {
-      name: roster.self.name,
-      seed: roster.self.seed,
-      status: "online",
-      isYou: true,
-    };
-    var all = [selfRow].concat(roster.members);
-    var order = ["online", "streaming", "idle", "dnd", "offline"];
-    var rolePair = DEMO_ROLE_SECTION_PAIRS[Math.floor(Math.random() * DEMO_ROLE_SECTION_PAIRS.length)];
-    var labels = {
-      online: "Online",
-      streaming: "Streaming",
-      idle: rolePair[0],
-      dnd: rolePair[1],
-      offline: "Offline",
-    };
-    var out = "";
-    var oi;
-    for (oi = 0; oi < order.length; oi++) {
-      var key = order[oi];
-      var users = [];
-      var ui;
-      for (ui = 0; ui < all.length; ui++) {
-        if (key === "offline") {
-          if (all[ui].status === "offline" || all[ui].status === "invisible") {
-            users.push(all[ui]);
-          }
-        } else if (all[ui].status === key) {
-          users.push(all[ui]);
-        }
-      }
-      if (!users.length) continue;
-      out +=
-        '<div class="discord-demo-members-section">' +
-        '<div class="discord-demo-members-head">' +
-        escapeHtml(labels[key]) +
-        ", " +
-        users.length +
-        "</div>";
-      for (ui = 0; ui < users.length; ui++) {
-        var u = users[ui];
-        var rowCls = "discord-demo-member-row" + (key === "offline" ? " discord-demo-member-row--offline" : "");
-        var badgeStatus = u.status;
-        out +=
-          '<div class="' +
-          rowCls +
-          '">' +
-          '<div class="discord-demo-avatar-wrap discord-demo-avatar-wrap--sm">' +
-          '<img class="discord-demo-user-av discord-demo-user-av--sm discord-demo-user-av--img" src="' +
-          escapeHtml(demoAvatarUrl(u.seed)) +
-          '" alt="" width="32" height="32" loading="eager" decoding="async" />' +
-          demoStatusHtml(badgeStatus) +
-          "</div>" +
-          '<span class="discord-demo-member-name">' +
-          (u.isYou
-            ? '<span class="discord-demo-you-strong">You</span>'
-            : escapeHtml(u.name)) +
-          "</span></div>";
-      }
-      out += "</div>";
-    }
-    return '<div class="discord-demo-members-scroll">' + out + "</div>";
   }
 
   function buildDemoPatternSwitcherHtml() {
@@ -1503,7 +1266,7 @@
   }
 
   /**
-   * Discord mock only (no pattern bar / summary chrome). Optional demoExtraClass for sizing variants.
+   * Discord mock: server rail + channel list + mobile-style tab bar (all viewports). No chat / members / user strip.
    */
   function buildDiscordDemoInnerHtml(patternId, tree, options) {
     options = options || {};
@@ -1513,15 +1276,6 @@
       options.ariaLabel != null ? String(options.ariaLabel) : "Discord-style layout preview";
     var rowsPack = buildDiscordCategoryRowsHtml(tree, patternId || "");
     var catHtml = rowsPack.catHtml;
-    var defCh = rowsPack.defCh;
-    var defLaneIndex = rowsPack.defLaneIndex;
-    var defLabel = defaultLaneDisplay(patternId, defCh.name, defCh.voice, defLaneIndex);
-    var defText = defCh.voice ? defLabel : "# " + defLabel;
-    var defHeader = defText;
-    var defWelcome = "Welcome to " + defText + "!";
-    var defSub = "This is the start of the " + defText + " channel.";
-    var defMsg = "Message " + defText;
-    var demoRoster = buildDemoUserRoster();
     return (
       '<div class="discord-demo' +
       demoExtraClass +
@@ -1544,33 +1298,6 @@
       "</div>" +
       catHtml +
       "</div>" +
-      buildDemoUserbarHtml(demoRoster) +
-      "</div>" +
-      '<div class="discord-demo-main">' +
-      '<div class="discord-demo-main-toolbar">' +
-      '<span class="discord-demo-main-channel" data-demo-main-header>' +
-      escapeHtml(defHeader) +
-      "</span>" +
-      "</div>" +
-      '<div class="discord-demo-main-body">' +
-      '<div class="discord-demo-welcome" data-demo-welcome>' +
-      '<h2 class="discord-demo-welcome-title" data-demo-welcome-title>' +
-      escapeHtml(defWelcome) +
-      "</h2>" +
-      '<p class="discord-demo-welcome-sub" data-demo-welcome-sub>' +
-      escapeHtml(defSub) +
-      "</p>" +
-      "</div>" +
-      '<div class="discord-demo-messages" data-demo-messages aria-live="polite"></div>' +
-      "</div>" +
-      '<div class="discord-demo-inputbar">' +
-      '<input type="text" class="discord-demo-input" data-demo-msg-input maxlength="500" autocomplete="off" spellcheck="false" placeholder="' +
-      escapeHtml(defMsg) +
-      '" aria-label="Demo message box (press Enter to send)" />' +
-      "</div>" +
-      "</div>" +
-      '<div class="discord-demo-members" aria-hidden="true">' +
-      buildDemoMembersPanelHtml(demoRoster) +
       "</div>" +
       buildDemoMobileTabbarHtml() +
       "</div>"
@@ -1591,7 +1318,7 @@
       ? '<p class="preview-disclaimer summary-preview-bundle-lead">You are purchasing · <strong data-summary-selected-style>' +
         escapeHtml(lab) +
         "</strong></p>"
-      : '<p class="preview-disclaimer summary-preview-bundle-lead">Pick a channel name style above — that’s what you’re purchasing.</p>';
+      : '<p class="preview-disclaimer summary-preview-bundle-lead">Pick a <strong>channel name style</strong> above — try them out in the preview.</p>';
     var patternBar = buildDemoPatternSwitcherHtml();
     var inner = buildDiscordDemoInnerHtml(renderPattern, tree, {
       serverLabel: "Your server",
@@ -1807,35 +1534,13 @@
     if (!container) return;
     var demo = container.querySelector(".discord-demo");
     if (!demo) return;
-    var patternId = demo.getAttribute("data-demo-pattern") || "";
     var scrollEl = demo.querySelector(".discord-demo-channel-scroll");
-    var mainHeader = demo.querySelector("[data-demo-main-header]");
-    var welcomeTitle = demo.querySelector("[data-demo-welcome-title]");
-    var welcomeSub = demo.querySelector("[data-demo-welcome-sub]");
-    var msgInput = demo.querySelector("[data-demo-msg-input]");
-    var msgList = demo.querySelector("[data-demo-messages]");
-    var welcomeWrap = demo.querySelector("[data-demo-welcome]");
-    if (!scrollEl || !mainHeader || !welcomeTitle || !welcomeSub) return;
+    if (!scrollEl) return;
 
     var rows = demo.querySelectorAll(".discord-demo-ch");
     var r;
 
     function updateFromRow(row) {
-      var name = row.getAttribute("data-name") || "";
-      var voice = row.getAttribute("data-voice") === "true";
-      var li = parseInt(row.getAttribute("data-lane-index") || "0", 10);
-      if (isNaN(li)) li = 0;
-      var rawLabel = row.querySelector(".discord-demo-ch-label");
-      var label = rawLabel ? rawLabel.textContent || "" : formatChannelDemoLabel(patternId, name, voice, li);
-      var shownLabel = voice ? label : "# " + label;
-      var headerText = shownLabel;
-      var welcome = "Welcome to " + shownLabel + "!";
-      var sub = "This is the start of the " + shownLabel + " channel.";
-      var msg = "Message " + shownLabel;
-      mainHeader.textContent = headerText;
-      welcomeTitle.textContent = welcome;
-      welcomeSub.textContent = sub;
-      if (msgInput) msgInput.placeholder = msg;
       var k;
       for (k = 0; k < rows.length; k++) {
         rows[k].classList.remove("is-active");
@@ -1848,11 +1553,6 @@
     for (r = 0; r < rows.length; r++) {
       rows[r].addEventListener("click", function () {
         updateFromRow(this);
-        if (state.step === 3 && hasSummaryContent()) {
-          state.finishCheckoutEngaged = true;
-          syncWizardProgress();
-          syncFinishCheckoutUi();
-        }
       });
     }
 
@@ -1881,50 +1581,6 @@
         }
       });
     });
-
-    var checkoutDemoReply =
-      "We know you like this template. If you want us to process it, use the checkout button below.";
-
-    function sendDemoMessage() {
-      if (!msgInput || !msgList) return;
-      var raw = msgInput.value.trim();
-      if (!raw) return;
-      msgInput.value = "";
-      var userRow =
-        '<div class="discord-demo-msg discord-demo-msg--user">' +
-        '<span class="discord-demo-msg-bubble">' +
-        escapeHtml(raw) +
-        "</span>" +
-        '<img class="discord-demo-msg-avatar discord-demo-msg-avatar--img" src="' +
-        escapeHtml(demoAvatarUrl("you-self")) +
-        '" alt="" width="24" height="24" loading="lazy" decoding="async" />' +
-        "</div>";
-      msgList.insertAdjacentHTML("beforeend", userRow);
-      if (welcomeWrap) welcomeWrap.classList.add("discord-demo-welcome--faded");
-      msgList.scrollTop = msgList.scrollHeight;
-      var reply = checkoutDemoReply;
-      setTimeout(function () {
-        var botRow =
-          '<div class="discord-demo-msg discord-demo-msg--bot">' +
-          '<img class="discord-demo-msg-avatar discord-demo-msg-avatar--img" src="' +
-          escapeHtml(demoAvatarUrl("serverly-bot-reply")) +
-          '" alt="" width="24" height="24" loading="lazy" decoding="async" />' +
-          '<span class="discord-demo-msg-bubble discord-demo-msg-bubble--bot">' +
-          escapeHtml(reply) +
-          "</span></div>";
-        msgList.insertAdjacentHTML("beforeend", botRow);
-        msgList.scrollTop = msgList.scrollHeight;
-      }, 380);
-    }
-
-    if (msgInput) {
-      msgInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          sendDemoMessage();
-        }
-      });
-    }
   }
 
   function getCheckoutApiBase() {
@@ -1974,9 +1630,9 @@
     return !!(state.serverMode && state.layoutType);
   }
 
-  /** Email + Stripe bar: after a style chip, or after clicking a channel in the demo (either unlocks). */
+  /** Email + Stripe bar: only after user clicks a channel name style chip on the finish step. */
   function isCheckoutStickyBarUnlocked() {
-    return state.namingPatternUserChosen || state.finishCheckoutEngaged;
+    return state.namingPatternUserChosen;
   }
 
   function updateFinishStepLead() {
@@ -1987,13 +1643,12 @@
       return;
     }
     if (isCheckoutStickyBarUnlocked()) {
-      el.innerHTML = state.namingPatternUserChosen
-        ? '<span class="finish-step-lead-status finish-step-lead-status--done">Style applied.</span> Enter your email in the bar below, then use <strong>Pay on Stripe</strong>.'
-        : '<span class="finish-step-lead-status finish-step-lead-status--done">Ready for checkout.</span> Enter your email in the bar below, then use <strong>Pay on Stripe</strong>.';
+      el.innerHTML =
+        '<span class="finish-step-lead-status finish-step-lead-status--done">Style applied.</span> Enter your email in the bar below, then use <strong>Pay on Stripe</strong>.';
       return;
     }
     el.innerHTML =
-      'Pick a <strong>channel name style</strong> above the preview to open checkout. You can click channels in the sidebar to explore the layout.';
+      'Choose a <strong>channel name style</strong> in the preview section below to load your layout. Selecting a style unlocks checkout. You can click channels in the sidebar to explore how your server is organized.';
   }
 
   function isValidCheckoutEmail(s) {
@@ -2110,7 +1765,6 @@
     state.channelPatternLabel = null;
     state.channelCustomByLane = {};
     state.namingPatternUserChosen = false;
-    state.finishCheckoutEngaged = false;
     syncPatternSelectionUI();
     setStep(0);
   }

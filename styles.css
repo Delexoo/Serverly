@@ -1837,11 +1837,13 @@ button.style-card.pattern-select {
   background: var(--surface-muted);
 }
 
-/* Summary: Discord-style interactive demo — clamp() forces a real pixel height (vh alone can look “unchanged” on some layouts). */
+/* Summary: Discord-style demo — rail + channel list + bottom tab bar on all viewports (mobile client chrome). */
 .discord-demo {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
   align-items: stretch;
+  justify-items: stretch;
   max-width: 100%;
   box-sizing: border-box;
   min-height: clamp(480px, 61vh, 708px);
@@ -1857,16 +1859,25 @@ button.style-card.pattern-select {
   color: #949ba4;
 }
 
-/* Finish-step summary: same sizing, higher specificity so nothing overrides */
+/* Finish-step summary: phone-like width on desktop (narrow column + centered), full width when parent < cap */
 #wizard-summary .discord-demo,
 .summary-preview-combined .discord-demo {
+  width: 100%;
+  max-width: min(360px, 100%);
+  margin-left: auto;
+  margin-right: auto;
   min-height: clamp(480px, 61vh, 708px);
   height: clamp(552px, 67vh, 820px);
   max-height: clamp(552px, 77vh, 940px);
 }
 
 .discord-demo-rail {
-  flex: 0 0 52px;
+  grid-column: 1;
+  grid-row: 1;
+  width: 52px;
+  max-width: 52px;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1874,10 +1885,9 @@ button.style-card.pattern-select {
   padding: 0.5rem 0.35rem;
   background: #1e1f22;
   pointer-events: none;
-  min-height: 0;
-  align-self: stretch;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   justify-content: flex-start;
   scrollbar-width: thin;
   scrollbar-color: #4e5058 #1a1c1e;
@@ -1960,14 +1970,14 @@ button.style-card.pattern-select {
 }
 
 .discord-demo-sidebar {
-  flex: 0 0 min(240px, 32vw);
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  align-self: stretch;
   background: #2b2d31;
-  border-right: 1px solid #1f2023;
+  border-right: none;
 }
 
 .discord-demo-sidebar-top {
@@ -2028,6 +2038,8 @@ button.style-card.pattern-select {
   scrollbar-width: thin;
   scrollbar-color: #4e5058 #1a1c1e;
   pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #2b2d31;
 }
 
 .discord-demo-channel-scroll::-webkit-scrollbar {
@@ -2664,12 +2676,13 @@ button.style-card.pattern-select {
   color: #f2f3f5;
 }
 
-/* Mobile tab bar: hidden on desktop; shown inside @media below */
 .discord-demo-tabbar {
-  display: none;
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 2;
   box-sizing: border-box;
-  flex-shrink: 0;
   width: 100%;
+  max-width: none;
   min-height: 52px;
   padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom, 0));
   background: #1e1f22;
@@ -2756,83 +2769,8 @@ button.style-card.pattern-select {
   text-align: center;
 }
 
-@media (max-width: 720px) {
-  /*
-   * Grid (not flex-wrap + space-between): one tall row for rail + channels, tab bar flush below.
-   * Avoids a #313338 “dead” band between the channel list and Home / Notifications / You.
-   */
-  .discord-demo {
-    display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    grid-template-rows: 1fr auto;
-    align-items: stretch;
-    justify-items: stretch;
-    min-height: 0;
-    max-height: none;
-  }
-
-  .discord-demo-rail {
-    display: flex !important;
-    grid-column: 1;
-    grid-row: 1;
-    width: 52px;
-    max-width: 52px;
-    min-width: 0;
-    min-height: 0;
-    max-height: none;
-    flex: unset;
-    flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    align-self: stretch;
-  }
-
-  .discord-demo-main,
-  .discord-demo-members,
-  .discord-demo-userbar,
-  .discord-demo-nav-static {
-    display: none !important;
-  }
-
-  .discord-demo-sidebar {
-    grid-column: 2;
-    grid-row: 1;
-    flex: unset;
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    min-height: 0;
-    border-right: none;
-    border-bottom: none;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .discord-demo-sidebar-top {
-    flex-shrink: 0;
-  }
-
-  .discord-demo-channel-scroll {
-    flex: 1 1 0;
-    min-height: 0;
-    max-height: none;
-    -webkit-overflow-scrolling: touch;
-    background: #2b2d31;
-  }
-
-  .discord-demo-tabbar {
-    display: flex;
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-    max-width: none;
-    flex: unset;
-  }
-
-  .discord-demo-tabbar-item:first-child {
-    color: #f2f3f5;
-  }
+.discord-demo-tabbar-item:first-child {
+  color: #f2f3f5;
 }
 
 .outcome-h--tier-samples {
@@ -4680,14 +4618,14 @@ html.wizard-app body.wizard-app #step-layout-type.wizard-page > .wizard-inner {
   }
 }
 
-/* Layout step: tabbed channel list previews — modest gap below grid on desktop; tight on phones */
+/* Layout step: tabbed channel list previews — extra space so users scroll into Layout previews */
 #step-layout-type .layout-examples {
-  margin-top: clamp(1.5rem, 5vw, 3rem);
+  margin-top: clamp(3rem, 28vw, 7rem);
 }
 
 @media (min-width: 768px) {
   #step-layout-type .layout-examples {
-    margin-top: clamp(2.5rem, 12vh, 6rem);
+    margin-top: clamp(4.5rem, 28vh, 12rem);
   }
 }
 
