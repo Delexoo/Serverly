@@ -1,36 +1,81 @@
 /**
- * Wizard selection → Discord server template URL.
- * URLs are never committed to the repo: set them as environment variables on Render (or your host).
- * Used only by the checkout API (Node), not bundled for the browser.
+ * Wizard selection → Discord server template URL (process.env).
+ *
+ * Env var name rule: {LAYOUT}_{NAMING_STYLE}
+ * - Layout comes from wizard layoutType (e.g. content_creator → CONTENT_CREATOR).
+ * - Naming style comes from channelPattern slug (e.g. bar-divider → BAR_DIVIDER, flourish → FLOURISH_WRAP).
+ *
+ * Examples:
+ *   content_creator + bar-divider  → CONTENT_CREATOR_BAR_DIVIDER
+ *   content_creator + flourish     → CONTENT_CREATOR_FLOURISH_WRAP
+ *   business + regular-text        → BUSINESS_REGULAR_TEXT
+ *
+ * Set the matching env var to your Discord template URL on the host (Render, etc.).
  */
 
-/** Map "tier:layoutType:channelPattern" → process.env key name */
-const TEMPLATE_ENV_KEYS = {
-  /** Wizard card "Column" → data-pattern="bold-column" */
-  "advanced:content_creator:bold-column": "CONTENT_CREATOR_COLUMN",
-  /** Wizard card "Bar divider" → data-pattern="bar-divider" */
-  "advanced:content_creator:bar-divider": "CONTENT_CREATOR_BAR_DIVIDER",
-  /** Wizard card "Flourish wrap" → data-pattern="flourish" */
-  "advanced:content_creator:flourish": "CONTENT_CREATOR_FLOURISH_WRAP",
-  /** Wizard card "Corner brackets" → data-pattern="corner-brackets" */
-  "advanced:content_creator:corner-brackets": "CONTENT_CREATOR_CORNER_BRACKETS",
-  /** Wizard card "Chevrons" → data-pattern="chevrons" */
-  "advanced:content_creator:chevrons": "CONTENT_CREATOR_CHEVRONS",
-  /** Wizard card "Regular text" → data-pattern="regular-text" (Advanced or Basic) */
-  "advanced:content_creator:regular-text": "CONTENT_CREATOR_REGULAR_TEXT",
-  "simple:content_creator:regular-text": "CONTENT_CREATOR_REGULAR_TEXT",
+/** Wizard layoutType → env name prefix */
+const LAYOUT_TYPE_PREFIX = {
+  content_creator: "CONTENT_CREATOR",
+  business: "BUSINESS",
+  education: "EDUCATION",
+  startup: "STARTUP",
+  private: "PRIVATE",
 };
 
+/**
+ * Wizard channelPattern (data-demo-pattern / checkout body) → env name suffix.
+ * Keeps legacy names (e.g. COLUMN, FLOURISH_WRAP) aligned with existing env keys.
+ */
+const CHANNEL_PATTERN_SUFFIX = {
+  "regular-text": "REGULAR_TEXT",
+  "bar-divider": "BAR_DIVIDER",
+  flourish: "FLOURISH_WRAP",
+  "bold-column": "COLUMN",
+  "corner-brackets": "CORNER_BRACKETS",
+  chevrons: "CHEVRONS",
+  "dot-separator": "DOT_SEPARATOR",
+  "em-dash": "EM_DASH",
+  "sparkle-dot": "SPARKLE_DOT",
+};
+
+function layoutTypeToPrefix(layoutType) {
+  const raw = (layoutType || "").toString().trim();
+  if (!raw) return "";
+  if (LAYOUT_TYPE_PREFIX[raw]) return LAYOUT_TYPE_PREFIX[raw];
+  return raw
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map((w) => w.toUpperCase())
+    .join("_");
+}
+
+function channelPatternToSuffix(channelPattern) {
+  const raw = (channelPattern || "").toString().trim();
+  if (!raw) return "";
+  if (CHANNEL_PATTERN_SUFFIX[raw]) return CHANNEL_PATTERN_SUFFIX[raw];
+  return raw
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.toUpperCase())
+    .join("_");
+}
+
+/**
+ * Public name for the env key (for logs, Stripe metadata, or ops docs).
+ */
+function getTemplateEnvKey(fields) {
+  const layoutPrefix = layoutTypeToPrefix((fields && fields.layoutType) || "");
+  const patternSuffix = channelPatternToSuffix((fields && fields.channelPattern) || "");
+  if (!layoutPrefix || !patternSuffix) return "";
+  return `${layoutPrefix}_${patternSuffix}`;
+}
+
 function resolveDiscordTemplateUrl(fields) {
-  const tier = (fields && fields.tier) || "";
-  const layoutType = (fields && fields.layoutType) || "";
-  const channelPattern = (fields && fields.channelPattern) || "";
-  const composite = `${tier}:${layoutType}:${channelPattern}`;
-  const envName = TEMPLATE_ENV_KEYS[composite];
+  const envName = getTemplateEnvKey(fields);
   if (!envName) return "";
   const raw = process.env[envName];
   if (raw == null || String(raw).trim() === "") return "";
   return String(raw).trim().slice(0, 500);
 }
 
-module.exports = { resolveDiscordTemplateUrl };
+module.exports = { resolveDiscordTemplateUrl, getTemplateEnvKey };

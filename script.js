@@ -1,17 +1,19 @@
 (function () {
   var pages = document.querySelectorAll(".wizard-page");
-  var FLOW_PAGE_ORDER = [0, 4, 1, 2, 3, 5, 6];
-  var totalSteps = FLOW_PAGE_ORDER.length || pages.length || 7;
+  var FLOW_PAGE_ORDER = [0, 1, 2, 3];
+  var totalSteps = FLOW_PAGE_ORDER.length || pages.length || 4;
   var backBtn = document.getElementById("wizard-back");
   var progressLabel = document.getElementById("progress-label");
   var progressFill = document.getElementById("progress-fill");
   var homeBtn = document.getElementById("wizard-home");
   var summaryEl = document.getElementById("wizard-summary");
-  var summaryCheckoutCta = document.getElementById("summary-checkout-cta");
-  var drawer = document.getElementById("mobile-drawer");
-  var backdrop = document.getElementById("drawer-backdrop");
-  var navToggle = document.querySelector(".nav-toggle");
-  var header = document.querySelector(".site-header");
+  var checkoutStickyBar = document.getElementById("checkout-sticky-bar");
+  var stickyBarShowTimer = null;
+  var STICKY_BAR_REVEAL_MS = 480;
+
+  /** Voice channel icon (SVG) — reliable across platforms vs. speaker emoji */
+  var DEMO_VOICE_CHANNEL_SVG =
+    '<svg class="demo-voice-channel-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
 
   var state = {
     step: 0,
@@ -20,27 +22,22 @@
     packageTier: null,
     channelPattern: null,
     channelPatternLabel: null,
-    checkoutReady: false,
     /** Lane index (string) → edited label text for Custom pattern demo sidebar */
     channelCustomByLane: {},
+    /** True after user picks a naming style in the finish-step demo (not auto-default). */
+    namingPatternUserChosen: false,
   };
 
   var patternPickLabelEl = document.getElementById("pattern-pick-label");
   var styleTierNoteEl = document.getElementById("style-tier-note");
   var patternSelectButtons = document.querySelectorAll(".pattern-select[data-pattern]");
-  var patternCustomCard = document.getElementById("pattern-custom-card");
-  var checkoutPanel = document.getElementById("checkout-panel");
+  /** Single product: full layout at $20 (Stripe/metadata tier key remains "advanced"). */
+  var PRODUCT_TIER_KEY = "advanced";
   var checkoutFlash = document.getElementById("checkout-flash");
-  var checkoutTierLabel = document.getElementById("checkout-tier-label");
-  var checkoutAmount = document.getElementById("checkout-amount");
-  var checkoutApiNote = document.getElementById("checkout-api-note");
-  var checkoutTierWarning = document.getElementById("checkout-tier-warning");
-  var checkoutEmailInp = document.getElementById("checkout-email");
-  var checkoutSubmit = document.getElementById("checkout-submit");
   var flashCheckoutTimer = null;
 
   var SERVER_MODE_LABELS = {
-    update: "Update current server (in progress, not available)",
+    update: "Fix my current server (coming soon, not available)",
     fresh: "New server template (new or reset server)",
   };
 
@@ -49,7 +46,6 @@
     business: "Businesses",
     education: "Education",
     startup: "Startup workspace",
-    coaching: "Coaching",
     private: "Private servers",
   };
 
@@ -87,7 +83,6 @@
     { id: "dot-separator", label: "Dot separator" },
     { id: "em-dash", label: "Em dash" },
     { id: "sparkle-dot", label: "Sparkle dot" },
-    { id: "custom", label: "Custom" },
   ];
 
   function serverModeNote(mode) {
@@ -138,14 +133,7 @@
     return list;
   }
 
-  function syncPackagePickUI() {
-    document.querySelectorAll("[data-package-tier]").forEach(function (b) {
-      var card = b.closest(".price-card");
-      if (!card) return;
-      var t = b.getAttribute("data-package-tier");
-      card.classList.toggle("is-picked", !!state.packageTier && t === state.packageTier);
-    });
-  }
+  function syncPackagePickUI() {}
 
   function flowPosForPage(pageIdx) {
     var i = FLOW_PAGE_ORDER.indexOf(pageIdx);
@@ -158,28 +146,15 @@
   }
 
   function syncPatternTierGate() {
-    var simple = state.packageTier === "simple";
     patternSelectButtons.forEach(function (btn) {
-      var id = btn.getAttribute("data-pattern");
-      var locked = simple && id !== "regular-text";
-      btn.classList.toggle("pattern-select--locked", locked);
-      btn.setAttribute("aria-disabled", locked ? "true" : "false");
+      btn.classList.remove("pattern-select--locked");
+      btn.setAttribute("aria-disabled", "false");
     });
-    if (styleTierNoteEl) {
-      styleTierNoteEl.textContent = simple
-        ? "Basic includes Regular text only. Other styles are visible but available in Advanced ($20)."
-        : "Advanced unlocks all channel naming styles.";
-    }
   }
 
   function setStep(n) {
     if (n < 0 || n >= pages.length) return;
-    var prevStep = state.step;
-    var lastIdx = pages.length - 1;
     state.step = n;
-    if (prevStep === lastIdx && n !== lastIdx) {
-      state.checkoutReady = false;
-    }
     pages.forEach(function (page, i) {
       page.classList.toggle("is-active", i === n);
     });
@@ -194,37 +169,24 @@
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    if (n === 5) renderSummary();
     if (n === 3) {
-      renderPatternStylePreviews();
+      state.packageTier = PRODUCT_TIER_KEY;
+      renderSummary();
       syncPatternSelectionUI();
       syncPatternTierGate();
     }
-    if (n === 4) syncPackagePickUI();
-    if (n === 5) {
-      syncPackagePickUI();
-      syncPatternSelectionUI();
-      syncPatternTierGate();
-      updateFinishStepLead();
-    }
-    if (n === 6) {
-      state.checkoutReady = true;
-      if (!state.packageTier) {
-        state.packageTier = "advanced";
-      }
-      syncCheckoutPanel();
-    }
-    closeDrawer();
     syncHeroValueRotator(n);
+    syncFinishCheckoutUi();
+    if (n === 2) renderLayoutChannelPreviewIfNeeded();
   }
 
   /** Welcome hero: vertical slide + smooth viewport height (paused off welcome). */
   var HERO_VALUE_ROTATOR_LINES = [
     { k: "Monetize", v: "paid-access ready channels and roles." },
     { k: "Growth", v: "scalable structure without chaos." },
-    { k: "Affordable", v: "pricing starts at $10." },
+    { k: "Simple", v: "one price — $20 at checkout." },
     { k: "Optimal", v: "layouts tuned for engagement." },
-    { k: "Easy", v: "quick wizard with live demo." },
+    { k: "Easy", v: "quick flow on the website with a live demo." },
   ];
   var heroRotatorTimeoutId = null;
   var heroRotatorIndex = 0;
@@ -338,9 +300,6 @@
       btn.classList.toggle("is-selected", !!on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
-    if (patternCustomCard) {
-      patternCustomCard.classList.toggle("is-selected", state.channelPattern === "custom");
-    }
     if (patternPickLabelEl) {
       patternPickLabelEl.textContent = state.channelPatternLabel || "none selected (optional)";
     }
@@ -367,187 +326,355 @@
       .replace(/"/g, "&quot;");
   }
 
-  /** Full server layout: categories and channels (single source for summary list + Discord demo). Total: 58 channels; order matches product spec. */
-  var CHANNEL_TREE = [
-    {
-      title: "New !",
-      locked: false,
-      channels: [
-        { name: "Welcome", voice: false, locked: false },
-        { name: "Rule", voice: false, locked: false },
-        { name: "Roles", voice: false, locked: false },
-      ],
-    },
-    {
-      title: "Information",
-      locked: false,
-      channels: [
-        { name: "Announcements", voice: false, locked: false },
-        { name: "Giveaway", voice: false, locked: false },
-        { name: "Pick-Your-Role", voice: false, locked: false },
-        { name: "Polls", voice: false, locked: false },
-        { name: "Links", voice: false, locked: false },
-        { name: "New-Posts", voice: false, locked: false },
-        { name: "Partnerships", voice: false, locked: false },
-      ],
-    },
-    {
-      title: "General",
-      locked: false,
-      channels: [
-        { name: "General", voice: false, locked: false },
-        { name: "Off-Topic", voice: false, locked: false },
-        { name: "Game-Chat", voice: false, locked: false },
-        { name: "Clips", voice: false, locked: false },
-        { name: "Tech", voice: false, locked: false },
-        { name: "Art", voice: false, locked: false },
-        { name: "Questions", voice: false, locked: false },
-        { name: "Feedback", voice: false, locked: false },
-      ],
-    },
-    {
-      title: "BOT",
-      locked: false,
-      channels: [
-        { name: "Bots", voice: false, locked: false },
-        { name: "CMD", voice: false, locked: false },
-      ],
-    },
-    {
-      title: "Voice Chat",
-      locked: false,
-      channels: [
-        { name: "Lounge", voice: true, locked: false },
-        { name: "Duo #1", voice: true, locked: false },
-        { name: "Duo #2", voice: true, locked: false },
-        { name: "Squad #1", voice: true, locked: false },
-        { name: "Squad #2", voice: true, locked: false },
-        { name: "Crew Lounge", voice: true, locked: false },
-        { name: "Music", voice: true, locked: false },
-        { name: "Stream", voice: true, locked: false },
-        { name: "AFK", voice: true, locked: false },
-      ],
-    },
-    {
-      title: "Advisory",
-      locked: true,
-      channels: [
-        { name: "Restricted-Users", voice: false, locked: true },
-        { name: "Muted-Users", voice: false, locked: true },
-        { name: "Jugement VC", voice: true, locked: true },
-      ],
-    },
-    {
-      title: "Staff",
-      locked: true,
-      channels: [
-        { name: "Admin", voice: false, locked: true },
-        { name: "Server-Ideas", voice: false, locked: true },
-        { name: "Staff-Information", voice: false, locked: true },
-        { name: "Test-Bot", voice: false, locked: true },
-        { name: "Bye-Bye", voice: false, locked: true },
-        { name: "Staff VC", voice: true, locked: true },
-        { name: "Recording", voice: true, locked: true },
-        { name: "Streaming", voice: true, locked: true },
-        { name: "Friends", voice: true, locked: true },
-      ],
-    },
-    {
-      title: "Extra Channels",
-      locked: true,
-      channels: [
-        { name: "Self-Promote", voice: false, locked: true },
-        { name: "Content-Ideas", voice: false, locked: true },
-        { name: "Brand-Deals", voice: false, locked: true },
-        { name: "Tools-and-Apps", voice: false, locked: true },
-        { name: "Creator-Events", voice: false, locked: true },
-        { name: "Monthly-Highlights", voice: false, locked: true },
-        { name: "Thumbnail-Contests", voice: false, locked: true },
-        { name: "Editing-Room", voice: false, locked: true },
-        { name: "Live-Feedback", voice: false, locked: true },
-        { name: "Hire-Me", voice: false, locked: true },
-        { name: "Team-Up", voice: false, locked: true },
-        { name: "Appeals", voice: false, locked: true },
-        { name: "Coffee-Chat", voice: false, locked: true },
-        { name: "Watch-Party", voice: false, locked: true },
-        { name: "Support-VC", voice: false, locked: true },
-        { name: "Creator Lounge", voice: true, locked: true },
-        { name: "Production Room", voice: true, locked: true },
-      ],
-    },
-  ];
+  /** Per-layout trees from layout-channel-trees.js (window.SERVERLY_LAYOUT_CHANNEL_TREES). */
+  function getChannelTree(layoutType) {
+    var trees =
+      typeof window !== "undefined" && window.SERVERLY_LAYOUT_CHANNEL_TREES
+        ? window.SERVERLY_LAYOUT_CHANNEL_TREES
+        : null;
+    if (!trees || !trees.content_creator) return [];
+    var key = layoutType && trees[layoutType] ? layoutType : "content_creator";
+    return trees[key] || trees.content_creator;
+  }
 
-  function totalDemoChannelCount() {
+  function totalDemoChannelCount(tree) {
     var n = 0;
     var i;
-    for (i = 0; i < CHANNEL_TREE.length; i++) {
-      n += CHANNEL_TREE[i].channels.length;
+    var t = tree || getChannelTree("content_creator");
+    for (i = 0; i < t.length; i++) {
+      n += t[i].channels.length;
     }
     return n;
   }
 
+  /** Channel name → sidebar emoji (layout demos, bar-divider, etc.). Keys: exact + lowercase slugs. */
+  var CHANNEL_DEMO_EMOJI = {
+    welcome: "👋",
+    Welcome: "👋",
+    rules: "📜",
+    Rules: "📜",
+    roles: "🎭",
+    Roles: "🎭",
+    announcements: "📢",
+    Announcements: "📢",
+    giveaway: "🎉",
+    Giveaway: "🎉",
+    "pick-your-role": "🎯",
+    "Pick-Your-Role": "🎯",
+    polls: "📊",
+    Polls: "📊",
+    links: "🔗",
+    Links: "🔗",
+    "new-posts": "📰",
+    "New-Posts": "📰",
+    partnerships: "🤝",
+    Partnerships: "🤝",
+    general: "💬",
+    General: "💬",
+    "off-topic": "💭",
+    "Off-Topic": "💭",
+    "gamer-chat": "🎮",
+    "Game-Chat": "🎮",
+    clips: "🎬",
+    Clips: "🎬",
+    tech: "💻",
+    Tech: "💻",
+    art: "🎨",
+    Art: "🎨",
+    questions: "❓",
+    Questions: "❓",
+    feedback: "💬",
+    Feedback: "💬",
+    bots: "🤖",
+    Bots: "🤖",
+    bot: "🤖",
+    cmd: "⌨️",
+    CMD: "⌨️",
+    forum: "🗂️",
+    Lounge: "🛋️",
+    lounge: "🛋️",
+    "Duo #1": "🎧",
+    "Duo #2": "🎧",
+    "Squad #1": "👥",
+    "Squad #2": "👥",
+    "Crew Lounge": "🎭",
+    Music: "🎵",
+    music: "🎵",
+    Stream: "📺",
+    stream: "📺",
+    AFK: "💤",
+    afk: "💤",
+    "restricted-users": "🔒",
+    "Restricted-Users": "🔒",
+    "muted-users": "🔇",
+    "Muted-Users": "🔇",
+    "Judgement VC": "⚖️",
+    "Jugement VC": "⚖️",
+    admin: "👑",
+    Admin: "👑",
+    "server-ideas": "💡",
+    "Server-Ideas": "💡",
+    "staff-information": "📑",
+    "Staff-Information": "📑",
+    "test-bot": "🧪",
+    "Test-Bot": "🧪",
+    "bye-bye": "👋",
+    "Bye-Bye": "👋",
+    "Staff VC": "🎙️",
+    Recording: "⏺️",
+    Streaming: "📡",
+    Friends: "👫",
+    "self-promote": "📣",
+    "Self-Promote": "📣",
+    "content-ideas": "💡",
+    "Content-Ideas": "💡",
+    "brand-deals": "🤝",
+    "Brand-Deals": "🤝",
+    "tools-and-apps": "🧰",
+    "Tools-and-Apps": "🧰",
+    "creator-events": "📅",
+    "Creator-Events": "📅",
+    "monthly-highlights": "⭐",
+    "Monthly-Highlights": "⭐",
+    "thumbnail-contents": "🖼️",
+    "Thumbnail-Contests": "🖼️",
+    "editing-room": "✂️",
+    "Editing-Room": "✂️",
+    "live-feedback": "📣",
+    "Live-Feedback": "📣",
+    "hire-me": "💼",
+    "Hire-Me": "💼",
+    "team-up": "🤝",
+    "Team-Up": "🤝",
+    appeals: "⚖️",
+    Appeals: "⚖️",
+    appeal: "⚖️",
+    "coffee-chat": "☕",
+    "Coffee-Chat": "☕",
+    "watch-party": "🍿",
+    "Watch-Party": "🍿",
+    "support-vc": "🎧",
+    "Support-VC": "🎧",
+    memes: "😂",
+    fanart: "🖌️",
+    level: "📈",
+    counting: "🔢",
+    subscriber: "⭐",
+    highlights: "✨",
+    gallery: "🖼️",
+    pets: "🐾",
+    management: "📊",
+    "irl-photos": "📷",
+    "our-socials": "📱",
+    "social-media": "📲",
+    website: "🌐",
+    faq: "❔",
+    ticket: "🎫",
+    application: "📝",
+    apply: "📝",
+    "Creator Lounge": "🎙️",
+    "Production Room": "🎬",
+    logs: "📜",
+    assets: "📁",
+    commands: "⌨️",
+    "Admin VC": "🎙️",
+    verification: "✅",
+    "weekly-updates": "📅",
+    resources: "📚",
+    "business-chat": "💼",
+    suggestions: "💡",
+    specifications: "📋",
+    docs: "📄",
+    Meeting: "🤝",
+    meeting: "🤝",
+    help: "🆘",
+    "bot-chat-1": "🤖",
+    "bot-chat-2": "🤖",
+    "move-in": "📦",
+    "bot voice 1": "🎙️",
+    "bot voice 2": "🎙️",
+    assign: "📌",
+    Class: "🎓",
+    science: "🔬",
+    technology: "💻",
+    engineering: "⚙️",
+    mathematics: "🔢",
+    finance: "💵",
+    marketing: "📣",
+    entrepreneurship: "🚀",
+    "visual-arts": "🖼️",
+    "performing-arts": "🎭",
+    media: "📰",
+    "graphic-design": "🎨",
+    history: "📜",
+    literature: "📖",
+    philosophy: "🤔",
+    "social-studies": "🌍",
+    english: "📘",
+    "foreign-languages": "🌐",
+    linguistics: "🔤",
+    nursing: "💉",
+    biology: "🧬",
+    psychology: "🧠",
+    "public-health": "🏥",
+    programming: "💻",
+    IT: "🖥️",
+    it: "🖥️",
+    cybersecurity: "🔐",
+    AI: "🤖",
+    ai: "🤖",
+    teaching: "🍎",
+    "child-development": "👶",
+    "education-leadership": "📋",
+    law: "⚖️",
+    criminology: "🔍",
+    "international-relations": "🌐",
+    "public-policy": "🏛️",
+    kinesiology: "🏃",
+    coaching: "🏅",
+    "sports-management": "⚽",
+    theater: "🎭",
+    dance: "💃",
+    "film-production": "🎥",
+    interior: "🏠",
+    landscape: "🌳",
+    industrial: "🏭",
+    "urban-planning": "🗺️",
+    journalism: "📰",
+    film: "🎬",
+    broadcasting: "📻",
+    blueprints: "📐",
+    documentation: "📄",
+    "launch-announcements": "🚀",
+    "event-calendar": "📅",
+    "dev-console": "🖥️",
+    "company-handbook": "📘",
+    "Executive Room": "🚪",
+    brainstorming: "💡",
+    planning: "📅",
+    prototypes: "🧪",
+    testing: "✅",
+    "Coffee Corner": "☕",
+    "founders-and-leadership": "👔",
+    "legal-and-compliance": "⚖️",
+    "finance-and-accounting": "🧾",
+    ui: "🖼️",
+    "brand-identity": "🎨",
+    branding: "✨",
+    seo: "📈",
+    ads: "📢",
+    community: "👥",
+    analytics: "📊",
+    sales: "💰",
+    support: "🛟",
+    retention: "🔄",
+    investors: "💵",
+    budgeting: "📒",
+    revenue: "📈",
+    forecasting: "📉",
+    goals: "🎯",
+    research: "🔬",
+    competition: "🏁",
+    risk: "⚠️",
+    devops: "⚙️",
+    security: "🔐",
+    automation: "🤖",
+    bugs: "🐛",
+    instructions: "📋",
+    tutorials: "📚",
+    "product-info": "📦",
+    "sales-tips": "💡",
+    collabs: "🤝",
+    "mindset-tips": "🧠",
+    "growth-strategies": "📈",
+    "marketing-zone": "📣",
+    "working-room": "💼",
+    "server-planning": "🗺️",
+    "start-here": "👋",
+    "my-project": "📁",
+    "project-feedback": "💬",
+    "client-work": "🤝",
+    "live-events": "🎟️",
+    "moderation-logs": "🛡️",
+    guidelines: "📜",
+    events: "🎉",
+    prices: "💲",
+    "clock-in-out": "⏰",
+    inventory: "📦",
+    discussion: "💬",
+    "Game Night": "🎮",
+    edits: "✂️",
+    "server-ideas": "💡",
+    tools: "🧰",
+    "plot-ideas": "💡",
+    "irl-stuff": "🌍",
+    updates: "🔔",
+    "Private VC": "🔒",
+    orientation: "🧭",
+  };
+
+  function demoEmojiHeuristic(lower) {
+    if (!lower) return "📌";
+    if ((/\bvc\b/.test(lower) || lower.indexOf("voice") >= 0) && (lower.indexOf(" ") >= 0 || lower.indexOf("-") >= 0))
+      return "🎙️";
+    if (lower.indexOf("ticket") >= 0) return "🎫";
+    if (lower.indexOf("faq") >= 0 || lower === "help") return "❔";
+    if (lower.indexOf("log") >= 0 && lower.indexOf("catalog") < 0) return "📜";
+    if (lower.indexOf("admin") >= 0) return "👑";
+    if (lower.indexOf("bot") >= 0) return "🤖";
+    if (lower.indexOf("meet") >= 0) return "🤝";
+    if (lower.indexOf("music") >= 0) return "🎵";
+    if (lower.indexOf("stream") >= 0 || lower.indexOf("broadcast") >= 0) return "📺";
+    if (lower.indexOf("video") >= 0 || lower.indexOf("film") >= 0) return "🎬";
+    if (lower.indexOf("photo") >= 0 || lower.indexOf("gallery") >= 0) return "📷";
+    if (lower.indexOf("legal") >= 0 || lower.indexOf("law") >= 0) return "⚖️";
+    if (lower.indexOf("finance") >= 0 || lower.indexOf("revenue") >= 0 || lower.indexOf("budget") >= 0)
+      return "💰";
+    if (lower.indexOf("market") >= 0 || lower.indexOf("seo") >= 0 || lower.indexOf("ads") >= 0)
+      return "📣";
+    if (lower.indexOf("design") >= 0 || lower.indexOf("brand") >= 0 || lower === "ui") return "🎨";
+    if (lower.indexOf("code") >= 0 || lower.indexOf("dev") >= 0 || lower.indexOf("program") >= 0)
+      return "💻";
+    if (lower.indexOf("security") >= 0 || lower.indexOf("cyber") >= 0) return "🔐";
+    if (lower.indexOf("bug") >= 0) return "🐛";
+    if (lower.indexOf("event") >= 0 || lower.indexOf("calendar") >= 0) return "📅";
+    if (lower.indexOf("welcome") >= 0) return "👋";
+    if (lower.indexOf("rule") >= 0) return "📜";
+    if (lower.indexOf("poll") >= 0) return "📊";
+    if (lower.indexOf("forum") >= 0 || lower.indexOf("discussion") >= 0) return "💬";
+    if (lower.indexOf("wiki") >= 0 || lower.indexOf("doc") >= 0) return "📄";
+    if (lower.indexOf("coffee") >= 0) return "☕";
+    if (lower.indexOf("pet") >= 0) return "🐾";
+    if (lower.indexOf("meme") >= 0) return "😂";
+    if (lower.indexOf("social") >= 0 || lower.indexOf("website") >= 0) return "🌐";
+    if (lower.indexOf("apply") >= 0 || lower.indexOf("application") >= 0) return "📝";
+    if (lower.indexOf("lounge") >= 0) return "🛋️";
+    if (lower.indexOf("afk") >= 0) return "💤";
+    if (lower.indexOf("class") >= 0 || lower.indexOf("teach") >= 0) return "🎓";
+    if (lower.indexOf("science") >= 0 || lower.indexOf("biology") >= 0) return "🔬";
+    if (lower.indexOf("math") >= 0) return "🔢";
+    if (lower.indexOf("sport") >= 0 || lower.indexOf("coach") >= 0) return "⚽";
+    return "📌";
+  }
+
   function demoEmojiForName(name) {
-    var m = {
-      Welcome: "👋",
-      Rule: "📋",
-      Roles: "🎭",
-      Announcements: "📢",
-      Giveaway: "🎉",
-      "Pick-Your-Role": "🎯",
-      Polls: "❓",
-      Links: "🔗",
-      "New-Posts": "📰",
-      Partnerships: "🤝",
-      General: "💬",
-      "Off-Topic": "🔍",
-      "Game-Chat": "✅",
-      Clips: "📷",
-      Tech: "📱",
-      Art: "🎨",
-      Questions: "❔",
-      Feedback: "📣",
-      Bots: "🤖",
-      CMD: "💻",
-      "Tools-and-Apps": "🧰",
-      "Creator-Events": "🥳",
-      "Monthly-Highlights": "🏆",
-      "Thumbnail-Contests": "🎨",
-      "Editing-Room": "🎬",
-      "Live-Feedback": "🔴",
-      "Hire-Me": "💼",
-      "Team-Up": "🤝",
-      Appeals: "⚖️",
-      "Coffee-Chat": "☕",
-      "Watch-Party": "📽️",
-      "Support-VC": "🛠️",
-      "Creator Lounge": "🎙️",
-      "Production Room": "🎬",
-      Lounge: "🗨️",
-      "Duo #1": "🎧",
-      "Duo #2": "🎧",
-      "Squad #1": "👥",
-      "Squad #2": "👥",
-      "Crew Lounge": "🎭",
-      Music: "🎵",
-      Stream: "📺",
-      AFK: "💤",
-      "Restricted-Users": "🔻",
-      "Muted-Users": "🚫",
-      "Jugement VC": "🔨",
-      Admin: "👑",
-      "Server-Ideas": "⛔",
-      "Staff-Information": "❗",
-      "Test-Bot": "🤖",
-      "Bye-Bye": "😟",
-      "Staff VC": "🎤",
-      Recording: "⏺️",
-      Streaming: "📹",
-      Friends: "👥",
-      "Self-Promote": "📣",
-      "Content-Ideas": "🗨️",
-      "Brand-Deals": "💼",
-    };
-    return m[name] || "📌";
+    if (name == null || name === "") return "📌";
+    var s = String(name).trim();
+    var m = CHANNEL_DEMO_EMOJI;
+    if (m[s]) return m[s];
+    var lower = s.toLowerCase();
+    if (m[lower]) return m[lower];
+    if (s.indexOf("-") >= 0) {
+      var tc = s.split("-").map(function (p) {
+        return p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p;
+      }).join("-");
+      if (m[tc]) return m[tc];
+    }
+    if (s.length) {
+      var t = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+      if (m[t]) return m[t];
+    }
+    return demoEmojiHeuristic(lower);
   }
 
   function toMathBoldText(input) {
@@ -621,43 +748,43 @@
         return toMathBoldText(e + " - " + lower);
       case "sparkle-dot":
         return toMathBoldText("✧・" + lower.replace(/\s+/g, ""));
-      case "custom":
-        return String(n)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       default:
         return toMathBoldText(isVoice ? n : e + " | " + n);
     }
   }
 
-  function findDefaultDemoChannel() {
+  function findDefaultDemoChannel(tree) {
+    var t = tree || getChannelTree("content_creator");
+    if (!t || !t.length) return { name: "general", voice: false, locked: false };
     var i;
     var j;
-    for (i = 0; i < CHANNEL_TREE.length; i++) {
-      if (CHANNEL_TREE[i].title !== "General") continue;
-      for (j = 0; j < CHANNEL_TREE[i].channels.length; j++) {
-        var ch = CHANNEL_TREE[i].channels[j];
+    var ch;
+    var c;
+    for (i = 0; i < t.length; i++) {
+      if (t[i].title !== "General") continue;
+      for (j = 0; j < t[i].channels.length; j++) {
+        ch = t[i].channels[j];
         if (!ch.voice && !ch.locked) return ch;
       }
     }
-    for (i = 0; i < CHANNEL_TREE.length; i++) {
-      for (j = 0; j < CHANNEL_TREE[i].channels.length; j++) {
-        var c = CHANNEL_TREE[i].channels[j];
+    for (i = 0; i < t.length; i++) {
+      for (j = 0; j < t[i].channels.length; j++) {
+        c = t[i].channels[j];
         if (!c.voice && !c.locked) return c;
       }
     }
-    return CHANNEL_TREE[0] && CHANNEL_TREE[0].channels[0] ? CHANNEL_TREE[0].channels[0] : { name: "general", voice: false, locked: false };
+    return t[0] && t[0].channels[0] ? t[0].channels[0] : { name: "general", voice: false, locked: false };
   }
 
-  /** Labels for style-step mini previews: New !, Information, General, Voice Chat (matches CHANNEL_TREE). */
+  /** Style-step mini previews (aligned with content creator naming). */
   function makePatternPreviewBlock(patternId) {
     function lab(name, voice) {
       return formatChannelDemoLabel(patternId, name, voice, 0);
     }
     return {
-      newSection: [lab("Welcome", false), lab("Rule", false), lab("Roles", false)],
-      information: [lab("Announcements", false), lab("Giveaway", false), lab("Pick-Your-Role", false)],
-      generalText: [lab("General", false), lab("Off-Topic", false), lab("Game-Chat", false)],
+      newSection: [lab("welcome", false), lab("rules", false), lab("roles", false)],
+      information: [lab("announcements", false), lab("giveaway", false), lab("pick-your-role", false)],
+      generalText: [lab("general", false), lab("off-topic", false), lab("gamer-chat", false)],
       voice: [lab("Lounge", true), lab("Music", true), lab("AFK", true)],
     };
   }
@@ -672,15 +799,15 @@
     "dot-separator": makePatternPreviewBlock("dot-separator"),
     "em-dash": makePatternPreviewBlock("em-dash"),
     "sparkle-dot": makePatternPreviewBlock("sparkle-dot"),
-    custom: makePatternPreviewBlock("custom"),
   };
 
   /** Global lane index (same order as summary Discord demo) for a channel by category title + name. */
-  function globalLaneIndexForChannel(categoryTitle, channelName, expectVoice) {
+  function globalLaneIndexForChannel(tree, categoryTitle, channelName, expectVoice) {
     var lane = 0;
+    var t = tree || getChannelTree("content_creator");
     var ci, cj, cat, ch;
-    for (ci = 0; ci < CHANNEL_TREE.length; ci++) {
-      cat = CHANNEL_TREE[ci];
+    for (ci = 0; ci < t.length; ci++) {
+      cat = t[ci];
       if (cat.title !== categoryTitle) {
         lane += cat.channels.length;
         continue;
@@ -694,83 +821,11 @@
     return null;
   }
 
-  /** Custom card mini-preview: categories + channels (Discord-like), inputs keyed by demo lane. */
-  function buildCustomPatternSidebarEditableHtml() {
-    var d = PATTERN_PREVIEW_DATA.custom;
-    var groups = [
-      {
-        title: "New !",
-        voice: false,
-        items: [
-          { name: "Welcome", def: d.newSection[0] },
-          { name: "Rule", def: d.newSection[1] },
-          { name: "Roles", def: d.newSection[2] },
-        ],
-      },
-      {
-        title: "Information",
-        voice: false,
-        items: [
-          { name: "Announcements", def: d.information[0] },
-          { name: "Giveaway", def: d.information[1] },
-          { name: "Pick-Your-Role", def: d.information[2] },
-        ],
-      },
-      {
-        title: "General",
-        voice: false,
-        items: [
-          { name: "General", def: d.generalText[0] },
-          { name: "Off-Topic", def: d.generalText[1] },
-          { name: "Game-Chat", def: d.generalText[2] },
-        ],
-      },
-      {
-        title: "Voice Chat",
-        voice: true,
-        items: [
-          { name: "Lounge", def: d.voice[0] },
-          { name: "Music", def: d.voice[1] },
-          { name: "AFK", def: d.voice[2] },
-        ],
-      },
-    ];
-    var gi, gr, ii, it, rows;
-    rows =
-      '<div class="disc-channel-list disc-channel-list--discord-regular pattern-mock-channel-list pattern-mock-channel-list--rows" dir="ltr">';
-    for (gi = 0; gi < groups.length; gi++) {
-      gr = groups[gi];
-      rows += '<div class="disc-category">';
-      rows +=
-        '<div class="disc-category-head pattern-mock-category-head" role="presentation">' +
-        '<span class="disc-chevron" aria-hidden="true">▼</span>' +
-        '<span class="disc-category-title">' +
-        escapeHtml(gr.title) +
-        "</span>" +
-        '<span class="disc-category-add" aria-hidden="true">+</span>' +
-        "</div>";
-      rows += '<div class="disc-channel-list">';
-      for (ii = 0; ii < gr.items.length; ii++) {
-        it = gr.items[ii];
-        rows += gr.voice
-          ? '<div class="disc-ch-row disc-ch-row-voice pattern-mock-pill"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
-            escapeHtml(it.def) +
-            "</span></div>"
-          : '<div class="disc-ch-row pattern-mock-pill"><span class="disc-hash">#</span><span class="disc-ch-text">' +
-            escapeHtml(it.def) +
-            "</span></div>";
-      }
-      rows += "</div></div>";
-    }
-    rows += "</div>";
-    return rows;
-  }
-
   /** Style-step sidebar mock: Discord-like categories (New !, Information, General, Voice Chat). */
   function buildPatternSidebarHtml(patternId) {
     var data = PATTERN_PREVIEW_DATA[patternId];
     if (!data) return "";
-    var regularTextMode = patternId === "regular-text" || patternId === "custom";
+    var regularTextMode = patternId === "regular-text";
     var listCls =
       "disc-channel-list pattern-mock-channel-list pattern-mock-channel-list--rows" +
       (regularTextMode
@@ -787,7 +842,9 @@
         t = items[i];
         if (isVoice) {
           h +=
-            '<div class="disc-ch-row disc-ch-row-voice pattern-mock-pill"><span class="disc-voice-icon" aria-hidden="true">🔊</span><span class="disc-ch-text">' +
+            '<div class="disc-ch-row disc-ch-row-voice pattern-mock-pill"><span class="disc-voice-icon" aria-hidden="true">' +
+            DEMO_VOICE_CHANNEL_SVG +
+            '</span><span class="disc-ch-text">' +
             escapeHtml(t) +
             "</span></div>";
         } else {
@@ -818,7 +875,7 @@
       '<div class="' +
       listCls +
       '" dir="ltr">' +
-      categoryBlock("New !", data.newSection, false) +
+      categoryBlock("New", data.newSection, false) +
       categoryBlock("Information", data.information, false) +
       categoryBlock("General", data.generalText, false) +
       categoryBlock("Voice Chat", data.voice, true) +
@@ -833,8 +890,6 @@
       if (!id || !mock) return;
       mock.innerHTML = buildPatternSidebarHtml(id);
     });
-    var customMock = document.querySelector("#pattern-custom-card .pattern-custom-soon-mock");
-    if (customMock) customMock.innerHTML = buildCustomPatternSidebarEditableHtml();
   }
 
   function slugToLabel(slug) {
@@ -877,21 +932,23 @@
     return formatChannelDemoLabel(patternId, channelName, isVoice, lane);
   }
 
-  function summaryChannelTreeForTier(packageTier) {
+  function summaryChannelTreeForTier(packageTier, layoutType) {
+    var tree = getChannelTree(layoutType || state.layoutType || "content_creator");
     if (packageTier === "simple") {
-      return CHANNEL_TREE.filter(function (cat) {
-        return cat.title !== "Extra Channels";
+      return tree.filter(function (cat) {
+        return cat.title !== "Extra" && cat.title !== "Extra Channels";
       });
     }
-    return CHANNEL_TREE;
+    return tree;
   }
 
-  function previewHasDeviations(patternId) {
+  function previewHasDeviations(patternId, layoutType) {
     if (!patternId) return false;
+    var tree = getChannelTree(layoutType || state.layoutType || "content_creator");
     var lane = 0;
     var ci, cj, cat, ch, def, stored, st;
-    for (ci = 0; ci < CHANNEL_TREE.length; ci++) {
-      cat = CHANNEL_TREE[ci];
+    for (ci = 0; ci < tree.length; ci++) {
+      cat = tree[ci];
       for (cj = 0; cj < cat.channels.length; cj++) {
         ch = cat.channels[cj];
         def = defaultLaneDisplay(patternId, ch.name, ch.voice, lane);
@@ -906,19 +963,15 @@
 
   function syncNamingLabelFromPreview() {
     var id = state.channelPattern || "regular-text";
-    var prev = String(state.channelPatternLabel || "");
-    if (id === "custom" && /^Custom (?:\u2014|-) /.test(prev)) {
-      if (!previewHasDeviations(id)) return;
-      state.channelPatternLabel = prev + " · preview customized";
-      return;
-    }
     var base = patternBaseLabelFromId(id);
-    state.channelPatternLabel = previewHasDeviations(id) ? base + " · preview customized" : base;
+    state.channelPatternLabel = previewHasDeviations(id, state.layoutType)
+      ? base + " · preview customized"
+      : base;
   }
 
-  function buildChannelPreviewBlob(patternId, packageTier) {
+  function buildChannelPreviewBlob(patternId, packageTier, layoutType) {
     var pid = patternId || "regular-text";
-    var tree = summaryChannelTreeForTier(packageTier || state.packageTier);
+    var tree = summaryChannelTreeForTier(packageTier || state.packageTier, layoutType || state.layoutType);
     var lane = 0;
     var lines = [];
     var ci, cj, cat, ch, def, stored, shown;
@@ -1027,7 +1080,7 @@
   var DEMO_ROLE_SECTION_PAIRS = [
     ["Moderators", "VIP"],
     ["Hosts", "Creators"],
-    ["Coaches", "Partners"],
+    ["Leads", "Partners"],
     ["Staff", "Artists"],
     ["Analysts", "Producers"],
   ];
@@ -1105,6 +1158,13 @@
         status: cycle[i % cycle.length],
       };
     });
+    var idleTrim = 0;
+    for (var mi = 0; mi < members.length && idleTrim < 2; mi++) {
+      if (members[mi].status === "idle") {
+        members[mi].status = "online";
+        idleTrim++;
+      }
+    }
     return {
       self: { name: "You", seed: "you-self", status: "online" },
       members: members,
@@ -1249,79 +1309,86 @@
     return '<div class="discord-demo-members-scroll">' + out + "</div>";
   }
 
-  function buildDemoPatternSwitcherHtml(activePatternId, basicTierLocked) {
-    var active = basicTierLocked ? "regular-text" : activePatternId || "regular-text";
+  function buildDemoPatternSwitcherHtml(activePatternId) {
+    var active = activePatternId || "regular-text";
     var i;
-    var groupLabel = basicTierLocked
-      ? "Preview channel naming style (Basic includes Regular text only; other presets unlock with Advanced)"
-      : "Preview channel naming style";
+    var groupLabel = "Channel name style — choose one to update the preview";
+    var legendId = "demo-pattern-legend";
     var out =
-      '<div class="demo-pattern-switcher' +
-      (basicTierLocked ? " demo-pattern-switcher--basic" : "") +
-      '" role="group" aria-label="' +
+      '<div class="demo-pattern-switcher demo-pattern-switcher--compact" role="group" aria-labelledby="' +
+      legendId +
+      '" aria-label="' +
       escapeHtml(groupLabel) +
       '">' +
-      '<span class="demo-pattern-switcher-label">Naming style</span>' +
+      '<div class="demo-pattern-switcher-head demo-pattern-switcher-head--minimal">' +
+      '<span class="demo-pattern-switcher-label" id="' +
+      legendId +
+      '">Channel name style</span>' +
+      "</div>" +
       '<div class="demo-pattern-switcher-chips">';
     for (i = 0; i < DEMO_PATTERN_OPTIONS.length; i++) {
       var o = DEMO_PATTERN_OPTIONS[i];
       var isOn = active === o.id;
-      var isLocked = !!basicTierLocked && o.id !== "regular-text";
+      var applyHint = "Preview: " + o.label;
       out +=
         '<button type="button" class="demo-pattern-chip' +
         (isOn ? " demo-pattern-chip--active" : "") +
-        (isLocked ? " demo-pattern-chip--locked" : "") +
         '" data-demo-pattern-btn="' +
         escapeHtml(o.id) +
         '" data-demo-pattern-label="' +
         escapeHtml(o.label) +
         '" aria-pressed="' +
         (isOn ? "true" : "false") +
-        '"' +
-        (isLocked
-          ? ' aria-disabled="true" title="Try other naming styles with Advanced ($20)."'
-          : "") +
-        ">" +
+        '" title="' +
+        escapeHtml(applyHint) +
+        '">' +
+        '<span class="demo-pattern-chip-text">' +
         escapeHtml(o.label) +
-        "</button>";
+        "</span></button>";
     }
-    out += "</div>";
-    if (basicTierLocked) {
-      out +=
-        '<p class="demo-pattern-switcher-upsell">Try other preset naming styles with <strong>Advanced</strong> ($20).</p>';
-    }
-    out += "</div>";
+    out += "</div></div>";
     return out;
   }
 
-  function buildDiscordDemoHtml(patternId, displayLabel, packageTier) {
-    var tree = summaryChannelTreeForTier(packageTier);
-    var lab =
-      displayLabel && String(displayLabel).trim()
-        ? displayLabel.trim()
-        : patternId
-          ? slugToLabel(patternId)
-          : "";
-    var hasPattern = !!patternId;
-    var lead = hasPattern
-      ? '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing. Naming style: <strong data-summary-selected-style>' +
-        escapeHtml(lab) +
-        "</strong>.</p>"
-      : '<p class="preview-disclaimer summary-preview-bundle-lead">This is a demo preview of what you are purchasing.</p>';
-    if (hasPattern) {
-      lead +=
-        '<p class="summary-custom-demo-hint summary-demo-edit-hint">Channel names are shown as part of your selected style preview.</p>';
-      if (packageTier === "simple") {
-        lead +=
-          '<p class="summary-custom-demo-hint">Basic preview includes core channels only (41+). The Extra Channels category is Advanced.</p>';
+  /** Full channel tree as a simple list (layout step previews). */
+  function buildLayoutPreviewListHtml(patternId, tree) {
+    var lane = 0;
+    var parts = [];
+    var ci, cj, cat, ch, label;
+    for (ci = 0; ci < tree.length; ci++) {
+      cat = tree[ci];
+      parts.push(
+        '<section class="layout-preview-cat" aria-label="' +
+        escapeHtml(cat.title) +
+        '">' +
+        '<h4 class="layout-preview-cat-title">' +
+        escapeHtml(cat.title) +
+        '</h4>' +
+        '<ul class="layout-preview-channels">'
+      );
+      for (cj = 0; cj < cat.channels.length; cj++) {
+        ch = cat.channels[cj];
+        label = defaultLaneDisplay(patternId, ch.name, ch.voice, lane);
+        lane += 1;
+        parts.push(
+          '<li class="layout-preview-ch' +
+          (ch.voice ? " layout-preview-ch--voice" : "") +
+          '">' +
+          (ch.voice
+            ? '<span class="layout-preview-ch-ico" aria-hidden="true">' + DEMO_VOICE_CHANNEL_SVG + "</span>"
+            : '<span class="layout-preview-ch-ico layout-preview-ch-ico--hash" aria-hidden="true">#</span>') +
+          '<span class="layout-preview-ch-name">' +
+          escapeHtml(label) +
+          "</span></li>"
+        );
       }
+      parts.push("</ul></section>");
     }
-    var patternBar = "";
-    if (packageTier === "advanced" || packageTier === "simple") {
-      patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text", packageTier === "simple");
-    }
+    return '<div class="layout-preview-list">' + parts.join("") + "</div>";
+  }
 
-    var defCh = findDefaultDemoChannel();
+  function buildDiscordCategoryRowsHtml(tree, patternId) {
+    var defCh = findDefaultDemoChannel(tree);
     var laneCounter = 0;
     var defLaneIndex = 0;
     var catHtml = "";
@@ -1339,8 +1406,10 @@
           ch.locked === defCh.locked;
         if (isDef) defLaneIndex = laneCounter;
         var defCls = isDef ? " discord-demo-ch--default is-active" : "";
+        var ariaCur = isDef ? ' aria-current="true"' : "";
         var label = defaultLaneDisplay(patternId, ch.name, ch.voice, laneCounter);
         var labelInner = escapeHtml(label);
+        var laneIdxAttr = String(laneCounter);
         laneCounter += 1;
         var vCls = ch.voice ? " discord-demo-ch--voice" : "";
         var lk = ch.locked ? "true" : "false";
@@ -1348,15 +1417,19 @@
           '<div class="discord-demo-ch' +
           defCls +
           vCls +
+          '" data-lane-index="' +
+          escapeHtml(laneIdxAttr) +
           '" data-name="' +
           escapeHtml(ch.name) +
           '" data-voice="' +
           (ch.voice ? "true" : "false") +
           '" data-locked="' +
           lk +
-          '" tabindex="-1" role="listitem">' +
+          '" tabindex="-1" role="listitem"' +
+          ariaCur +
+          ">" +
           (ch.voice
-            ? '<span class="discord-demo-ch-icon" aria-hidden="true">🔊</span>'
+            ? '<span class="discord-demo-ch-icon" aria-hidden="true">' + DEMO_VOICE_CHANNEL_SVG + "</span>"
             : '<span class="discord-demo-ch-hash">#</span>') +
           '<span class="discord-demo-ch-label">' +
           labelInner +
@@ -1375,33 +1448,48 @@
         rowsHtml +
         "</div></div>";
     }
+    return { catHtml: catHtml, defCh: defCh, defLaneIndex: defLaneIndex };
+  }
 
+  /**
+   * Discord mock only (no pattern bar / summary chrome). Optional demoExtraClass for sizing variants.
+   */
+  function buildDiscordDemoInnerHtml(patternId, tree, options) {
+    options = options || {};
+    var demoExtraClass = options.demoExtraClass ? " " + options.demoExtraClass : "";
+    var serverLabel = options.serverLabel != null ? String(options.serverLabel) : "Your server";
+    var aria =
+      options.ariaLabel != null ? String(options.ariaLabel) : "Discord-style layout preview";
+    var rowsPack = buildDiscordCategoryRowsHtml(tree, patternId || "");
+    var catHtml = rowsPack.catHtml;
+    var defCh = rowsPack.defCh;
+    var defLaneIndex = rowsPack.defLaneIndex;
     var defLabel = defaultLaneDisplay(patternId, defCh.name, defCh.voice, defLaneIndex);
     var defText = defCh.voice ? defLabel : "# " + defLabel;
     var defHeader = defText;
     var defWelcome = "Welcome to " + defText + "!";
     var defSub = "This is the start of the " + defText + " channel.";
     var defMsg = "Message " + defText;
-
     var demoRoster = buildDemoUserRoster();
-
     return (
-      '<div class="summary-preview-combined">' +
-      '<h4 class="outcome-h outcome-h--preview-bundle">Demo</h4>' +
-      patternBar +
-      lead +
-      '<div class="discord-demo" data-demo-pattern="' +
+      '<div class="discord-demo' +
+      demoExtraClass +
+      '" data-demo-pattern="' +
       escapeHtml(patternId || "") +
-      '" role="region" aria-label="Discord-style layout preview">' +
+      '" role="region" aria-label="' +
+      escapeHtml(aria) +
+      '">' +
       buildDemoRailHtml() +
       '<div class="discord-demo-sidebar">' +
       '<div class="discord-demo-sidebar-top">' +
-      '<div class="discord-demo-server-name">Your server <span class="discord-demo-chev">▼</span></div>' +
+      '<div class="discord-demo-server-name">' +
+      escapeHtml(serverLabel) +
+      ' <span class="discord-demo-chev">▼</span></div>' +
       "</div>" +
       '<div class="discord-demo-channel-scroll" tabindex="0">' +
       '<div class="discord-demo-nav-static">' +
-      '<div class="discord-demo-nav-row">Events</div>' +
-      '<div class="discord-demo-nav-row">Server Boosts</div>' +
+      '<div class="discord-demo-nav-row discord-demo-nav-row--mock-link" data-demo-nav-mock="1" role="presentation" tabindex="-1">Events</div>' +
+      '<div class="discord-demo-nav-row discord-demo-nav-row--mock-link" data-demo-nav-mock="1" role="presentation" tabindex="-1">Server Boosts</div>' +
       "</div>" +
       catHtml +
       "</div>" +
@@ -1434,8 +1522,233 @@
       buildDemoMembersPanelHtml(demoRoster) +
       "</div>" +
       buildDemoMobileTabbarHtml() +
-      "</div></div>"
+      "</div>"
     );
+  }
+
+  function buildDiscordDemoHtml(patternId, displayLabel, packageTier, layoutType) {
+    var tree = summaryChannelTreeForTier(packageTier, layoutType);
+    var lab =
+      displayLabel && String(displayLabel).trim()
+        ? displayLabel.trim()
+        : patternId
+          ? slugToLabel(patternId)
+          : "";
+    var hasPattern = !!patternId;
+    var lead = hasPattern
+      ? '<p class="preview-disclaimer summary-preview-bundle-lead">Demo · style <strong data-summary-selected-style>' +
+        escapeHtml(lab) +
+        "</strong></p>"
+      : '<p class="preview-disclaimer summary-preview-bundle-lead">Demo preview</p>';
+    var patternBar = buildDemoPatternSwitcherHtml(patternId || "regular-text");
+    var inner = buildDiscordDemoInnerHtml(patternId, tree, {
+      serverLabel: "Your server",
+      ariaLabel: "Discord-style layout preview",
+    });
+    return (
+      '<div class="summary-preview-combined">' +
+      '<div class="summary-preview-heading">' +
+      '<h4 class="outcome-h outcome-h--preview-bundle">Preview</h4>' +
+      "</div>" +
+      patternBar +
+      lead +
+      inner +
+      "</div>"
+    );
+  }
+
+  var LAYOUT_PREVIEW_ENTRIES = [
+    {
+      id: "private",
+      tabLabel: "Private",
+      title: "Private servers",
+      tagline: "Member gates, VIP lanes, and trusted access",
+    },
+    {
+      id: "business",
+      tabLabel: "Business",
+      title: "Businesses",
+      tagline: "Client lanes, support flow, and clean handoffs",
+    },
+    {
+      id: "education",
+      tabLabel: "Education",
+      title: "Education",
+      tagline: "Classes, resources, Q&A, and discussion rhythm",
+    },
+    {
+      id: "startup",
+      tabLabel: "Startup",
+      title: "Startup workspace",
+      tagline: "Ship fast: ops, standups, and execution channels",
+    },
+    {
+      id: "content_creator",
+      tabLabel: "Creator",
+      title: "Content creator",
+      tagline: "Loops, clips, announcements—broadcast-ready structure",
+    },
+  ];
+
+  function activateLayoutPreviewTab(root, layoutId) {
+    if (!root || !layoutId) return;
+    root.querySelectorAll(".layout-preview-tab").forEach(function (t) {
+      var on = t.getAttribute("data-layout-id") === layoutId;
+      t.classList.toggle("is-active", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.setAttribute("tabindex", on ? "0" : "-1");
+    });
+    root.querySelectorAll(".layout-preview-panel").forEach(function (p) {
+      var on = p.getAttribute("data-layout-panel") === layoutId;
+      p.classList.toggle("is-active", on);
+      if (on) p.removeAttribute("hidden");
+      else p.setAttribute("hidden", "");
+    });
+  }
+
+  function renderLayoutChannelPreviewIfNeeded() {
+    var mount = document.getElementById("layout-examples-mount");
+    if (!mount || mount.getAttribute("data-layout-preview-rendered") === "1") return;
+    mount.setAttribute("data-layout-preview-rendered", "1");
+    var patternId = "regular-text";
+    var tier = PRODUCT_TIER_KEY;
+    var i;
+    var entry;
+    var tree;
+    var listHtml;
+    var tabsHtml = [];
+    var panelsHtml = [];
+    var preferred = LAYOUT_PREVIEW_ENTRIES[0].id;
+    for (i = 0; i < LAYOUT_PREVIEW_ENTRIES.length; i++) {
+      if (LAYOUT_PREVIEW_ENTRIES[i].id === state.layoutType) {
+        preferred = state.layoutType;
+        break;
+      }
+    }
+
+    for (i = 0; i < LAYOUT_PREVIEW_ENTRIES.length; i++) {
+      entry = LAYOUT_PREVIEW_ENTRIES[i];
+      tree = summaryChannelTreeForTier(tier, entry.id);
+      listHtml = buildLayoutPreviewListHtml(patternId, tree);
+      var isSel = entry.id === preferred;
+      var exampleId = "layout-example-" + entry.id;
+      var tabId = "layout-tab-" + entry.id;
+      tabsHtml.push(
+        '<button type="button" class="layout-preview-tab' +
+        (isSel ? " is-active" : "") +
+        '" role="tab" id="' +
+        escapeHtml(tabId) +
+        '" data-layout-id="' +
+        escapeHtml(entry.id) +
+        '" aria-selected="' +
+        (isSel ? "true" : "false") +
+        '" aria-controls="' +
+        escapeHtml(exampleId) +
+        '" tabindex="' +
+        (isSel ? "0" : "-1") +
+        '">' +
+        escapeHtml(entry.tabLabel) +
+        "</button>"
+      );
+      panelsHtml.push(
+        '<div class="layout-preview-panel' +
+        (isSel ? " is-active" : "") +
+        '" role="tabpanel" id="' +
+        escapeHtml(exampleId) +
+        '" data-layout-panel="' +
+        escapeHtml(entry.id) +
+        '" aria-labelledby="' +
+        escapeHtml(tabId) +
+        '"' +
+        (isSel ? "" : " hidden") +
+        ">" +
+        '<div class="layout-preview-panel-inner">' +
+        '<div class="layout-preview-panel-head">' +
+        '<div class="layout-preview-panel-copy">' +
+        '<p class="layout-preview-title">' +
+        escapeHtml(entry.title) +
+        "</p>" +
+        '<p class="layout-preview-tagline">' +
+        escapeHtml(entry.tagline) +
+        "</p>" +
+        "</div>" +
+        '<button type="button" class="btn btn-outline btn-sm layout-preview-choose" data-choice-key="layoutType" data-choice-value="' +
+        escapeHtml(entry.id) +
+        '">Use this layout</button>' +
+        "</div>" +
+        '<div class="layout-preview-list-scroll">' +
+        listHtml +
+        "</div>" +
+        "</div>" +
+        "</div>"
+      );
+    }
+
+    mount.innerHTML =
+      '<div class="layout-preview reveal" data-layout-preview-root>' +
+      '<div class="layout-preview-tabs" role="tablist" aria-label="Preview channels by layout">' +
+      tabsHtml.join("") +
+      "</div>" +
+      '<div class="layout-preview-panels">' +
+      panelsHtml.join("") +
+      "</div>" +
+      "</div>";
+
+    var root = mount.querySelector("[data-layout-preview-root]");
+    if (root) {
+      root.querySelectorAll(".layout-preview-tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          var lid = tab.getAttribute("data-layout-id");
+          activateLayoutPreviewTab(root, lid);
+        });
+      });
+      var tablist = root.querySelector(".layout-preview-tabs");
+      if (tablist) {
+        tablist.addEventListener("keydown", function (e) {
+          var tabs = [].slice.call(root.querySelectorAll(".layout-preview-tab"));
+          var ix = tabs.indexOf(document.activeElement);
+          if (ix < 0) return;
+          var nextIx = ix;
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            nextIx = (ix + 1) % tabs.length;
+            e.preventDefault();
+          } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            nextIx = (ix - 1 + tabs.length) % tabs.length;
+            e.preventDefault();
+          } else if (e.key === "Home") {
+            nextIx = 0;
+            e.preventDefault();
+          } else if (e.key === "End") {
+            nextIx = tabs.length - 1;
+            e.preventDefault();
+          }
+          if (nextIx !== ix) {
+            var lid = tabs[nextIx].getAttribute("data-layout-id");
+            activateLayoutPreviewTab(root, lid);
+            tabs[nextIx].focus();
+          }
+        });
+      }
+    }
+
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && root) {
+      var obs = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) {
+              e.target.classList.add("visible");
+              e.target.classList.add("is-in");
+              obs.unobserve(e.target);
+            }
+          });
+        },
+        { rootMargin: "0px 0px -5% 0px", threshold: 0.06 }
+      );
+      obs.observe(root);
+    } else if (root) {
+      root.classList.add("visible");
+      root.classList.add("is-in");
+    }
   }
 
   function initDiscordDemoPreview(container) {
@@ -1450,22 +1763,16 @@
     var msgInput = demo.querySelector("[data-demo-msg-input]");
     var msgList = demo.querySelector("[data-demo-messages]");
     var welcomeWrap = demo.querySelector("[data-demo-welcome]");
-    var defaultRow = demo.querySelector(".discord-demo-ch--default");
     if (!scrollEl || !mainHeader || !welcomeTitle || !welcomeSub) return;
 
-    var laneMap = {};
-    var idx = 0;
     var rows = demo.querySelectorAll(".discord-demo-ch");
     var r;
-    for (r = 0; r < rows.length; r++) {
-      laneMap[rows[r].getAttribute("data-name") || ""] = idx++;
-    }
 
     function updateFromRow(row) {
       var name = row.getAttribute("data-name") || "";
       var voice = row.getAttribute("data-voice") === "true";
-      var li = laneMap[name];
-      if (typeof li !== "number") li = 0;
+      var li = parseInt(row.getAttribute("data-lane-index") || "0", 10);
+      if (isNaN(li)) li = 0;
       var rawLabel = row.querySelector(".discord-demo-ch-label");
       var label = rawLabel ? rawLabel.textContent || "" : formatChannelDemoLabel(patternId, name, voice, li);
       var shownLabel = voice ? label : "# " + label;
@@ -1480,19 +1787,24 @@
       var k;
       for (k = 0; k < rows.length; k++) {
         rows[k].classList.remove("is-active");
+        rows[k].removeAttribute("aria-current");
       }
       row.classList.add("is-active");
-    }
-
-    function resetDefault() {
-      if (defaultRow) updateFromRow(defaultRow);
+      row.setAttribute("aria-current", "true");
     }
 
     for (r = 0; r < rows.length; r++) {
-      rows[r].addEventListener("mouseenter", function () {
+      rows[r].addEventListener("click", function () {
         updateFromRow(this);
       });
     }
+
+    demo.querySelectorAll("[data-demo-nav-mock]").forEach(function (mockNav) {
+      mockNav.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
 
     demo.querySelectorAll(".discord-demo-cat").forEach(function (catEl) {
       var head = catEl.querySelector(".discord-demo-cat-head");
@@ -1511,10 +1823,6 @@
           toggleCat();
         }
       });
-    });
-
-    scrollEl.addEventListener("mouseleave", function () {
-      resetDefault();
     });
 
     var checkoutDemoReply =
@@ -1569,118 +1877,153 @@
     return s.replace(/\/$/, "");
   }
 
-  function flashCheckout(message, kind) {
+  function formatCheckoutFetchError(err) {
+    var raw = err && err.message ? String(err.message) : "";
+    if (
+      raw === "Failed to fetch" ||
+      raw === "Load failed" ||
+      (err && err.name === "TypeError" && /fetch|Failed to load|network/i.test(raw))
+    ) {
+      return (
+        "Could not reach checkout (often CORS). Don’t open this page as file://—use Live Server (e.g. port 5500). " +
+        "For a live site, add your page’s exact origin to CORS_ORIGIN on the API (Render env). " +
+        "From disk only: set CORS_ALLOW_NULL_ORIGIN=true on the API, or serve the folder over http://."
+      );
+    }
+    return raw || "Checkout failed. Check the API URL and try again.";
+  }
+
+  function flashCheckout(message, kind, persist) {
     if (!checkoutFlash) return;
     checkoutFlash.hidden = false;
     checkoutFlash.textContent = message;
-    checkoutFlash.className = "checkout-flash checkout-flash--" + (kind || "info");
+    checkoutFlash.className =
+      "checkout-flash summary-card checkout-flash--" + (kind || "info");
     if (flashCheckoutTimer) clearTimeout(flashCheckoutTimer);
-    if (kind === "success") return;
+    if (kind === "success" || persist) return;
     flashCheckoutTimer = setTimeout(function () {
       checkoutFlash.hidden = true;
     }, kind === "error" ? 8000 : 5000);
   }
 
   function hasSummaryContent() {
-    return !!(
-      state.serverMode ||
-      state.layoutType ||
-      state.packageTier ||
-      state.channelPattern
-    );
+    return !!(state.serverMode && state.layoutType);
   }
 
   function updateFinishStepLead() {
     var el = document.getElementById("finish-step-lead");
     if (!el) return;
     if (!hasSummaryContent()) {
-      el.textContent =
-        "Finish the steps above to see your channel count, layout, and a Discord-style preview.";
+      el.textContent = "Complete the steps above for your recap and demo.";
       return;
     }
-    var nCh = totalDemoChannelCount();
-    var layoutName =
-      state.layoutType && LAYOUT_TYPE_LABELS[state.layoutType]
-        ? LAYOUT_TYPE_LABELS[state.layoutType]
-        : null;
-    var layoutPhrase = layoutName
-      ? "the <strong>" + escapeHtml(layoutName) + "</strong> layout"
-      : "the <strong>layout you chose</strong> in this wizard";
-    el.innerHTML =
-      "You’re getting <strong>" +
-      nCh +
-      " channels</strong> with " +
-      layoutPhrase +
-      ". <strong>View the demo below</strong> to see what you’re getting. It’s a preview, not your live server. Use <strong>Edit</strong> on any step to change something, then <strong>Continue to checkout</strong>.";
+    if (state.namingPatternUserChosen) {
+      el.innerHTML =
+        '<span class="finish-step-lead-status finish-step-lead-status--done">Style applied.</span>';
+    } else {
+      el.innerHTML =
+        'Pick a <strong>channel name style</strong> above the preview.';
+    }
   }
 
-  function syncCheckoutPanel() {
-    if (!checkoutPanel) return;
-    var hasAny = hasSummaryContent();
-    if (!hasAny) {
-      checkoutPanel.hidden = true;
-      checkoutPanel.classList.remove("checkout-panel--revealed");
-      if (checkoutSubmit) checkoutSubmit.disabled = true;
+  function isValidCheckoutEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || "").trim());
+  }
+
+  function syncSummaryOpenCheckoutBtn() {
+    var btn = document.getElementById("summary-open-checkout");
+    if (!btn) return;
+    var api = getCheckoutApiBase();
+    var emailInp = document.getElementById("sticky-checkout-email");
+    var emailOk = emailInp && isValidCheckoutEmail(emailInp.value);
+    var barReady =
+      state.step === 3 && hasSummaryContent() && state.namingPatternUserChosen;
+    btn.disabled = !barReady || !api || !emailOk;
+  }
+
+  function syncCheckoutStickyHint() {
+    var hint = document.getElementById("checkout-sticky-hint");
+    if (!hint) return;
+    var shouldShow = state.step === 3 && hasSummaryContent() && state.namingPatternUserChosen;
+    if (!shouldShow) {
+      hint.setAttribute("hidden", "");
+      hint.setAttribute("aria-hidden", "true");
       return;
     }
-    var api = getCheckoutApiBase();
-    if (checkoutApiNote) checkoutApiNote.hidden = !!api;
-    if (checkoutTierWarning) checkoutTierWarning.hidden = !!state.packageTier;
-    var tier = state.packageTier;
-    if (checkoutTierLabel) {
-      checkoutTierLabel.textContent =
-        tier && PACKAGE_LABELS[tier]
-          ? PACKAGE_LABELS[tier] + " package"
-          : "Pick a tier in step 2";
+    hint.removeAttribute("hidden");
+    hint.setAttribute("aria-hidden", "false");
+  }
+
+  function syncStickyCheckoutBar() {
+    if (!checkoutStickyBar) return;
+    if (stickyBarShowTimer != null) {
+      clearTimeout(stickyBarShowTimer);
+      stickyBarShowTimer = null;
     }
-    if (checkoutAmount) {
-      checkoutAmount.textContent =
-        tier && PACKAGE_PRICE_HINTS[tier] ? PACKAGE_PRICE_HINTS[tier] + " USD" : "-";
+    var shouldShow = state.step === 3 && hasSummaryContent() && state.namingPatternUserChosen;
+    if (!shouldShow) {
+      checkoutStickyBar.classList.remove("checkout-sticky-bar--visible");
+      document.body.classList.remove("checkout-sticky-bar-open");
+      checkoutStickyBar.setAttribute("aria-hidden", "true");
+      checkoutStickyBar.setAttribute("hidden", "");
+      syncCheckoutStickyHint();
+      syncSummaryOpenCheckoutBtn();
+      return;
     }
-    if (checkoutSubmit) {
-      checkoutSubmit.disabled = !tier || !api;
+    checkoutStickyBar.removeAttribute("hidden");
+    checkoutStickyBar.setAttribute("aria-hidden", "false");
+    document.body.classList.add("checkout-sticky-bar-open");
+    syncCheckoutStickyHint();
+    syncSummaryOpenCheckoutBtn();
+    stickyBarShowTimer = setTimeout(function () {
+      stickyBarShowTimer = null;
+      if (
+        checkoutStickyBar &&
+        state.step === 3 &&
+        hasSummaryContent() &&
+        state.namingPatternUserChosen
+      ) {
+        checkoutStickyBar.classList.add("checkout-sticky-bar--visible");
+      }
+    }, STICKY_BAR_REVEAL_MS);
+  }
+
+  function syncFinishCheckoutUi() {
+    updateFinishStepLead();
+    syncStickyCheckoutBar();
+    syncSummaryOpenCheckoutBtn();
+  }
+
+  /** Legacy sessions may still have pattern "custom"; product no longer offers it. */
+  function coerceChannelPatternAwayFromLegacyCustom() {
+    if (!state.channelPattern || state.channelPattern === "custom") {
+      state.channelPattern = "regular-text";
+      state.channelPatternLabel = "Regular text";
     }
-    var show = !!state.checkoutReady;
-    checkoutPanel.hidden = !show;
-    checkoutPanel.classList.toggle("checkout-panel--revealed", show);
   }
 
   function renderSummary() {
     if (!summaryEl) return;
-    var tier = state.packageTier || "simple";
+    state.packageTier = PRODUCT_TIER_KEY;
+    var tier = PRODUCT_TIER_KEY;
     var hasAny = hasSummaryContent();
 
     if (!hasAny) {
       summaryEl.innerHTML =
-        '<p class="summary-placeholder">Go through the steps above to generate your recap and preview.</p>';
-      if (summaryCheckoutCta) summaryCheckoutCta.hidden = true;
-      syncCheckoutPanel();
+        '<p class="summary-placeholder">Complete server setup and layout type above to open the live preview and naming styles.</p>';
+      syncFinishCheckoutUi();
       return;
     }
 
-    if (state.packageTier === "advanced" && !state.channelPattern) {
-      state.channelPattern = "regular-text";
-      state.channelPatternLabel = "Regular text";
-    }
-    if (state.packageTier === "simple" && state.channelPattern !== "regular-text") {
-      state.channelPattern = "regular-text";
-      state.channelPatternLabel = "Regular text";
-    }
+    coerceChannelPatternAwayFromLegacyCustom();
 
     syncNamingLabelFromPreview();
     var styleLabel = summaryPatternDisplay();
 
-    var incomplete = !state.packageTier
-      ? '<p class="summary-disclaimer">You haven’t chosen a package tier yet. Go back to step 2 to pick <strong>Basic</strong> or <strong>Advanced</strong>.</p>'
-      : "";
-
-    var html =
-      incomplete +
-      buildDiscordDemoHtml(state.channelPattern, styleLabel, state.packageTier);
+    var html = buildDiscordDemoHtml(state.channelPattern, styleLabel, tier, state.layoutType);
 
     summaryEl.innerHTML = html;
-    if (summaryCheckoutCta) summaryCheckoutCta.hidden = false;
-    syncCheckoutPanel();
+    syncFinishCheckoutUi();
     requestAnimationFrame(function () {
       initDiscordDemoPreview(summaryEl);
     });
@@ -1692,11 +2035,8 @@
     state.packageTier = null;
     state.channelPattern = null;
     state.channelPatternLabel = null;
-    state.checkoutReady = false;
     state.channelCustomByLane = {};
-    document.querySelectorAll(".price-card.is-picked").forEach(function (card) {
-      card.classList.remove("is-picked");
-    });
+    state.namingPatternUserChosen = false;
     syncPatternSelectionUI();
     setStep(0);
   }
@@ -1715,129 +2055,93 @@
     });
   }
 
-  document.querySelectorAll("[data-choice-key]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      if (
-        btn.disabled ||
-        btn.classList.contains("choice-card--disabled") ||
-        btn.getAttribute("aria-disabled") === "true"
-      )
-        return;
-      var key = btn.getAttribute("data-choice-key");
-      var val = btn.getAttribute("data-choice-value");
-      if (key === "serverMode") {
-        state.serverMode = val;
-        nextStep();
-        return;
-      }
-      if (key === "layoutType") {
-        state.layoutType = val;
-        nextStep();
-        return;
-      }
-    });
-  });
-
-  patternSelectButtons.forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = btn.getAttribute("data-pattern");
-      if (state.packageTier === "simple" && id !== "regular-text") {
-        state.packageTier = "advanced";
-        syncPackagePickUI();
-        setStep(4);
-        return;
-      }
-      var lab = patternLabelFromButton(btn);
-      if (state.channelPattern === id) {
-        state.channelPattern = null;
-        state.channelPatternLabel = null;
+  function handleWizardChoiceClick(btn) {
+    if (
+      !btn ||
+      btn.disabled ||
+      btn.classList.contains("choice-card--disabled") ||
+      btn.getAttribute("aria-disabled") === "true"
+    )
+      return;
+    var key = btn.getAttribute("data-choice-key");
+    var val = btn.getAttribute("data-choice-value");
+    if (key === "serverMode") {
+      state.serverMode = val;
+      nextStep();
+      return;
+    }
+    if (key === "layoutType") {
+      if (state.layoutType !== val) {
         state.channelCustomByLane = {};
-        syncPatternSelectionUI();
-      } else {
-        if (state.channelPattern !== id) state.channelCustomByLane = {};
-        state.channelPattern = id;
-        state.channelPatternLabel = lab;
-        syncPatternSelectionUI();
-        nextStep();
+        state.namingPatternUserChosen = false;
       }
-    });
-  });
+      state.layoutType = val;
+      nextStep();
+      return;
+    }
+  }
 
-  if (patternCustomCard) {
-    patternCustomCard.addEventListener("click", function (e) {
-      state.channelPattern = "custom";
-      if (!/^Custom (?:\u2014|-) /.test(String(state.channelPatternLabel || ""))) {
-        state.channelPatternLabel = "Custom";
-      }
-      syncPatternSelectionUI();
+  var wizardPagesRoot = document.getElementById("wizard-pages");
+  if (wizardPagesRoot) {
+    wizardPagesRoot.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-choice-key]");
+      if (!btn || !wizardPagesRoot.contains(btn)) return;
+      handleWizardChoiceClick(btn);
     });
   }
 
-  document.querySelectorAll("[data-package-tier]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      if (btn.disabled) return;
-      var t = btn.getAttribute("data-package-tier");
-      if (!t || t === "professional") return;
-      state.packageTier = t;
-      if (t === "simple") {
-        state.channelPattern = "regular-text";
-        state.channelPatternLabel = "Regular text";
-        state.channelCustomByLane = {};
+  function startStripeCheckout() {
+    var api = getCheckoutApiBase();
+    var summaryBtn = document.getElementById("summary-open-checkout");
+    var emailInp = document.getElementById("sticky-checkout-email");
+    var email = emailInp && emailInp.value ? emailInp.value.trim() : "";
+    state.packageTier = PRODUCT_TIER_KEY;
+    if (!api) {
+      flashCheckout("Checkout API is not configured yet. Add STRIPE_CHECKOUT_API and try again.", "error");
+      return;
+    }
+    if (!isValidCheckoutEmail(email)) {
+      flashCheckout("Enter a valid email for receipts and delivery.", "error");
+      if (emailInp) emailInp.focus();
+      return;
+    }
+    if (summaryBtn) {
+      summaryBtn.disabled = true;
+      summaryBtn.setAttribute("aria-busy", "true");
+      if (!summaryBtn.getAttribute("data-default-label")) {
+        summaryBtn.setAttribute("data-default-label", summaryBtn.textContent.trim());
       }
-      document.querySelectorAll("[data-package-tier]").forEach(function (b) {
-        var card = b.closest(".price-card");
-        if (card) card.classList.remove("is-picked");
-      });
-      var picked = btn.closest(".price-card");
-      if (picked) picked.classList.add("is-picked");
-      syncPatternTierGate();
-      nextStep();
-    });
-  });
-
-  if (checkoutSubmit) {
-    checkoutSubmit.addEventListener("click", function () {
-      var api = getCheckoutApiBase();
-      if (!state.packageTier) {
-        state.packageTier = "advanced";
-      }
-      if (!api) {
-        flashCheckout("Checkout API is not configured yet. Add STRIPE_CHECKOUT_API and try again.", "error");
-        return;
-      }
-      var email = checkoutEmailInp && checkoutEmailInp.value ? checkoutEmailInp.value.trim() : "";
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        flashCheckout("Enter a valid email so we can send your order copy.", "error");
-        if (checkoutEmailInp) checkoutEmailInp.focus();
-        return;
-      }
-      checkoutSubmit.disabled = true;
-      flashCheckout("Redirecting to secure Stripe Checkout…", "info");
-      syncNamingLabelFromPreview();
-      var previewChunks = chunkPreviewForMetadata(buildChannelPreviewBlob(state.channelPattern, state.packageTier));
-      fetch(api + "/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tier: state.packageTier,
-          email: email,
-          serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
-          layoutType: state.layoutType,
-          channelPattern: state.channelPattern,
-          channelPatternLabel: state.channelPatternLabel,
-          channelPreviewChunks: previewChunks,
-        }),
+      summaryBtn.textContent = "Redirecting to Stripe…";
+    }
+    flashCheckout("Redirecting to Stripe…", "info", true);
+    coerceChannelPatternAwayFromLegacyCustom();
+    syncNamingLabelFromPreview();
+    var previewChunks = chunkPreviewForMetadata(
+      buildChannelPreviewBlob(state.channelPattern, state.packageTier, state.layoutType)
+    );
+    fetch(api + "/create-checkout-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tier: PRODUCT_TIER_KEY,
+        email: email,
+        serverMode: normalizeServerMode(state.serverMode) || state.serverMode || "",
+        layoutType: state.layoutType,
+        channelPattern: state.channelPattern,
+        channelPatternLabel: state.channelPatternLabel,
+        channelPreviewChunks: previewChunks,
+      }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok) throw new Error(data.error || r.statusText || "Request failed");
+          return data;
+        });
       })
-        .then(function (r) {
-          return r.json().then(function (data) {
-            if (!r.ok) throw new Error(data.error || r.statusText || "Request failed");
-            return data;
-          });
-        })
-        .then(function (data) {
-          if (data.url) {
-            try {
-              sessionStorage.setItem(
+      .then(function (data) {
+        if (data.url) {
+          try {
+            sessionStorage.setItem(
                 "discordStudioWizard",
                 JSON.stringify({
                   checkoutEmail: email,
@@ -1849,73 +2153,35 @@
                   channelPreviewChunks: previewChunks,
                 })
               );
-            } catch (e) {}
-            window.location.href = data.url;
-            return;
-          }
-          throw new Error("No checkout URL returned");
-        })
-        .catch(function (err) {
-          flashCheckout(err.message || "Checkout failed. Check the API URL and try again.", "error");
-          checkoutSubmit.disabled = false;
-        });
-    });
+          } catch (e) {}
+          window.location.href = data.url;
+          return;
+        }
+        throw new Error("No checkout URL returned");
+      })
+      .catch(function (err) {
+        flashCheckout(formatCheckoutFetchError(err), "error");
+        if (summaryBtn) {
+          summaryBtn.removeAttribute("aria-busy");
+          summaryBtn.textContent =
+            summaryBtn.getAttribute("data-default-label") || "Pay on Stripe";
+        }
+        syncSummaryOpenCheckoutBtn();
+      });
   }
-
-  function openDrawer() {
-    if (!drawer || !backdrop) return;
-    drawer.classList.add("is-open");
-    backdrop.classList.add("is-open");
-    drawer.setAttribute("aria-hidden", "false");
-    document.body.classList.add("drawer-open");
-    if (navToggle) navToggle.setAttribute("aria-expanded", "true");
-  }
-
-  function closeDrawer() {
-    if (!drawer || !backdrop) return;
-    drawer.classList.remove("is-open");
-    backdrop.classList.remove("is-open");
-    drawer.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("drawer-open");
-    if (navToggle) navToggle.setAttribute("aria-expanded", "false");
-    if (header) header.classList.remove("nav-open");
-  }
-
-  if (navToggle) {
-    navToggle.addEventListener("click", function () {
-      if (drawer && drawer.classList.contains("is-open")) closeDrawer();
-      else openDrawer();
-    });
-  }
-
-  if (backdrop) backdrop.addEventListener("click", closeDrawer);
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeDrawer();
-  });
-
-  document.querySelectorAll("[data-goto-step]").forEach(function (link) {
-    link.addEventListener("click", function () {
-      var stepFlow = parseInt(link.getAttribute("data-goto-step"), 10);
-      if (isNaN(stepFlow)) return;
-      var page = pageForFlowPos(stepFlow);
-      if (typeof page === "number") setStep(page);
-    });
-  });
 
   var summaryOpenCheckoutBtn = document.getElementById("summary-open-checkout");
   if (summaryOpenCheckoutBtn) {
     summaryOpenCheckoutBtn.addEventListener("click", function () {
-      if (!state.packageTier) {
-        state.packageTier = "advanced";
-        syncPackagePickUI();
-        setStep(4);
-        flashCheckout("Nice choice. Advanced ($20) is preselected so you can review and continue.", "info");
-        return;
-      }
-      state.checkoutReady = true;
-      setStep(6);
+      state.packageTier = PRODUCT_TIER_KEY;
+      startStripeCheckout();
     });
+  }
+
+  var stickyCheckoutEmail = document.getElementById("sticky-checkout-email");
+  if (stickyCheckoutEmail) {
+    stickyCheckoutEmail.addEventListener("input", syncSummaryOpenCheckoutBtn);
+    stickyCheckoutEmail.addEventListener("blur", syncSummaryOpenCheckoutBtn);
   }
 
   if (summaryEl) {
@@ -1924,36 +2190,19 @@
       if (!btn || !summaryEl.contains(btn)) return;
       var id = btn.getAttribute("data-demo-pattern-btn");
       var labAttr = btn.getAttribute("data-demo-pattern-label");
-      if (state.packageTier === "simple") {
-        e.preventDefault();
-        if (!id || id === "regular-text") return;
-        flashCheckout(
-          "Only Regular text is included in Basic. Pick Advanced in step 2 to unlock other naming styles.",
-          "info"
-        );
-        return;
-      }
-      if (state.packageTier !== "advanced") return;
       e.preventDefault();
       if (!id) return;
+      state.packageTier = PRODUCT_TIER_KEY;
       if (state.channelPattern !== id) state.channelCustomByLane = {};
-      if (id === "custom") {
-        var prevAdv = String(state.channelPatternLabel || "");
-        var chipAdv =
-          labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
-        state.channelPattern = "custom";
-        state.channelPatternLabel = /^Custom (?:\u2014|-) /.test(prevAdv) ? prevAdv : chipAdv;
-      } else {
-        state.channelPattern = id;
-        state.channelPatternLabel =
-          labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
-      }
+      state.channelPattern = id;
+      state.channelPatternLabel =
+        labAttr && String(labAttr).trim() !== "" ? String(labAttr).trim() : slugToLabel(id);
+      state.namingPatternUserChosen = true;
       syncPatternSelectionUI();
       renderSummary();
     });
   }
 
-  renderPatternStylePreviews();
   setStep(0);
 
   (function handleCheckoutReturn() {
@@ -1975,16 +2224,24 @@
               ? normalizeServerMode(saved.serverMode) || saved.serverMode
               : null;
             state.layoutType = saved.layoutType || null;
-            state.packageTier =
-              saved.packageTier === "professional" ? null : saved.packageTier || null;
+            state.packageTier = PRODUCT_TIER_KEY;
             state.channelPattern = saved.channelPattern || null;
             state.channelPatternLabel = saved.channelPatternLabel || null;
+            coerceChannelPatternAwayFromLegacyCustom();
+            state.namingPatternUserChosen = !!state.channelPattern;
+            if (saved.checkoutEmail && typeof saved.checkoutEmail === "string") {
+              var em = document.getElementById("sticky-checkout-email");
+              if (em) em.value = saved.checkoutEmail;
+            }
           }
         }
       } catch (e2) {}
-      state.checkoutReady = true;
-      setStep(6);
-      flashCheckout("Checkout was canceled. You can pay from the summary whenever you’re ready.", "error");
+      state.packageTier = PRODUCT_TIER_KEY;
+      setStep(3);
+      flashCheckout(
+        "Checkout was canceled. Enter your email in the bar below and use Pay on Stripe when you’re ready.",
+        "error"
+      );
       window.history.replaceState({}, "", window.location.pathname);
     }
   })();
@@ -1995,6 +2252,7 @@
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add("visible");
+            entry.target.classList.add("is-in");
             observer.unobserve(entry.target);
           }
         });
@@ -2002,6 +2260,10 @@
       { rootMargin: "0px 0px -5% 0px", threshold: 0.06 }
     );
     document.querySelectorAll("#step-finish .steps, #step-finish .feature-chips").forEach(function (el) {
+      el.classList.add("reveal");
+      observer.observe(el);
+    });
+    document.querySelectorAll(".faq-item, .welcome-section-below, .section-alt-wizard").forEach(function (el) {
       el.classList.add("reveal");
       observer.observe(el);
     });

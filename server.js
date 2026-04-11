@@ -1,8 +1,8 @@
 /**
  * Stripe Checkout API for Serverly static site.
  *
- * POST /create-checkout-session: body: { tier, email, goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
- * POST /webhook: Stripe webhook (checkout.session.completed) sends order email
+ * POST /create-checkout-session: body: { tier, email? (optional; omit for Stripe-hosted email), goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
+ * POST /webhook: Stripe webhook (checkout.session.completed) sends receipt + product emails
  */
 
 require("dotenv").config();
@@ -11,7 +11,16 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const Stripe = require("stripe");
 const nodemailer = require("nodemailer");
-const { resolveDiscordTemplateUrl } = require("./template-registry.js");
+const { resolveDiscordTemplateUrl, getTemplateEnvKey } = require("./template-registry.js");
+const {
+  normalizeLayoutType,
+  normalizeChannelPattern,
+  isValidStripeCheckoutSessionId,
+  sanitizeChannelPatternLabel,
+  safePublicHttpUrl,
+  securityHeadersMiddleware,
+  strictBrowserOriginMiddleware,
+} = require("./checkout-security.js");
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -91,13 +100,25 @@ function buildCorsOriginOption() {
     .filter(Boolean)
     .forEach((o) => allow.add(o));
   if (siteOrigin.startsWith("http")) allow.add(siteOrigin);
+  const allowNull =
+    process.env.CORS_ALLOW_NULL_ORIGIN === "1" ||
+    process.env.CORS_ALLOW_NULL_ORIGIN === "true";
+  if (allowNull) allow.add("null");
   [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
+    "http://localhost:5501",
+    "http://127.0.0.1:5501",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+    "http://localhost:8888",
+    "http://127.0.0.1:8888",
   ].forEach((o) => allow.add(o));
   return function corsOriginCallback(origin, callback) {
     if (!origin) return callback(null, true);
@@ -117,9 +138,8 @@ if (!stripeSecret) {
 const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 
 const TIERS = {
-  simple: { amount: 1000, name: "Serverly: Basic server layout" },
-  advanced: { amount: 2000, name: "Serverly: Advanced server layout" },
-  professional: { amount: 5000, name: "Serverly: Professional (hands-on)" },
+  /** Fallback label only; checkout + emails use checkoutLineItemPresentation when layout/style metadata exists. */
+  advanced: { amount: 2000, name: "Serverly: Discord layout package" },
 };
 
 const GOAL_LABELS = {
@@ -130,8 +150,8 @@ const GOAL_LABELS = {
 };
 
 const SERVER_LABELS = {
-  update: "Update current server (in progress, not available)",
-  fresh: "New server template (new or reset)",
+  update: "Fix my current server (coming soon, not available)",
+  fresh: "New server template (new or reset server)",
 };
 
 function effectiveServerMode(sm) {
@@ -151,9 +171,72 @@ const LAYOUT_TYPE_LABELS = {
   business: "Businesses",
   education: "Education",
   startup: "Startup workspace",
-  coaching: "Coaching",
   private: "Private servers",
 };
+
+/** Wizard chip labels (keep in sync with script.js DEMO_PATTERN_OPTIONS). */
+const CHANNEL_PATTERN_LABELS = {
+  "regular-text": "Regular text",
+  "bar-divider": "Bar divider",
+  flourish: "Flourish wrap",
+  "bold-column": "Column",
+  "corner-brackets": "Corner brackets",
+  chevrons: "Chevrons",
+  "dot-separator": "Dot separator",
+  "em-dash": "Em dash",
+  "sparkle-dot": "Sparkle dot",
+};
+
+function slugToLabel(slug) {
+  if (!slug) return "";
+  return String(slug)
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Human-readable naming style from Stripe metadata (label preferred, else pattern id). */
+function namingStyleFromMeta(meta) {
+  const lab = (meta.channelPatternLabel || "").toString().trim();
+  if (lab) return lab;
+  const id = (meta.channelPattern || "").toString().trim();
+  if (!id) return "";
+  return CHANNEL_PATTERN_LABELS[id] || slugToLabel(id);
+}
+
+function layoutLabelForCheckout(layoutTypeKey) {
+  const k = (layoutTypeKey || "").toString().trim();
+  if (!k) return "Discord server layout";
+  if (LAYOUT_TYPE_LABELS[k]) return LAYOUT_TYPE_LABELS[k];
+  return slugToLabel(k.replace(/_/g, "-")) || "Discord server layout";
+}
+
+/** Stripe line item + invoice: layout focus and channel name style (matches wizard). */
+function checkoutLineItemPresentation(layoutTypeKey, namingStyleLabel) {
+  const k = (layoutTypeKey || "").toString().trim();
+  let layoutTitle;
+  if (k && LAYOUT_TYPE_LABELS[k]) {
+    layoutTitle = `${LAYOUT_TYPE_LABELS[k]} layout`;
+  } else if (k) {
+    const phrase = layoutLabelForCheckout(layoutTypeKey);
+    layoutTitle = /\blayout\b/i.test(phrase) ? phrase : `${phrase} layout`;
+  } else {
+    layoutTitle = "Discord server layout";
+  }
+  const style = (namingStyleLabel || "").toString().trim();
+  const name = style
+    ? `Serverly: ${layoutTitle} · ${style}`
+    : `Serverly: ${layoutTitle}`;
+  return {
+    name: name.slice(0, 250),
+    description:
+      "Includes your Discord template link, full channel map, roles, and setup notes for the layout and channel name style you selected.".slice(
+        0,
+        500
+      ),
+  };
+}
 
 function includesForTier(tier, goal, serverMode) {
   const base = {
@@ -210,12 +293,100 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-function buildOrderEmail(meta, customerEmail, extras) {
+/** Reply-To / support address on Serverly emails and printed on Stripe invoice footer. */
+function getSupportReplyEmail() {
+  const a = (process.env.EMAIL_REPLY_TO || "").trim();
+  if (a) return a;
+  return (process.env.INVOICE_SUPPORT_EMAIL || "").trim();
+}
+
+/** Short payment + invoice email (first of two). */
+function buildReceiptEmail(meta, customerEmail, extras) {
+  extras = extras || {};
+  const checkoutSessionId = extras.checkoutSessionId || "";
+  const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
+  const support = getSupportReplyEmail();
+  const thankYou = thankYouPageUrl(checkoutSessionId);
+
+  const lines = [
+    "SERVERLY — Payment received",
+    "",
+    "Thank you. Your payment was successful.",
+    "",
+    "HOSTED INVOICE (Stripe)",
+    stripeInvoiceUrl
+      ? stripeInvoiceUrl
+      : "Stripe emails a receipt separately. The hosted invoice link is included there when your account sends it for this checkout.",
+    "",
+    "ORDER PAGE (next steps)",
+    thankYou,
+    "",
+    "Checkout reference: " + (checkoutSessionId || "(n/a)"),
+    "",
+    'You will receive a second email: "Serverly: Your Discord template & order details" with your Discord template link and full order summary.',
+    "",
+  ];
+  if (support) {
+    lines.push(
+      "Questions about this order? Reply to this email, or write to: " + support,
+      "(Our messages use Reply-To so your reply reaches us.)",
+      "",
+    );
+  }
+  lines.push("- Serverly");
+
+  const text = lines.join("\n");
+
+  let html =
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
+  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Payment received — Serverly</h1>';
+  html += "<p>Thank you. Your payment was successful.</p>";
+  html += '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Hosted invoice</h2>';
+  if (stripeInvoiceUrl) {
+    html +=
+      '<p style="margin:0;word-break:break-all"><a href="' +
+      escapeHtml(stripeInvoiceUrl) +
+      '">' +
+      escapeHtml(stripeInvoiceUrl) +
+      "</a></p>";
+  } else {
+    html +=
+      "<p style=\"margin:0\">Stripe sends a receipt email separately; the hosted invoice link appears there when available.</p>";
+  }
+  html += '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Order page</h2>';
+  html +=
+    '<p style="margin:0 0 0.75rem"><a href="' + escapeHtml(thankYou) + '">' + escapeHtml(thankYou) + "</a></p>";
+  html +=
+    '<p style="margin:0 0 0.75rem"><strong>Checkout reference:</strong> ' +
+    escapeHtml(checkoutSessionId || "(n/a)") +
+    "</p>";
+  html +=
+    "<p style=\"margin:0 0 1rem\">You will receive a <strong>second email</strong> titled <em>Serverly: Your Discord template & order details</em> with your template link and full order summary.</p>";
+  if (support) {
+    html +=
+      '<p style="margin:0">Questions? Reply to this message or email <a href="mailto:' +
+      escapeHtml(support) +
+      '">' +
+      escapeHtml(support) +
+      "</a>.</p>";
+  }
+  html += '<p style="margin:1.5rem 0 0;color:#64748b;font-size:0.9rem">- Serverly</p></body></html>';
+
+  return { text, html };
+}
+
+function buildProductDeliveryEmail(meta, customerEmail, extras) {
   extras = extras || {};
   const checkoutSessionId = extras.checkoutSessionId || "";
   const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
   const tier = meta.tier || "simple";
   const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+  const layoutForPackage = normalizeLayoutType(meta.layout_type);
+  const namingStyleLine = namingStyleFromMeta(meta);
+  const packageLine =
+    checkoutLineItemPresentation(layoutForPackage, namingStyleLine).name ||
+    (TIERS[tier] && TIERS[tier].name) ||
+    tierName;
   const metaDiscord = (meta.discord_template_url && String(meta.discord_template_url).trim()) || "";
   const instantUrl = (metaDiscord || digitalDeliveryUrl || "").trim();
   const isDiscordTemplate = !!metaDiscord;
@@ -227,9 +398,9 @@ function buildOrderEmail(meta, customerEmail, extras) {
   }
 
   const lines = [
-    "YOUR DIGITAL PRODUCT: Serverly",
+    "SERVERLY — Your Discord template & order details",
     "",
-    "Thank you for your purchase. Here is what you bought and how you get it.",
+    "This email is the second message we send after checkout. It has your template link, your choices from the website, and delivery notes.",
     "",
   ];
 
@@ -248,7 +419,7 @@ function buildOrderEmail(meta, customerEmail, extras) {
   const orderPageSectionNum = instantUrl ? "3)" : "2)";
   lines.push(
     `${layoutSectionNum} CUSTOM DISCORD LAYOUT (${instantUrl ? "your main purchase" : "your purchase"})`,
-    "This is the personalized server blueprint: channels, categories, roles, and setup notes based on your wizard answers.",
+    "This is the personalized server blueprint: channels, categories, roles, and setup notes based on your answers on the website.",
     "We deliver it to this email in line with your tier timeline unless we reach out separately.",
     "",
     `${orderPageSectionNum} ORDER PAGE (bookmark)`,
@@ -259,14 +430,14 @@ function buildOrderEmail(meta, customerEmail, extras) {
     stripeInvoiceUrl
       ? "• Stripe: hosted invoice: " + stripeInvoiceUrl
       : "• Stripe: hosted invoice link when your account sends invoices for this Checkout session.",
-    "• Serverly: this message is your order record and spec snapshot.",
+    "• Serverly: this email is your product delivery and spec snapshot.",
     "",
     "Checkout reference: " + (checkoutSessionId || "(n/a)") + "",
     "",
     "---",
     "ORDER SNAPSHOT (what you selected)",
     "",
-    `Package: ${tierName}`,
+    `Package: ${packageLine}`,
     `Delivery email: ${customerEmail}`,
     "",
   );
@@ -276,13 +447,16 @@ function buildOrderEmail(meta, customerEmail, extras) {
   }
   if (meta.serverMode) {
     const sm = effectiveServerMode(meta.serverMode);
-    lines.push(`Server approach: ${SERVER_LABELS[sm] || sm}`);
+    lines.push(`Server approach: ${SERVER_LABELS[sm] || meta.serverMode || sm}`);
+  }
+  if (meta.hasFollowers === "true") {
+    lines.push("Established audience: Yes");
   }
   if (meta.hasFollowers === "false") {
-    lines.push("Followers: No established audience yet (following size skipped)");
+    lines.push("Established audience: No (following size skipped)");
   }
   if (meta.size) lines.push(`Following / reach: ${SIZE_LABELS[meta.size] || meta.size}`);
-  if (meta.channelPatternLabel) lines.push(`Naming style preference: ${meta.channelPatternLabel}`);
+  if (namingStyleLine) lines.push(`Channel naming style: ${namingStyleLine}`);
   if (chPrevParts.length) {
     lines.push(
       "",
@@ -300,8 +474,9 @@ function buildOrderEmail(meta, customerEmail, extras) {
 
   let html =
     '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
-  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your digital product: Serverly</h1>';
-  html += "<p>Thank you for your purchase. Below is what you bought and how you get it.</p>";
+  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your Discord template & order details — Serverly</h1>';
+  html +=
+    "<p>This is your <strong>product delivery</strong> email (sent right after your payment confirmation). Below are your template link, choices, and what is included.</p>";
 
   if (instantUrl) {
     if (isDiscordTemplate) {
@@ -322,7 +497,7 @@ function buildOrderEmail(meta, customerEmail, extras) {
   }
 
   html +=
-    '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Custom Discord layout</h2><p style="margin:0 0 0.75rem">Your personalized server blueprint (channels, roles, notes) is produced from your wizard answers and delivered to <strong>' +
+    '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Custom Discord layout</h2><p style="margin:0 0 0.75rem">Your personalized server blueprint (channels, roles, notes) is produced from your answers on the website and delivered to <strong>' +
     escapeHtml(customerEmail) +
     "</strong> on your tier timeline.</p>";
 
@@ -344,7 +519,11 @@ function buildOrderEmail(meta, customerEmail, extras) {
     "</p>";
 
   html += '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Order snapshot</h2><dl style="margin:0 0 1rem">';
-  html += "<dt style=\"font-weight:600;color:#64748b\">Package</dt><dd style=\"margin:0 0 0.5rem\">" + escapeHtml(tierName) + "</dd>";
+  html += "<dt style=\"font-weight:600;color:#64748b\">Package</dt><dd style=\"margin:0 0 0.5rem\">" + escapeHtml(packageLine) + "</dd>";
+  html +=
+    '<dt style="font-weight:600;color:#64748b">Delivery email</dt><dd style="margin:0 0 0.5rem">' +
+    escapeHtml(customerEmail) +
+    "</dd>";
   if (meta.goal) {
     html +=
       "<dt style=\"font-weight:600;color:#64748b\">Goal</dt><dd style=\"margin:0 0 0.5rem\">" +
@@ -361,12 +540,16 @@ function buildOrderEmail(meta, customerEmail, extras) {
     const sm = effectiveServerMode(meta.serverMode);
     html +=
       "<dt style=\"font-weight:600;color:#64748b\">Server approach</dt><dd style=\"margin:0 0 0.5rem\">" +
-      escapeHtml(SERVER_LABELS[sm] || sm) +
+      escapeHtml(SERVER_LABELS[sm] || meta.serverMode || sm) +
       "</dd>";
+  }
+  if (meta.hasFollowers === "true") {
+    html +=
+      '<dt style="font-weight:600;color:#64748b">Established audience</dt><dd style="margin:0 0 0.5rem">Yes</dd>';
   }
   if (meta.hasFollowers === "false") {
     html +=
-      '<dt style="font-weight:600;color:#64748b">Followers</dt><dd style="margin:0 0 0.5rem">No established audience yet</dd>';
+      '<dt style="font-weight:600;color:#64748b">Established audience</dt><dd style="margin:0 0 0.5rem">No</dd>';
   }
   if (meta.size) {
     html +=
@@ -374,10 +557,10 @@ function buildOrderEmail(meta, customerEmail, extras) {
       escapeHtml(SIZE_LABELS[meta.size] || meta.size) +
       "</dd>";
   }
-  if (meta.channelPatternLabel) {
+  if (namingStyleLine) {
     html +=
-      "<dt style=\"font-weight:600;color:#64748b\">Naming style</dt><dd style=\"margin:0 0 0.5rem\">" +
-      escapeHtml(meta.channelPatternLabel) +
+      "<dt style=\"font-weight:600;color:#64748b\">Channel naming style</dt><dd style=\"margin:0 0 0.5rem\">" +
+      escapeHtml(namingStyleLine) +
       "</dd>";
   }
   html += "</dl>";
@@ -417,11 +600,18 @@ function getTransporter() {
   return transporter;
 }
 
+function isOrderEmailConfigured() {
+  return !!(process.env.SMTP_HOST && process.env.EMAIL_FROM);
+}
+
 async function sendOrderEmail(to, subject, text, html) {
   const tx = getTransporter();
   if (!tx) {
-    console.warn("Email not configured (SMTP_HOST / EMAIL_FROM). Order text:\n", text);
-    return;
+    console.error(
+      "[Serverly] Order email NOT sent: SMTP_HOST / EMAIL_FROM missing on server. Customer:",
+      to || "(no address)"
+    );
+    return false;
   }
   const mail = {
     from: process.env.EMAIL_FROM,
@@ -430,12 +620,17 @@ async function sendOrderEmail(to, subject, text, html) {
     text,
   };
   if (html) mail.html = html;
+  const replyTo = getSupportReplyEmail();
+  if (replyTo) mail.replyTo = replyTo;
   if (process.env.EMAIL_BCC) mail.bcc = process.env.EMAIL_BCC;
   await tx.sendMail(mail);
+  return true;
 }
 
 const app = express();
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
+app.use(securityHeadersMiddleware);
 
 const checkoutIpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -473,33 +668,45 @@ app.post(
       event = stripe.webhooks.constructEvent(req.body, req.headers["stripe-signature"], webhookSecret);
     } catch (err) {
       console.error("Webhook signature:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      return res.status(400).send("Webhook Error");
     }
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+      if (session.mode !== "payment") {
+        return res.json({ received: true });
+      }
       const meta = session.metadata || {};
       const email =
         session.customer_details?.email || session.customer_email || meta.customer_email || "";
       if (email) {
-        try {
-          let stripeInvoiceUrl = "";
-          if (stripe && session.invoice) {
-            try {
-              const invId = typeof session.invoice === "string" ? session.invoice : session.invoice.id;
-              const inv = await stripe.invoices.retrieve(invId);
-              if (inv.hosted_invoice_url) stripeInvoiceUrl = inv.hosted_invoice_url;
-            } catch (invErr) {
-              console.warn("Could not load Stripe invoice for email:", invErr.message);
-            }
+        let stripeInvoiceUrl = "";
+        if (stripe && session.invoice) {
+          try {
+            const invId = typeof session.invoice === "string" ? session.invoice : session.invoice.id;
+            const inv = await stripe.invoices.retrieve(invId);
+            if (inv.hosted_invoice_url) stripeInvoiceUrl = inv.hosted_invoice_url;
+          } catch (invErr) {
+            console.warn("Could not load Stripe invoice for email:", invErr.message);
           }
-          const { text, html } = buildOrderEmail(meta, email, {
-            checkoutSessionId: session.id,
-            stripeInvoiceUrl,
-          });
-          await sendOrderEmail(email, "Your Serverly digital order: layout & delivery", text, html);
-        } catch (e) {
-          console.error("Send email failed:", e);
+        }
+        const extras = { checkoutSessionId: session.id, stripeInvoiceUrl };
+        try {
+          const rec = buildReceiptEmail(meta, email, extras);
+          await sendOrderEmail(email, "Serverly: Payment received — receipt & invoice", rec.text, rec.html);
+        } catch (e1) {
+          console.error("Receipt email failed:", e1);
+        }
+        try {
+          const prod = buildProductDeliveryEmail(meta, email, extras);
+          await sendOrderEmail(
+            email,
+            "Serverly: Your Discord template & order details",
+            prod.text,
+            prod.html
+          );
+        } catch (e2) {
+          console.error("Product delivery email failed:", e2);
         }
       } else {
         console.warn("No email on completed session", session.id);
@@ -510,37 +717,51 @@ app.post(
   }
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "64kb" }));
 
 app.get("/order-instant", orderInstantIpLimiter, async (req, res) => {
   const sessionId = typeof req.query.session_id === "string" ? req.query.session_id.trim() : "";
   if (!sessionId || !stripe) {
     return res.status(400).json({ error: "Missing session_id or Stripe not configured." });
   }
+  if (!isValidStripeCheckoutSessionId(sessionId)) {
+    return res.status(400).json({ error: "Invalid session_id." });
+  }
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.mode !== "payment") {
+      return res.status(403).json({ error: "Payment not confirmed for this session." });
+    }
     const paid =
       session.payment_status === "paid" || session.payment_status === "no_payment_required";
     if (!paid) {
       return res.status(403).json({ error: "Payment not confirmed for this session." });
     }
     const meta = session.metadata || {};
-    let discordTemplateUrl = (meta.discord_template_url || "").toString().trim();
-    if (!discordTemplateUrl) {
-      discordTemplateUrl = resolveDiscordTemplateUrl({
-        tier: meta.tier || "",
-        layoutType: meta.layout_type || "",
-        channelPattern: meta.channelPattern || "",
-      });
+    const metaTier = (meta.tier || "").toString().trim();
+    if (metaTier && metaTier !== "advanced") {
+      return res.status(403).json({ error: "Payment not confirmed for this session." });
     }
-    return res.json({ discordTemplateUrl });
+    let discordTemplateUrl = safePublicHttpUrl(meta.discord_template_url);
+    if (!discordTemplateUrl) {
+      const resolved = resolveDiscordTemplateUrl({
+        layoutType: normalizeLayoutType(meta.layout_type),
+        channelPattern: normalizeChannelPattern(meta.channelPattern),
+      });
+      discordTemplateUrl = safePublicHttpUrl(resolved);
+    }
+    return res.json({ discordTemplateUrl: discordTemplateUrl || "" });
   } catch (e) {
     console.error("order-instant:", e.message);
     return res.status(400).json({ error: "Could not load checkout session." });
   }
 });
 
-app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
+app.post(
+  "/create-checkout-session",
+  strictBrowserOriginMiddleware,
+  checkoutIpLimiter,
+  async (req, res) => {
   if (!stripe) {
     return res.status(500).json({ error: "Stripe is not configured on the server." });
   }
@@ -558,17 +779,14 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
     layoutType,
   } = req.body || {};
 
-  if (!tier || !TIERS[tier]) {
-    return res.status(400).json({ error: "Invalid or missing tier (simple or advanced)." });
-  }
-
-  if (tier === "professional") {
-    return res.status(400).json({ error: "Professional tier is coming soon and is not available for checkout yet." });
+  const paidTier = "advanced";
+  if (!TIERS[paidTier]) {
+    return res.status(500).json({ error: "Checkout product is not configured." });
   }
 
   const emailStr = typeof email === "string" ? email.trim() : "";
-  if (!emailStr || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
-    return res.status(400).json({ error: "Valid email is required." });
+  if (emailStr && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+    return res.status(400).json({ error: "Invalid email." });
   }
 
   const ghPagesErr = githubPagesMissingProjectPathError();
@@ -579,14 +797,20 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
     });
   }
 
-  const t = TIERS[tier];
-  const patLab = (channelPatternLabel || "").toString().slice(0, 450);
-  const layoutTypeMeta = (layoutType || "").toString().slice(0, 450);
-  const discordTemplateUrl = resolveDiscordTemplateUrl({
-    tier,
+  const t = TIERS[paidTier];
+  const patId = normalizeChannelPattern(channelPattern);
+  let patLab = sanitizeChannelPatternLabel(channelPatternLabel, 450);
+  if (!patLab && patId) {
+    patLab = sanitizeChannelPatternLabel(CHANNEL_PATTERN_LABELS[patId] || slugToLabel(patId), 450);
+  }
+  const layoutTypeMeta = normalizeLayoutType(layoutType);
+  const templateFields = {
     layoutType: layoutTypeMeta,
-    channelPattern: (channelPattern || "").toString(),
-  }).slice(0, 500);
+    channelPattern: patId,
+  };
+  const templateEnvKey = getTemplateEnvKey(templateFields);
+  const discordTemplateUrl =
+    safePublicHttpUrl(resolveDiscordTemplateUrl(templateFields).slice(0, 500)) || "";
   const hasFollowersMeta =
     hasFollowers === true || hasFollowers === "true"
       ? "true"
@@ -597,20 +821,23 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
   const previewMeta = {};
   const rawChunks = Array.isArray(channelPreviewChunks) ? channelPreviewChunks : [];
   for (let ci = 0; ci < Math.min(rawChunks.length, 12); ci++) {
-    const piece = String(rawChunks[ci] || "").slice(0, 500);
+    const piece = sanitizeChannelPatternLabel(String(rawChunks[ci] || ""), 500);
     if (piece.trim()) previewMeta[`ch_prev_${ci}`] = piece;
   }
 
   try {
     const thankYouPage = `${clientUrl}/thank-you.html`;
-    const session = await stripe.checkout.sessions.create({
+    let invoiceFooter = `Next steps & layout guide: ${thankYouPage}`;
+    const supportFooter = getSupportReplyEmail();
+    if (supportFooter) invoiceFooter += `\n\nSupport / replies: ${supportFooter}`;
+    const checkoutLine = checkoutLineItemPresentation(layoutTypeMeta, patLab);
+    const sessionParams = {
       mode: "payment",
       allow_promotion_codes: true,
-      customer_email: emailStr,
       invoice_creation: {
         enabled: true,
         invoice_data: {
-          footer: `Next steps & layout guide: ${thankYouPage}`,
+          footer: invoiceFooter,
         },
       },
       line_items: [
@@ -619,8 +846,8 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
             currency: "usd",
             unit_amount: t.amount,
             product_data: {
-              name: t.name,
-              description: "Discord server layout: channels, roles, flows & tier notes (implement like a Discord template)",
+              name: checkoutLine.name,
+              description: checkoutLine.description,
             },
           },
           quantity: 1,
@@ -629,33 +856,65 @@ app.post("/create-checkout-session", checkoutIpLimiter, async (req, res) => {
       success_url: `${thankYouPage}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/?checkout=cancel`,
       metadata: {
-        tier,
-        goal: goal || "",
-        serverMode: effectiveServerMode(serverMode) || serverMode || "",
+        tier: paidTier,
+        goal: sanitizeChannelPatternLabel(goal || "", 200),
+        serverMode: sanitizeChannelPatternLabel(
+          effectiveServerMode(serverMode) || serverMode || "",
+          80
+        ),
         hasFollowers: hasFollowersMeta,
-        size: size || "",
-        channelPattern: channelPattern || "",
+        size: sanitizeChannelPatternLabel(size || "", 80),
+        channelPattern: patId,
         channelPatternLabel: patLab,
         layout_type: layoutTypeMeta,
+        template_env_key: templateEnvKey,
         discord_template_url: discordTemplateUrl,
         customer_email: emailStr,
         ...previewMeta,
       },
-    });
+    };
+    if (emailStr) {
+      sessionParams.customer_email = emailStr;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return res.json({ url: session.url });
   } catch (e) {
     console.error("create-checkout-session:", e);
     return res.status(500).json({ error: CHECKOUT_GENERIC_ERROR });
   }
-});
+  }
+);
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  const verbose =
+    process.env.HEALTH_VERBOSE === "1" || process.env.HEALTH_VERBOSE === "true";
+  if (verbose) {
+    res.json({
+      ok: true,
+      stripeConfigured: !!stripe,
+      webhookConfigured: !!webhookSecret,
+      orderEmailConfigured: isOrderEmailConfigured(),
+      replyToConfigured: !!getSupportReplyEmail(),
+    });
+  } else {
+    res.json({ ok: true });
+  }
 });
 
 app.listen(port, () => {
   warnIfGithubPagesMissingRepoPath();
   console.log(`Checkout API listening on http://localhost:${port}`);
   console.log(`Stripe return / CORS site base: ${clientUrl}`);
+  if (stripe && webhookSecret && !isOrderEmailConfigured()) {
+    console.error(
+      "[Serverly] Paid customers will not get the Serverly order email until SMTP_HOST and EMAIL_FROM are set (see env.example)."
+    );
+  }
+  if (stripe && webhookSecret && isOrderEmailConfigured() && !getSupportReplyEmail()) {
+    console.warn(
+      "[Serverly] Set EMAIL_REPLY_TO so customers can reply to receipt/product emails; invoice PDF footer will also list support."
+    );
+  }
 });

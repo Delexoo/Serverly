@@ -2,74 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Thank you for your Serverly order: receipt and next steps." />
   <meta name="theme-color" content="#5865F2" />
+  <meta name="color-scheme" content="light" />
   <meta name="robots" content="noindex" />
-  <!-- Optional: same URL as DIGITAL_DELIVERY_URL on your Render server; shows “Instant access” on this page -->
   <meta name="serverly-digital-delivery-url" content="" />
-  <!-- Optional override for checkout API base; defaults to the script below if empty. -->
   <meta name="serverly-checkout-api" content="" />
-  <title>Thank you - Serverly</title>
+  <title>Thank you — Serverly</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="thank-you-body">
-  <a class="skip-link" href="#thank-you-main">Skip to main content</a>
+<body class="thank-you-body thank-you-mono">
+  <a class="skip-link thank-you-mono-skip" href="#thank-you-main">Skip to main content</a>
 
-  <header class="site-header site-header--thank-you thank-you-header">
-    <div class="site-header-shell">
-      <div class="site-header-inner">
-        <div class="site-header-top">
-          <a class="logo logo-link" href="index.html">
-            <span class="logo-mark" aria-hidden="true">◆</span>
-            <span class="logo-wordmark">Serverly</span>
-          </a>
-          <div class="site-header-tools">
-            <a class="btn btn-back-wizard btn-back-wizard--link" href="index.html">Wizard home</a>
-          </div>
-        </div>
-      </div>
+  <header class="thank-you-mono-topbar">
+    <div class="thank-you-mono-topbar-inner">
+      <span class="thank-you-mono-topbar-kicker">Order complete</span>
+      <a class="thank-you-mono-topbar-link" href="index.html">← Website home</a>
+    </div>
+    <div class="thank-you-mono-brand-row">
+      <a class="thank-you-mono-brand" href="index.html">
+        <span class="logo-mark thank-you-mono-brand-mark" aria-hidden="true">✎</span>
+        <span class="thank-you-mono-brand-word">Serverly</span>
+      </a>
     </div>
   </header>
 
-  <main class="thank-you-main" id="thank-you-main">
-    <div class="thank-you-inner">
-      <p class="badge thank-you-badge">
-        <span class="badge-icon" aria-hidden="true">✓</span>
-        Payment received
-      </p>
-      <h1 class="thank-you-title">Thank you for your order</h1>
-
-      <section class="summary-card thank-you-claim" id="thank-you-claim" aria-labelledby="claim-product-heading">
-        <h2 class="section-title section-title-tight" id="claim-product-heading">Claim your New Discord Server!</h2>
-        <p class="thank-you-claim-lead" id="thank-you-claim-lead">
-          Your purchase is fulfilled by email: Stripe’s receipt, optional instant download (if we’ve added a link), and your custom Discord layout on your tier timeline. Use the button below to open an instant file or get help if email hasn’t arrived.
+  <main class="thank-you-main thank-you-mono-main" id="thank-you-main">
+    <div class="thank-you-inner thank-you-mono-inner">
+      <div class="thank-you-mono-hero">
+        <p class="thank-you-badge thank-you-mono-badge">
+          <span class="badge-icon" aria-hidden="true">✓</span>
+          Payment received
         </p>
-        <div class="thank-you-claim-actions" id="thank-you-claim-actions"></div>
-        <p class="thank-you-claim-hint" id="thank-you-claim-hint"></p>
+        <h1 class="thank-you-title thank-you-mono-title">Thank you for your order</h1>
+        <p class="thank-you-mono-subtitle">You’re all set — claim your layout below or check your email.</p>
+      </div>
+
+      <section class="thank-you-mono-panel thank-you-claim" id="thank-you-claim" aria-labelledby="claim-product-heading">
+        <div class="thank-you-mono-panel-head">
+          <span class="thank-you-mono-panel-icon" aria-hidden="true">⌕</span>
+          <h2 class="section-title section-title-tight thank-you-mono-panel-title" id="claim-product-heading">Claim your New Discord Server!</h2>
+        </div>
+        <div class="thank-you-mono-panel-body">
+          <p class="thank-you-claim-lead" id="thank-you-claim-lead">
+            Your purchase is fulfilled by email: Stripe’s receipt, optional instant download (if we’ve added a link), and your custom Discord layout on your tier timeline. Use the button below to open an instant file or get help if email hasn’t arrived.
+          </p>
+          <div class="thank-you-claim-actions thank-you-mono-actions" id="thank-you-claim-actions"></div>
+          <p class="thank-you-claim-hint thank-you-mono-hint" id="thank-you-claim-hint"></p>
+        </div>
       </section>
 
-      <section class="summary-card thank-you-receipt" id="thank-you-receipt" aria-labelledby="receipt-heading" hidden>
-        <h2 class="section-title section-title-tight" id="receipt-heading">Your order receipt</h2>
-        <p class="thank-you-receipt-note" id="thank-you-receipt-email-line"></p>
-        <dl class="thank-you-receipt-dl" id="thank-you-receipt-dl"></dl>
-        <div class="thank-you-receipt-includes" id="thank-you-receipt-includes"></div>
+      <section class="thank-you-mono-panel thank-you-receipt summary-card" id="thank-you-receipt" aria-labelledby="receipt-heading" hidden>
+        <div class="thank-you-mono-panel-head">
+          <span class="thank-you-mono-panel-icon" aria-hidden="true">≡</span>
+          <h2 class="section-title section-title-tight thank-you-mono-panel-title" id="receipt-heading">Your order receipt</h2>
+        </div>
+        <div class="thank-you-mono-panel-body">
+          <p class="thank-you-receipt-note" id="thank-you-receipt-email-line"></p>
+          <dl class="thank-you-receipt-dl" id="thank-you-receipt-dl"></dl>
+          <div class="thank-you-receipt-includes" id="thank-you-receipt-includes"></div>
+        </div>
       </section>
 
-      <p class="thank-you-footnote">
-        Questions? Reply to your order email, write <a href="mailto:teambrilliantt@hotmail.com">teambrilliantt@hotmail.com</a>, or start again from the <a href="index.html">wizard</a>.
+      <p class="thank-you-footnote thank-you-mono-footnote" id="thank-you-footnote">
+        Questions? Reply to your order email, or <a href="mailto:teambrilliantt@hotmail.com" class="link-with-launch-icon"><span>Email Us</span><svg class="launch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 3h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 14 21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>, or start again from the <a href="index.html">website</a>.
       </p>
     </div>
   </main>
 
-  <footer class="site-footer thank-you-footer">
-    <p>Not affiliated with Discord Inc.</p>
-  </footer>
+  <nav class="site-fineprint-row" aria-label="Legal notices">
+    <a href="discord-disclaimer.html" class="site-fineprint-link">Not affiliated with Discord Inc.</a>
+    <a href="legal.html" class="site-fineprint-link">Legal</a>
+  </nav>
 
-  <!-- Must match index.html so /order-instant can load your template after Stripe redirect (thank-you does not load script.js). -->
+  <!-- Same public checkout API URL as index.html; no secrets in the page source. -->
   <script>
     window.STRIPE_CHECKOUT_API = window.STRIPE_CHECKOUT_API || "https://serverly-mzwf.onrender.com";
   </script>
@@ -80,14 +90,17 @@
         business: "Businesses",
         education: "Education",
         startup: "Startup workspace",
-        coaching: "Coaching",
         private: "Private servers",
       };
-      var PACKAGE_LABELS = { simple: "Basic", advanced: "Advanced", professional: "Professional" };
+      var PACKAGE_LABELS = {
+        simple: "Basic",
+        advanced: "Discord server layout",
+        professional: "Professional",
+      };
       var PACKAGE_PRICE_HINTS = { simple: "$10", advanced: "$20", professional: "$50" };
       var SERVER_MODE_LABELS = {
         fresh: "New server template (new or reset server)",
-        update: "Update current server",
+        update: "Fix my current server (coming soon)",
       };
 
       function normalizeServerMode(mode) {
@@ -154,6 +167,58 @@
 
       var id = new URLSearchParams(window.location.search).get("session_id");
 
+      function namingStyleFromSaved(s) {
+        if (!s || typeof s !== "object") return "";
+        if (s.channelPatternLabel && String(s.channelPatternLabel).trim())
+          return String(s.channelPatternLabel).trim();
+        if (s.channelPattern) return slugToLabel(s.channelPattern);
+        return "";
+      }
+
+      function buildSupportMailtoHref(sessionId, s) {
+        var lines = [
+          "Hi, I completed a Serverly checkout and haven't received my order or template link.",
+          "",
+        ];
+        if (sessionId) {
+          lines.push("Stripe session id: " + sessionId, "");
+        }
+        if (
+          s &&
+          typeof s === "object" &&
+          (s.packageTier || s.layoutType || s.serverMode || s.channelPattern || s.channelPatternLabel)
+        ) {
+          lines.push("What I selected on the website:", "");
+          if (s.checkoutEmail && String(s.checkoutEmail).trim()) {
+            lines.push("Checkout email: " + String(s.checkoutEmail).trim());
+          }
+          var t = s.packageTier || "advanced";
+          if (t === "professional") t = "advanced";
+          var tLab = PACKAGE_LABELS[t] || t;
+          var ph = PACKAGE_PRICE_HINTS[t] || "";
+          lines.push("Package: " + tLab + (ph ? " (" + ph + " USD)" : ""));
+          if (s.layoutType && LAYOUT_TYPE_LABELS[s.layoutType]) {
+            lines.push("Layout focus: " + LAYOUT_TYPE_LABELS[s.layoutType]);
+          }
+          var sm0 = s.serverMode ? normalizeServerMode(s.serverMode) || s.serverMode : "";
+          if (sm0 && SERVER_MODE_LABELS[sm0]) {
+            lines.push("Server approach: " + SERVER_MODE_LABELS[sm0]);
+          }
+          var ns = namingStyleFromSaved(s);
+          if (ns) lines.push("Channel naming style: " + ns);
+          lines.push("");
+        }
+        lines.push("Thanks!");
+        return (
+          "mailto:teambrilliantt@hotmail.com?subject=" +
+          encodeURIComponent("Serverly order - didn't receive delivery") +
+          "&body=" +
+          encodeURIComponent(lines.join("\n"))
+        );
+      }
+
+      var SUPPORT_MAILTO = buildSupportMailtoHref(id, saved);
+
       var metaInstant = document.querySelector('meta[name="serverly-digital-delivery-url"]');
       var instantUrlMeta =
         metaInstant && metaInstant.getAttribute("content")
@@ -173,24 +238,41 @@
         }
       }
 
-      var SUPPORT_MAILTO =
-        "mailto:teambrilliantt@hotmail.com?subject=" +
-        encodeURIComponent("Serverly order - didn't receive delivery") +
-        "&body=" +
-        encodeURIComponent(
-          "Hi, I completed a Serverly checkout and haven’t received my order or template link.\n\n" +
-            (id ? "Stripe session id: " + id + "\n\n" : "") +
-            "Thanks!"
-        );
+      function appendLaunchIconSvg() {
+        var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("class", "launch-icon");
+        svg.setAttribute("width", "18");
+        svg.setAttribute("height", "18");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        svg.setAttribute("aria-hidden", "true");
+        function path(d) {
+          var p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          p.setAttribute("d", d);
+          p.setAttribute("stroke", "currentColor");
+          p.setAttribute("stroke-width", "2");
+          p.setAttribute("stroke-linecap", "round");
+          p.setAttribute("stroke-linejoin", "round");
+          return p;
+        }
+        svg.appendChild(path("M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"));
+        svg.appendChild(path("M15 3h6v6"));
+        svg.appendChild(path("M10 14 21 3"));
+        return svg;
+      }
 
       function appendEmailSupportLink() {
         if (!claimActions) return;
         var sub = document.createElement("p");
         sub.className = "thank-you-claim-secondary-wrap";
         var mailA = document.createElement("a");
-        mailA.className = "btn btn-outline btn-block";
+        mailA.className = "btn btn-outline btn-block thank-you-mono-btn-secondary btn-label-launch";
         mailA.href = SUPPORT_MAILTO;
-        mailA.textContent = "Didn’t receive anything?";
+        var label = document.createElement("span");
+        label.textContent = "Email Us";
+        mailA.appendChild(label);
+        mailA.appendChild(appendLaunchIconSvg());
         claimActions.appendChild(sub);
         sub.appendChild(mailA);
       }
@@ -199,7 +281,7 @@
         if (!claimActions) return;
         if (claimLead) claimLead.textContent = leadText;
         var openBtn = document.createElement("a");
-        openBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+        openBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary thank-you-mono-btn-primary";
         openBtn.href = primaryHref;
         openBtn.rel = "noopener noreferrer";
         openBtn.textContent = primaryLabel;
@@ -225,7 +307,7 @@
 
         var claimBtn = document.createElement("button");
         claimBtn.type = "button";
-        claimBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary";
+        claimBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary thank-you-mono-btn-primary";
         claimBtn.textContent = "Claim your Discord template";
 
         claimBtn.addEventListener("click", function () {
@@ -353,7 +435,7 @@
         dl.appendChild(dd);
       }
 
-      if (saved && typeof saved === "object" && saved.packageTier) {
+      if (saved && typeof saved === "object" && (saved.packageTier || saved.layoutType)) {
         receipt.hidden = false;
         if (saved.checkoutEmail) {
           emailLine.textContent =
@@ -362,9 +444,10 @@
           emailLine.textContent = "Use the email you entered on Stripe checkout for receipts and delivery.";
         }
 
-        var tier = saved.packageTier;
+        var tier = saved.packageTier || "advanced";
+        if (tier === "professional") tier = "advanced";
         var tierLabel = PACKAGE_LABELS[tier] || tier;
-        var price = PACKAGE_PRICE_HINTS[tier] || "";
+        var price = PACKAGE_PRICE_HINTS[tier] || (tier === "advanced" ? "$20" : "");
         addRow("Package", tierLabel + (price ? ", " + price + " USD" : ""));
 
         if (saved.layoutType && LAYOUT_TYPE_LABELS[saved.layoutType]) {
