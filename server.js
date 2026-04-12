@@ -2,7 +2,7 @@
  * Stripe Checkout API for Serverly static site.
  *
  * POST /create-checkout-session: body: { tier, email? (optional; omit for Stripe-hosted email), goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
- * POST /webhook: Stripe webhook (checkout.session.completed) sends receipt + product emails
+ * POST /webhook: Stripe webhook (checkout.session.completed) sends receipt + Discord template email + order summary
  */
 
 require("dotenv").config();
@@ -369,13 +369,112 @@ function getSupportReplyEmail() {
   return (process.env.INVOICE_SUPPORT_EMAIL || "").trim();
 }
 
-/** Short payment + invoice email (first of two). */
+/** Discord template URL for emails: Stripe metadata first, then env (same logic as GET /order-instant). */
+function resolveDiscordTemplateUrlForOrder(meta) {
+  const m = meta || {};
+  const fromMeta = safePublicHttpUrl(String(m.discord_template_url || "").trim());
+  if (fromMeta) return fromMeta;
+  return safePublicHttpUrl(
+    resolveDiscordTemplateUrl({
+      layoutType: normalizeLayoutType(m.layout_type),
+      channelPattern: normalizeChannelPattern(m.channelPattern),
+    })
+  );
+}
+
+/**
+ * Dedicated follow-up: template link only (easy to find in inbox).
+ * Returns { subject, text, html }.
+ */
+function buildDiscordTemplateFollowUpEmail(meta, customerEmail, extras, templateUrl) {
+  extras = extras || {};
+  const checkoutSessionId = extras.checkoutSessionId || "";
+  const thankYou = thankYouPageUrl(checkoutSessionId);
+  const support = getSupportReplyEmail();
+  const url = safePublicHttpUrl(String(templateUrl || "").trim()) || "";
+  const namingStyleLine = namingStyleFromMeta(meta || {});
+  const layoutForPackage = normalizeLayoutType((meta && meta.layout_type) || "");
+  const layoutHuman = LAYOUT_TYPE_LABELS[layoutForPackage] || layoutForPackage || "your layout";
+
+  const subject = "Serverly: Your Discord server template";
+
+  const lines = [
+    "SERVERLY — Your Discord server template",
+    "",
+    "Thanks again for your purchase. This message is only your template link so you can spot it quickly in your inbox.",
+    "",
+    "Open the link below while signed into Discord (app or browser). You’ll start a new server from the template that matches what you chose on our site.",
+    "",
+    url,
+    "",
+    `Layout: ${layoutHuman}` + (namingStyleLine ? ` · Channel style: ${namingStyleLine}` : ""),
+    "",
+    "Thank-you page:",
+    thankYou,
+    "",
+    "Checkout reference: " + (checkoutSessionId || "(n/a)"),
+    "",
+  ];
+  if (support) {
+    lines.push("Questions? Reply to this email — we use Reply-To so your message reaches us.", "");
+  }
+  lines.push("- Serverly");
+
+  const text = lines.join("\n");
+
+  let html =
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
+  html +=
+    '<h1 style="font-size:1.35rem;margin:0 0 0.5rem">Your Discord server template</h1>';
+  html +=
+    "<p style=\"margin:0 0 1rem\">Thanks again. <strong>This email is just your template link</strong> so it’s easy to find later.</p>";
+  html +=
+    "<p style=\"margin:0 0 1rem\">Open it while signed into <strong>Discord</strong> to create a server from the template for <strong>" +
+    escapeHtml(layoutHuman) +
+    "</strong>" +
+    (namingStyleLine ? " · <strong>" + escapeHtml(namingStyleLine) + "</strong> style" : "") +
+    ".</p>";
+  html +=
+    '<p style="margin:0 0 1rem"><a href="' +
+    escapeHtml(url) +
+    '" style="display:inline-block;background:#5865F2;color:#fff;text-decoration:none;padding:0.65rem 1.25rem;border-radius:8px;font-weight:600">Open template in Discord</a></p>';
+  html +=
+    '<p style="margin:0 0 0.35rem;font-size:0.9rem;color:#64748b">Or copy this link:</p><p style="margin:0 0 1.25rem;word-break:break-all;font-size:0.85rem"><a href="' +
+    escapeHtml(url) +
+    '">' +
+    escapeHtml(url) +
+    "</a></p>";
+  html +=
+    '<p style="margin:0 0 0.5rem"><a href="' +
+    escapeHtml(thankYou) +
+    '">' +
+    escapeHtml(thankYou) +
+    "</a> — your order page</p>";
+  html +=
+    '<p style="margin:0 0 1rem;font-size:0.9rem;color:#64748b">Checkout reference: ' +
+    escapeHtml(checkoutSessionId || "(n/a)") +
+    "</p>";
+  if (support) {
+    html +=
+      '<p style="margin:0">Questions? Reply to this message or email <a href="mailto:' +
+      escapeHtml(support) +
+      '">' +
+      escapeHtml(support) +
+      "</a>.</p>";
+  }
+  html += '<p style="margin:1.5rem 0 0;color:#64748b;font-size:0.9rem">- Serverly</p></body></html>';
+
+  return { subject, text, html };
+}
+
+/** Short payment + invoice email (first of three when a template is available). */
 function buildReceiptEmail(meta, customerEmail, extras) {
   extras = extras || {};
   const checkoutSessionId = extras.checkoutSessionId || "";
   const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
   const support = getSupportReplyEmail();
   const thankYou = thankYouPageUrl(checkoutSessionId);
+  const hasTemplateFollowUp = !!resolveDiscordTemplateUrlForOrder(meta);
 
   const lines = [
     "SERVERLY — Payment received",
@@ -392,9 +491,20 @@ function buildReceiptEmail(meta, customerEmail, extras) {
     "",
     "Checkout reference: " + (checkoutSessionId || "(n/a)"),
     "",
-    'You will receive a second email: "Serverly: Your Discord template & order details" with your Discord template link and full order summary.',
-    "",
   ];
+  if (hasTemplateFollowUp) {
+    lines.push(
+      "Next from Serverly (after this message):",
+      '• "Serverly: Your Discord server template" — your template link only (easy to find in your inbox).',
+      '• "Serverly: Your order summary & delivery details" — full purchase summary and what’s included.',
+      "",
+    );
+  } else {
+    lines.push(
+      'You will receive another email: "Serverly: Your order summary & delivery details" with delivery notes and your purchase summary.',
+      "",
+    );
+  }
   if (support) {
     lines.push(
       "Questions about this order? Reply to this email, or write to: " + support,
@@ -429,8 +539,13 @@ function buildReceiptEmail(meta, customerEmail, extras) {
     '<p style="margin:0 0 0.75rem"><strong>Checkout reference:</strong> ' +
     escapeHtml(checkoutSessionId || "(n/a)") +
     "</p>";
-  html +=
-    "<p style=\"margin:0 0 1rem\">You will receive a <strong>second email</strong> titled <em>Serverly: Your Discord template & order details</em> with your template link and full order summary.</p>";
+  if (hasTemplateFollowUp) {
+    html +=
+      "<p style=\"margin:0 0 1rem\"><strong>Next from Serverly:</strong> (1) <em>Your Discord server template</em> — template link only. (2) <em>Your order summary &amp; delivery details</em> — full recap.</p>";
+  } else {
+    html +=
+      "<p style=\"margin:0 0 1rem\">You will receive <strong>another email</strong> with your order summary and delivery details.</p>";
+  }
   if (support) {
     html +=
       '<p style="margin:0">Questions? Reply to this message or email <a href="mailto:' +
@@ -444,7 +559,11 @@ function buildReceiptEmail(meta, customerEmail, extras) {
   return { text, html };
 }
 
-function buildProductDeliveryEmail(meta, customerEmail, extras) {
+/**
+ * Order summary & delivery notes. discordUrlResolved: output of resolveDiscordTemplateUrlForOrder (may be "").
+ * When non-empty, customer already received (or will receive) buildDiscordTemplateFollowUpEmail separately.
+ */
+function buildProductDeliveryEmail(meta, customerEmail, extras, discordUrlResolved) {
   extras = extras || {};
   const checkoutSessionId = extras.checkoutSessionId || "";
   const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
@@ -456,9 +575,13 @@ function buildProductDeliveryEmail(meta, customerEmail, extras) {
     checkoutLineItemPresentation(layoutForPackage, namingStyleLine).name ||
     (TIERS[tier] && TIERS[tier].name) ||
     tierName;
-  const metaDiscord = (meta.discord_template_url && String(meta.discord_template_url).trim()) || "";
-  const instantUrl = (metaDiscord || digitalDeliveryUrl || "").trim();
-  const isDiscordTemplate = !!metaDiscord;
+  const urlDiscord =
+    typeof discordUrlResolved === "string" && discordUrlResolved.trim() !== ""
+      ? safePublicHttpUrl(discordUrlResolved.trim()) || ""
+      : resolveDiscordTemplateUrlForOrder(meta);
+  const isDiscordTemplate = !!urlDiscord;
+  const rawDig = (digitalDeliveryUrl || "").trim();
+  const digUrl = rawDig ? safePublicHttpUrl(rawDig) || rawDig : "";
 
   const chPrevParts = [];
   for (let pi = 0; pi < 15; pi++) {
@@ -467,31 +590,43 @@ function buildProductDeliveryEmail(meta, customerEmail, extras) {
   }
 
   const lines = [
-    "SERVERLY — Your Discord template & order details",
+    "SERVERLY — Your order summary & delivery details",
     "",
-    "This email is the second message we send after checkout. It has your template link, your choices from the website, and delivery notes.",
+    isDiscordTemplate
+      ? "This email is your full purchase summary. Your Discord template link was also sent in a separate email (subject: Serverly: Your Discord server template) so it is easy to find."
+      : "This email summarizes what you purchased and how delivery works.",
     "",
   ];
 
-  if (instantUrl) {
+  let step = 1;
+  if (isDiscordTemplate) {
     lines.push(
-      "1) INSTANT ACCESS: your digital product",
-      isDiscordTemplate
-        ? "Open this link while signed into Discord to create a server from your purchased template (same link as your thank-you page):"
-        : "Use this link right away for your starter resource or download:",
-      instantUrl,
-      ""
+      `${step}) YOUR DISCORD TEMPLATE (saved here too)`,
+      "Open while signed into Discord (same link as the dedicated template email and your thank-you page):",
+      urlDiscord,
+      "",
     );
+    step += 1;
+  }
+  if (digUrl) {
+    lines.push(
+      `${step}) INSTANT RESOURCE`,
+      "Use this link for your starter file or download:",
+      digUrl,
+      "",
+    );
+    step += 1;
   }
 
-  const layoutSectionNum = instantUrl ? "2)" : "1)";
-  const orderPageSectionNum = instantUrl ? "3)" : "2)";
   lines.push(
-    `${layoutSectionNum} CUSTOM DISCORD LAYOUT (${instantUrl ? "your main purchase" : "your purchase"})`,
-    "This is the personalized server blueprint: channels, categories, roles, and setup notes based on your answers on the website.",
-    "We deliver it to this email in line with your tier timeline unless we reach out separately.",
+    `${step}) CUSTOM DISCORD LAYOUT`,
+    "Personalized server blueprint: channels, categories, roles, and setup notes from your answers on the website.",
+    "Delivered to this email on your tier timeline unless we contact you separately.",
     "",
-    `${orderPageSectionNum} ORDER PAGE (bookmark)`,
+  );
+  step += 1;
+  lines.push(
+    `${step}) ORDER PAGE (bookmark)`,
     thankYouPageUrl(checkoutSessionId),
     "",
     "Emails sent to " + customerEmail + ":",
@@ -499,7 +634,9 @@ function buildProductDeliveryEmail(meta, customerEmail, extras) {
     stripeInvoiceUrl
       ? "• Stripe: hosted invoice: " + stripeInvoiceUrl
       : "• Stripe: hosted invoice link when your account sends invoices for this Checkout session.",
-    "• Serverly: this email is your product delivery and spec snapshot.",
+    isDiscordTemplate
+      ? "• Serverly: template-only email + this summary (plus your payment receipt above)."
+      : "• Serverly: this summary and your payment receipt above.",
     "",
     "Checkout reference: " + (checkoutSessionId || "(n/a)") + "",
     "",
@@ -543,26 +680,27 @@ function buildProductDeliveryEmail(meta, customerEmail, extras) {
 
   let html =
     '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
-  html += '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your Discord template & order details — Serverly</h1>';
   html +=
-    "<p>This is your <strong>product delivery</strong> email (sent right after your payment confirmation). Below are your template link, choices, and what is included.</p>";
+    '<h1 style="font-size:1.25rem;margin:0 0 0.75rem">Your order summary & delivery details — Serverly</h1>';
+  html += isDiscordTemplate
+    ? "<p>This is your <strong>full purchase summary</strong>. Your Discord template link was also sent in a <strong>separate email</strong> (subject: <em>Serverly: Your Discord server template</em>) so it is easy to find.</p>"
+    : "<p>Below is what you purchased and how delivery works.</p>";
 
-  if (instantUrl) {
-    if (isDiscordTemplate) {
-      html +=
-        '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Discord server template (instant)</h2><p style="margin:0 0 0.5rem">Open this link while signed into Discord. It matches the template you purchased:</p><p style="margin:0;word-break:break-all"><a href="' +
-        escapeHtml(instantUrl) +
-        '">' +
-        escapeHtml(instantUrl) +
-        "</a></p>";
-    } else {
-      html +=
-        '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Instant access</h2><p style="margin:0 0 0.5rem">Use this link right away for your starter resource or download:</p><p style="margin:0;word-break:break-all"><a href="' +
-        escapeHtml(instantUrl) +
-        '">' +
-        escapeHtml(instantUrl) +
-        "</a></p>";
-    }
+  if (isDiscordTemplate) {
+    html +=
+      '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Discord template (copy)</h2><p style="margin:0 0 0.5rem">Same link as the template-only email and your thank-you page:</p><p style="margin:0;word-break:break-all"><a href="' +
+      escapeHtml(urlDiscord) +
+      '">' +
+      escapeHtml(urlDiscord) +
+      "</a></p>";
+  }
+  if (digUrl) {
+    html +=
+      '<h2 style="font-size:1rem;margin:1.25rem 0 0.5rem">Instant resource</h2><p style="margin:0 0 0.5rem">Starter file or download:</p><p style="margin:0;word-break:break-all"><a href="' +
+      escapeHtml(digUrl) +
+      '">' +
+      escapeHtml(digUrl) +
+      "</a></p>";
   }
 
   html +=
@@ -767,15 +905,20 @@ app.post(
           console.error("Receipt email failed:", e1);
         }
         try {
-          const prod = buildProductDeliveryEmail(meta, email, extras);
+          const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
+          if (discordResolved) {
+            const tmpl = buildDiscordTemplateFollowUpEmail(meta, email, extras, discordResolved);
+            await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html);
+          }
+          const prod = buildProductDeliveryEmail(meta, email, extras, discordResolved);
           await sendOrderEmail(
             email,
-            "Serverly: Your Discord template & order details",
+            "Serverly: Your order summary & delivery details",
             prod.text,
             prod.html
           );
         } catch (e2) {
-          console.error("Product delivery email failed:", e2);
+          console.error("Order follow-up emails failed:", e2);
         }
       } else {
         console.warn("No email on completed session", session.id);
@@ -978,7 +1121,7 @@ app.listen(port, () => {
   console.log(`Stripe return / CORS site base: ${clientUrl}`);
   if (stripe && webhookSecret && !isOrderEmailConfigured()) {
     console.error(
-      "[Serverly] Paid customers will not get the Serverly order email until SMTP_HOST and EMAIL_FROM are set (see env.example)."
+      "[Serverly] Paid customers will not get Serverly follow-up emails (template + order summary) until SMTP_HOST and EMAIL_FROM are set (see env.example)."
     );
   }
   if (stripe && webhookSecret && isOrderEmailConfigured() && !getSupportReplyEmail()) {

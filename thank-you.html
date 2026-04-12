@@ -295,7 +295,7 @@
         if (claimLead) {
           if (hasSessionId && hadApiBase) {
             claimLead.textContent =
-              "Use the button to open your template, or find the link in your order email.";
+              "Use the button to open your template, or check the email titled \"Serverly: Your Discord server template\" (we also include the link in your order summary email).";
           } else if (hasSessionId && !hadApiBase) {
             claimLead.textContent =
               "Use the link in your order email to open your template. You can also add a checkout API URL on this page to load it automatically next time.";
@@ -403,7 +403,7 @@
           appendClaimChrome(
             discordUrl,
             "Claim Discord template",
-            "Your paid Discord server template is ready. Open it while signed into Discord; the same link is in your order email."
+            "Your paid Discord server template is ready. Open it while signed into Discord; the same link is in your \"Serverly: Your Discord server template\" email and your order summary."
           );
           return;
         }
