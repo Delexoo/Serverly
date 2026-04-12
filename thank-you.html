@@ -240,6 +240,102 @@
         }
       }
 
+      /**
+       * Canonical https URL for Discord server templates (better universal-link / app handoff than discord.new alone).
+       */
+      function normalizeDiscordTemplateHttps(urlString) {
+        var trimmed = String(urlString || "").trim();
+        if (!trimmed) return "";
+        try {
+          var u = new URL(trimmed);
+          if (u.protocol !== "https:" && u.protocol !== "http:") return trimmed;
+          var host = u.hostname.toLowerCase();
+          var code = "";
+          if (host === "discord.new" || host === "www.discord.new") {
+            code = u.pathname.replace(/^\//, "").split("/")[0];
+          } else if (/^([a-z0-9-]+\.)?discord\.com$/i.test(host)) {
+            var m = u.pathname.match(/^\/template\/([^/?#]+)/i);
+            if (m) code = decodeURIComponent(m[1]);
+          }
+          if (code && /^[a-zA-Z0-9_-]+$/.test(code)) {
+            return "https://discord.com/template/" + code;
+          }
+          return u.protocol + "//" + u.host + u.pathname + u.search;
+        } catch (e) {
+          return trimmed;
+        }
+      }
+
+      function extractDiscordTemplateCode(urlString) {
+        var n = normalizeDiscordTemplateHttps(urlString);
+        if (!n) return "";
+        try {
+          var u = new URL(n);
+          var m = u.pathname.match(/^\/template\/([^/?#]+)/i);
+          return m ? m[1] : "";
+        } catch (e2) {
+          return "";
+        }
+      }
+
+      function isDiscordTemplateUrl(urlString) {
+        try {
+          var h = new URL(String(urlString).trim(), window.location.href).hostname.toLowerCase();
+          return (
+            h === "discord.new" ||
+            h === "www.discord.new" ||
+            h === "discord.com" ||
+            h.endsWith(".discord.com")
+          );
+        } catch (e) {
+          return false;
+        }
+      }
+
+      /**
+       * Prefer opening the Discord app: Android intent, touch devices same-tab (universal link), desktop new tab.
+       */
+      function openDiscordTemplateClaim(rawUrl) {
+        var normalized = normalizeDiscordTemplateHttps(rawUrl) || String(rawUrl || "").trim();
+        if (!normalized) return;
+        var code = extractDiscordTemplateCode(rawUrl);
+        var ua = navigator.userAgent || "";
+        var android = /Android/i.test(ua);
+        var coarse =
+          window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+
+        if (android && code) {
+          var intent =
+            "intent://discord.com/template/" +
+            encodeURIComponent(code) +
+            "#Intent;scheme=https;package=com.discord;S.browser_fallback_url=" +
+            encodeURIComponent(normalized) +
+            ";end";
+          var cancelled = false;
+          function onLeave() {
+            cancelled = true;
+          }
+          document.addEventListener("visibilitychange", onLeave);
+          document.addEventListener("pagehide", onLeave);
+          window.location.href = intent;
+          window.setTimeout(function () {
+            document.removeEventListener("visibilitychange", onLeave);
+            document.removeEventListener("pagehide", onLeave);
+            if (!cancelled && document.visibilityState !== "hidden") {
+              window.location.href = normalized;
+            }
+          }, 1800);
+          return;
+        }
+
+        if (coarse) {
+          window.location.href = normalized;
+          return;
+        }
+
+        window.open(normalized, "_blank", "noopener,noreferrer");
+      }
+
       function appendLaunchIconSvg() {
         var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.setAttribute("class", "launch-icon");
@@ -284,12 +380,30 @@
         if (claimLead) claimLead.textContent = leadText;
         var openBtn = document.createElement("a");
         openBtn.className = "btn btn-primary btn-lg btn-block thank-you-claim-primary thank-you-mono-btn-primary";
-        openBtn.href = primaryHref;
-        openBtn.rel = "noopener noreferrer";
+        var discordTpl = isDiscordTemplateUrl(primaryHref);
+        if (discordTpl) {
+          var canon = normalizeDiscordTemplateHttps(primaryHref) || primaryHref;
+          openBtn.href = canon;
+          openBtn.rel = "noopener noreferrer";
+          openBtn.addEventListener("click", function (ev) {
+            if (ev.defaultPrevented) return;
+            if (ev.button !== 0) return;
+            if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
+            ev.preventDefault();
+            openDiscordTemplateClaim(primaryHref);
+          });
+        } else {
+          openBtn.href = primaryHref;
+          openBtn.rel = "noopener noreferrer";
+        }
         openBtn.textContent = primaryLabel;
         claimActions.appendChild(openBtn);
         appendEmailSupportLink();
-        if (claimHint) claimHint.textContent = "";
+        if (claimHint) {
+          claimHint.textContent = discordTpl
+            ? "Tip: On your phone, this usually opens the Discord app if it’s installed; otherwise Discord opens in the browser."
+            : "";
+        }
       }
 
       function showClaimFallback(hasSessionId, hadApiBase, sessionId, apiBaseForClaim) {
@@ -326,12 +440,12 @@
               .then(function (data) {
                 var u = data && data.discordTemplateUrl ? String(data.discordTemplateUrl).trim() : "";
                 if (u) {
-                  window.open(u, "_blank", "noopener,noreferrer");
+                  openDiscordTemplateClaim(u);
                   claimBtn.disabled = false;
                   claimBtn.textContent = "Claim your Discord template";
                   if (claimHint) {
                     claimHint.textContent =
-                      "Opened in a new tab. If the window was blocked, allow pop-ups or copy the link from your order email.";
+                      "If Discord didn’t open, use your browser’s back button to return here, or open the template link from your email.";
                   }
                 } else {
                   claimBtn.disabled = false;
