@@ -830,8 +830,14 @@ async function sendOrderEmail(to, subject, text, html) {
   const replyTo = getSupportReplyEmail();
   if (replyTo) mail.replyTo = replyTo;
   if (process.env.EMAIL_BCC) mail.bcc = process.env.EMAIL_BCC;
-  await tx.sendMail(mail);
-  return true;
+  try {
+    await tx.sendMail(mail);
+    console.log("[Serverly] Sent order email:", subject, "→", to);
+    return true;
+  } catch (err) {
+    console.error("[Serverly] sendMail failed:", subject, err && err.message ? err.message : err);
+    throw err;
+  }
 }
 
 const app = express();
@@ -904,12 +910,25 @@ app.post(
         } catch (e1) {
           console.error("Receipt email failed:", e1);
         }
-        try {
-          const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
-          if (discordResolved) {
-            const tmpl = buildDiscordTemplateFollowUpEmail(meta, email, extras, discordResolved);
-            await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html);
+        const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
+        /* Send each follow-up in its own try/catch so one SMTP failure does not block the others. */
+        if (discordResolved) {
+          const safeTemplateUrl = safePublicHttpUrl(String(discordResolved).trim());
+          if (safeTemplateUrl) {
+            try {
+              const tmpl = buildDiscordTemplateFollowUpEmail(meta, email, extras, safeTemplateUrl);
+              await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html);
+            } catch (eTmpl) {
+              console.error("[Serverly] Template-only email failed:", eTmpl && eTmpl.message ? eTmpl.message : eTmpl);
+            }
+          } else {
+            console.warn(
+              "[Serverly] discord_template_url / env resolved to a non-http(s) value; skipping template-only email. session:",
+              session.id
+            );
           }
+        }
+        try {
           const prod = buildProductDeliveryEmail(meta, email, extras, discordResolved);
           await sendOrderEmail(
             email,
@@ -917,8 +936,11 @@ app.post(
             prod.text,
             prod.html
           );
-        } catch (e2) {
-          console.error("Order follow-up emails failed:", e2);
+        } catch (eSummary) {
+          console.error(
+            "[Serverly] Order summary email failed:",
+            eSummary && eSummary.message ? eSummary.message : eSummary
+          );
         }
       } else {
         console.warn("No email on completed session", session.id);
