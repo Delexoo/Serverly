@@ -2,7 +2,7 @@
  * Stripe Checkout API for Serverly static site.
  *
  * POST /create-checkout-session: body: { tier, email? (optional; omit for Stripe-hosted email), goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
- * POST /webhook: Stripe webhook sends one combined receipt+order-summary email, optional separate template-only email
+ * POST /webhook: Stripe webhook sends combined receipt+order-summary, then always a short second email (template or quick link)
  */
 
 require("dotenv").config();
@@ -494,6 +494,70 @@ function buildDiscordTemplateFollowUpEmail(meta, customerEmail, extras, template
 }
 
 /**
+ * Second email when no Discord template URL is configured: still sends a short follow-up so buyers always get two Serverly messages.
+ * Returns { subject, text, html }.
+ */
+function buildThankYouQuickLinkSecondEmail(_meta, _customerEmail, extras) {
+  extras = extras || {};
+  const checkoutSessionId = extras.checkoutSessionId || "";
+  const thankYou = thankYouPageUrl(checkoutSessionId);
+  const support = getSupportReplyEmail();
+  const subject = "Serverly: Quick link — your order page";
+
+  const lines = [
+    "SERVERLY — Quick link (your order page)",
+    "",
+    "This is a short follow-up so you have an easy-to-find message in your inbox.",
+    "",
+    "Your payment receipt and full order summary were in the previous Serverly email.",
+    "",
+    "Open your thank-you / order page:",
+    thankYou,
+    "",
+    "Checkout reference: " + (checkoutSessionId || "(n/a)"),
+    "",
+  ];
+  if (support) {
+    lines.push("Questions? Reply to this email — we use Reply-To so your message reaches us.", "");
+  }
+  lines.push("- Serverly");
+
+  const text = lines.join("\n");
+
+  let html =
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#1e293b;max-width:40rem;margin:0;padding:1rem">';
+  html +=
+    '<h1 style="font-size:1.35rem;margin:0 0 0.5rem">Your order page</h1>';
+  html +=
+    "<p style=\"margin:0 0 1rem\">This is a <strong>short second email</strong> from Serverly so it’s easy to find in your inbox. Your <strong>full receipt and order summary</strong> are in the previous message.</p>";
+  html +=
+    '<p style="margin:0 0 1rem"><a href="' +
+    escapeHtml(thankYou) +
+    '" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:0.65rem 1.25rem;border-radius:8px;font-weight:600">Open your order page</a></p>';
+  html +=
+    '<p style="margin:0 0 0.35rem;font-size:0.9rem;color:#64748b">Or copy this link:</p><p style="margin:0 0 1.25rem;word-break:break-all;font-size:0.85rem"><a href="' +
+    escapeHtml(thankYou) +
+    '">' +
+    escapeHtml(thankYou) +
+    "</a></p>";
+  html +=
+    '<p style="margin:0 0 1rem;font-size:0.9rem;color:#64748b">Checkout reference: ' +
+    escapeHtml(checkoutSessionId || "(n/a)") +
+    "</p>";
+  if (support) {
+    html +=
+      '<p style="margin:0">Questions? Reply to this message or email <a href="mailto:' +
+      escapeHtml(support) +
+      '">' +
+      escapeHtml(support) +
+      "</a>.</p>";
+  }
+  html += '<p style="margin:1.5rem 0 0;color:#64748b;font-size:0.9rem">- Serverly</p></body></html>';
+
+  return { subject, text, html };
+}
+
+/**
  * Short payment + invoice email.
  * @param {boolean} [bundledWithSummary] — when true, order summary is appended in the same SMTP message; copy avoids promising a separate summary email.
  */
@@ -525,13 +589,9 @@ function buildReceiptEmail(meta, customerEmail, extras, bundledWithSummary) {
     lines.push(
       "Order summary and delivery details are included below in this same email.",
       "",
+      'You will also get a short second email from Serverly: either "Your Discord server template" (link only) or "Quick link — your order page".',
+      "",
     );
-    if (hasTemplateFollowUp) {
-      lines.push(
-        'You will also receive a separate short email: "Serverly: Your Discord server template" (template link only).',
-        "",
-      );
-    }
   } else if (hasTemplateFollowUp) {
     lines.push(
       "Next from Serverly (after this message):",
@@ -582,10 +642,8 @@ function buildReceiptEmail(meta, customerEmail, extras, bundledWithSummary) {
   if (bundledWithSummary) {
     html +=
       "<p style=\"margin:0 0 0.75rem\">Your <strong>order summary and delivery details</strong> are in this same message below.</p>";
-    if (hasTemplateFollowUp) {
-      html +=
-        "<p style=\"margin:0 0 1rem\">You’ll also get a <strong>separate short email</strong> with only your Discord template link.</p>";
-    }
+    html +=
+      "<p style=\"margin:0 0 1rem\">You’ll also get a <strong>short second email</strong> from Serverly (Discord template link, or a direct link to your order page).</p>";
   } else if (hasTemplateFollowUp) {
     html +=
       "<p style=\"margin:0 0 1rem\"><strong>Next from Serverly:</strong> (1) <em>Your Discord server template</em> — template link only. (2) <em>Your order summary &amp; delivery details</em> — full recap.</p>";
@@ -873,7 +931,7 @@ function isOrderEmailConfigured() {
 }
 
 /**
- * @param {string} mailRole - receipt-summary | template | receipt | summary (logging + X-Serverly-Mail-Role)
+ * @param {string} mailRole - receipt-summary | template | quick-link (logging + X-Serverly-Mail-Role)
  */
 async function sendOrderEmail(to, subject, text, html, mailRole) {
   const tx = getTransporter();
@@ -978,7 +1036,8 @@ app.post(
         }
         const extras = { checkoutSessionId: session.id, stripeInvoiceUrl };
         let sentReceiptSummary = false;
-        let sentTemplate = false;
+        let sentSecond = false;
+        let secondEmailKind = "none";
         const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
         try {
           const rec = buildReceiptEmail(meta, email, extras, true);
@@ -999,30 +1058,40 @@ app.post(
           );
         }
         await staggerOrderEmails();
-        /* Optional second SMTP message: template link only (same try/catch isolation as before). */
-        if (discordResolved) {
-          const safeTemplateUrl = safePublicHttpUrl(String(discordResolved).trim());
+        /* Always send a second short email (template link when configured, else thank-you quick link). */
+        const safeTemplateUrl = discordResolved
+          ? safePublicHttpUrl(String(discordResolved).trim())
+          : "";
+        if (discordResolved && !safeTemplateUrl) {
+          console.warn(
+            "[Serverly] discord_template_url / env resolved to a non-http(s) value; sending quick-link second email instead. session:",
+            session.id
+          );
+        }
+        try {
           if (safeTemplateUrl) {
-            try {
-              const tmpl = buildDiscordTemplateFollowUpEmail(meta, email, extras, safeTemplateUrl);
-              sentTemplate = await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html, "template");
-            } catch (eTmpl) {
-              console.error("[Serverly] Template-only email failed:", eTmpl && eTmpl.message ? eTmpl.message : eTmpl);
-            }
+            const tmpl = buildDiscordTemplateFollowUpEmail(meta, email, extras, safeTemplateUrl);
+            sentSecond = await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html, "template");
+            secondEmailKind = sentSecond ? "template" : "none";
           } else {
-            console.warn(
-              "[Serverly] discord_template_url / env resolved to a non-http(s) value; skipping template-only email. session:",
-              session.id
-            );
+            const quick = buildThankYouQuickLinkSecondEmail(meta, email, extras);
+            sentSecond = await sendOrderEmail(email, quick.subject, quick.text, quick.html, "quick-link");
+            secondEmailKind = sentSecond ? "quick-link" : "none";
           }
+        } catch (eSecond) {
+          console.error(
+            "[Serverly] Second follow-up email failed:",
+            eSecond && eSecond.message ? eSecond.message : eSecond
+          );
         }
         console.log(
           "[Serverly] Checkout email sequence done for",
           session.id,
           "| receipt+summary:",
           sentReceiptSummary,
-          "template:",
-          sentTemplate,
+          "second:",
+          sentSecond,
+          "(" + secondEmailKind + ")",
           "| stagger ms:",
           orderEmailStaggerMs()
         );
