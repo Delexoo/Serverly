@@ -6,6 +6,7 @@
  */
 
 require("dotenv").config();
+const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
@@ -795,7 +796,9 @@ let transporter = null;
 function getTransporter() {
   if (transporter) return transporter;
   if (!process.env.SMTP_HOST || !process.env.EMAIL_FROM) return null;
+  const poolOff = process.env.SMTP_POOL === "0" || process.env.SMTP_POOL === "false";
   transporter = nodemailer.createTransport({
+    pool: !poolOff,
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || "587", 10),
     secure: process.env.SMTP_SECURE === "true",
@@ -807,11 +810,26 @@ function getTransporter() {
   return transporter;
 }
 
+/** Pause between order emails so providers (e.g. Outlook) are less likely to drop or merge rapid sends. */
+function orderEmailStaggerMs() {
+  const n = parseInt(process.env.ORDER_EMAIL_STAGGER_MS || "750", 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function staggerOrderEmails() {
+  const ms = orderEmailStaggerMs();
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function isOrderEmailConfigured() {
   return !!(process.env.SMTP_HOST && process.env.EMAIL_FROM);
 }
 
-async function sendOrderEmail(to, subject, text, html) {
+/**
+ * @param {string} mailRole - receipt | template | summary (logging + X-Serverly-Mail-Role for inbox dedup quirks)
+ */
+async function sendOrderEmail(to, subject, text, html, mailRole) {
   const tx = getTransporter();
   if (!tx) {
     console.error(
@@ -820,11 +838,16 @@ async function sendOrderEmail(to, subject, text, html) {
     );
     return false;
   }
+  const role = (mailRole || "order").toString().trim() || "order";
   const mail = {
     from: process.env.EMAIL_FROM,
     to,
     subject,
     text,
+    headers: {
+      "X-Serverly-Mail-Role": role,
+      "X-Entity-Ref-ID": `${role}-${crypto.randomUUID()}`,
+    },
   };
   if (html) mail.html = html;
   const replyTo = getSupportReplyEmail();
@@ -832,10 +855,14 @@ async function sendOrderEmail(to, subject, text, html) {
   if (process.env.EMAIL_BCC) mail.bcc = process.env.EMAIL_BCC;
   try {
     await tx.sendMail(mail);
-    console.log("[Serverly] Sent order email:", subject, "→", to);
+    console.log("[Serverly] Sent order email (" + role + "):", subject, "→", to);
     return true;
   } catch (err) {
-    console.error("[Serverly] sendMail failed:", subject, err && err.message ? err.message : err);
+    console.error(
+      "[Serverly] sendMail failed (" + role + "):",
+      subject,
+      err && err.message ? err.message : err
+    );
     throw err;
   }
 }
@@ -904,12 +931,22 @@ app.post(
           }
         }
         const extras = { checkoutSessionId: session.id, stripeInvoiceUrl };
+        let sentReceipt = false;
+        let sentTemplate = false;
+        let sentSummary = false;
         try {
           const rec = buildReceiptEmail(meta, email, extras);
-          await sendOrderEmail(email, "Serverly: Payment received — receipt & invoice", rec.text, rec.html);
+          sentReceipt = await sendOrderEmail(
+            email,
+            "Serverly: Payment received — receipt & invoice",
+            rec.text,
+            rec.html,
+            "receipt"
+          );
         } catch (e1) {
           console.error("Receipt email failed:", e1);
         }
+        await staggerOrderEmails();
         const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
         /* Send each follow-up in its own try/catch so one SMTP failure does not block the others. */
         if (discordResolved) {
@@ -917,7 +954,7 @@ app.post(
           if (safeTemplateUrl) {
             try {
               const tmpl = buildDiscordTemplateFollowUpEmail(meta, email, extras, safeTemplateUrl);
-              await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html);
+              sentTemplate = await sendOrderEmail(email, tmpl.subject, tmpl.text, tmpl.html, "template");
             } catch (eTmpl) {
               console.error("[Serverly] Template-only email failed:", eTmpl && eTmpl.message ? eTmpl.message : eTmpl);
             }
@@ -928,13 +965,15 @@ app.post(
             );
           }
         }
+        await staggerOrderEmails();
         try {
           const prod = buildProductDeliveryEmail(meta, email, extras, discordResolved);
-          await sendOrderEmail(
+          sentSummary = await sendOrderEmail(
             email,
             "Serverly: Your order summary & delivery details",
             prod.text,
-            prod.html
+            prod.html,
+            "summary"
           );
         } catch (eSummary) {
           console.error(
@@ -942,6 +981,18 @@ app.post(
             eSummary && eSummary.message ? eSummary.message : eSummary
           );
         }
+        console.log(
+          "[Serverly] Checkout email sequence done for",
+          session.id,
+          "| receipt:",
+          sentReceipt,
+          "template:",
+          sentTemplate,
+          "summary:",
+          sentSummary,
+          "| stagger ms:",
+          orderEmailStaggerMs()
+        );
       } else {
         console.warn("No email on completed session", session.id);
       }

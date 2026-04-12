@@ -192,6 +192,71 @@
     });
   }
 
+  var issueBubbleExitFallbackTimer = null;
+  var issueBubbleExitDone = false;
+  var issueBubbleTransitionEndHandler = null;
+
+  /** Welcome-only “Issue?” bubble: ease out after leaving step 0 (e.g. Get started). */
+  function syncIssueSpeechBubble(step) {
+    var mount = document.getElementById("issue-speech-bubble-mount");
+    if (!mount) return;
+    if (issueBubbleExitFallbackTimer != null) {
+      clearTimeout(issueBubbleExitFallbackTimer);
+      issueBubbleExitFallbackTimer = null;
+    }
+    if (issueBubbleTransitionEndHandler) {
+      mount.removeEventListener("transitionend", issueBubbleTransitionEndHandler);
+      issueBubbleTransitionEndHandler = null;
+    }
+    if (step < 1) {
+      mount.classList.remove("issue-speech-bubble-wrap--ease-out");
+      mount.removeAttribute("hidden");
+      mount.setAttribute("aria-hidden", "false");
+      issueBubbleExitDone = false;
+      return;
+    }
+    if (issueBubbleExitDone || mount.hasAttribute("hidden")) return;
+    if (mount.classList.contains("issue-speech-bubble-wrap--ease-out")) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      mount.setAttribute("hidden", "");
+      mount.setAttribute("aria-hidden", "true");
+      issueBubbleExitDone = true;
+      return;
+    }
+
+    var exitFinished = false;
+    function finishExit() {
+      if (exitFinished) return;
+      exitFinished = true;
+      if (issueBubbleTransitionEndHandler) {
+        mount.removeEventListener("transitionend", issueBubbleTransitionEndHandler);
+        issueBubbleTransitionEndHandler = null;
+      }
+      if (issueBubbleExitFallbackTimer != null) {
+        clearTimeout(issueBubbleExitFallbackTimer);
+        issueBubbleExitFallbackTimer = null;
+      }
+      mount.setAttribute("hidden", "");
+      mount.setAttribute("aria-hidden", "true");
+      mount.classList.remove("issue-speech-bubble-wrap--ease-out");
+      issueBubbleExitDone = true;
+    }
+
+    function onTransitionEnd(ev) {
+      if (ev.target !== mount) return;
+      if (ev.propertyName !== "opacity") return;
+      finishExit();
+    }
+
+    issueBubbleTransitionEndHandler = onTransitionEnd;
+    mount.addEventListener("transitionend", onTransitionEnd);
+    issueBubbleExitFallbackTimer = setTimeout(finishExit, 900);
+    requestAnimationFrame(function () {
+      mount.classList.add("issue-speech-bubble-wrap--ease-out");
+    });
+  }
+
   function setStep(n) {
     if (n < 0 || n >= pages.length) return;
     state.step = n;
@@ -223,11 +288,7 @@
     syncHeroValueRotator(n);
     syncFinishCheckoutUi();
     if (n === 2) renderLayoutChannelPreviewIfNeeded();
-    var issueBubbleMount = document.getElementById("issue-speech-bubble-mount");
-    if (issueBubbleMount) {
-      issueBubbleMount.removeAttribute("hidden");
-      issueBubbleMount.setAttribute("aria-hidden", "false");
-    }
+    syncIssueSpeechBubble(n);
   }
 
   /** Welcome hero: vertical slide + smooth viewport height (paused off welcome). */

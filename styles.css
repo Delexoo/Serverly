@@ -7274,6 +7274,17 @@ button.choice-card.choice-card--goal {
   right: max(0.75rem, env(safe-area-inset-right, 0px));
   bottom: max(5.15rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem));
   pointer-events: none;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.issue-speech-bubble-wrap.issue-speech-bubble-wrap--ease-out {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(0.94);
+  pointer-events: none;
 }
 
 .issue-speech-bubble-wrap[hidden] {
@@ -7345,6 +7356,10 @@ button.choice-card.choice-card--goal {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .issue-speech-bubble-wrap {
+    transition: none;
+  }
+
   .issue-speech-bubble {
     animation: none;
     opacity: 1;
