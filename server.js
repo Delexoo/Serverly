@@ -251,7 +251,7 @@ const CHANNEL_PATTERN_LABELS = {
   "bold-column": "Column",
   chevrons: "Chevrons",
   "corner-brackets": "Corner Brackets",
-  "dot-separator": "Dot Separator",
+  "dot-separator": "Star Separator",
   flourish: "Flourish Wrap",
   "em-dash": "Fullwidth",
 };

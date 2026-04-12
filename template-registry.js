@@ -2,15 +2,15 @@
  * Wizard selection → Discord server template URL (process.env).
  *
  * Env var name rule: {LAYOUT}_{NAMING_STYLE}
- * - Layout comes from wizard layoutType (e.g. content_creator → CONTENT_CREATOR).
- * - Naming style comes from channelPattern slug (e.g. bar-divider → BAR_DIVIDER, flourish → FLOURISH_WRAP).
+ * - Layout: e.g. private → PRIVATE_SERVER, startup → STARTUP_WORKSPACE (matches Keys-Templates.txt).
+ * - Pattern: internal slug (e.g. dot-separator) → STAR_SEPARATOR (UI label: Star Separator).
  *
  * Examples:
- *   content_creator + bar-divider  → CONTENT_CREATOR_BAR_DIVIDER
- *   content_creator + flourish     → CONTENT_CREATOR_FLOURISH_WRAP
- *   business + regular-text        → BUSINESS_REGULAR_TEXT
+ *   private + regular-text       → PRIVATE_SERVER_REGULAR_TEXT
+ *   business + dot-separator     → BUSINESS_STAR_SEPARATOR
+ *   startup + sparkle-dot        → STARTUP_WORKSPACE_WHITE_BRACKETS
  *
- * Set the matching env var to your Discord template URL on the host (Render, etc.).
+ * Set the matching env var on the host (Render, etc.). See Keys-Templates.txt for the full matrix.
  */
 
 /** Wizard layoutType → env name prefix */
@@ -18,13 +18,13 @@ const LAYOUT_TYPE_PREFIX = {
   content_creator: "CONTENT_CREATOR",
   business: "BUSINESS",
   education: "EDUCATION",
-  startup: "STARTUP",
-  private: "PRIVATE",
+  startup: "STARTUP_WORKSPACE",
+  private: "PRIVATE_SERVER",
 };
 
 /**
  * Wizard channelPattern (data-demo-pattern / checkout body) → env name suffix.
- * Keeps legacy names (e.g. COLUMN, FLOURISH_WRAP) aligned with existing env keys.
+ * Internal ids stay stable (e.g. dot-separator); suffix matches deployment env keys.
  */
 const CHANNEL_PATTERN_SUFFIX = {
   "regular-text": "REGULAR_TEXT",
@@ -33,9 +33,9 @@ const CHANNEL_PATTERN_SUFFIX = {
   "bold-column": "COLUMN",
   "corner-brackets": "CORNER_BRACKETS",
   chevrons: "CHEVRONS",
-  "dot-separator": "DOT_SEPARATOR",
-  "em-dash": "EM_DASH", // UI: Fullwidth (emoji + fullwidth Latin, no separator)
-  "sparkle-dot": "SPARKLE_DOT",
+  "dot-separator": "STAR_SEPARATOR",
+  "em-dash": "FULLWIDTH",
+  "sparkle-dot": "WHITE_BRACKETS",
 };
 
 function layoutTypeToPrefix(layoutType) {
@@ -73,9 +73,18 @@ function getTemplateEnvKey(fields) {
 function resolveDiscordTemplateUrl(fields) {
   const envName = getTemplateEnvKey(fields);
   if (!envName) return "";
-  const raw = process.env[envName];
-  if (raw == null || String(raw).trim() === "") return "";
-  return String(raw).trim().slice(0, 500);
+  const keys = [envName];
+  /* Keys file historically used singular BRACKET for startup only */
+  if (envName === "STARTUP_WORKSPACE_WHITE_BRACKETS") {
+    keys.push("STARTUP_WORKSPACE_WHITE_BRACKET");
+  }
+  for (let i = 0; i < keys.length; i++) {
+    const raw = process.env[keys[i]];
+    if (raw != null && String(raw).trim() !== "") {
+      return String(raw).trim().slice(0, 500);
+    }
+  }
+  return "";
 }
 
 module.exports = { resolveDiscordTemplateUrl, getTemplateEnvKey };

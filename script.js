@@ -81,7 +81,7 @@
     { id: "bold-column", label: "Column" },
     { id: "chevrons", label: "Chevrons" },
     { id: "corner-brackets", label: "Corner Brackets" },
-    { id: "dot-separator", label: "Dot Separator" },
+    { id: "dot-separator", label: "Star Separator" },
     { id: "flourish", label: "Flourish Wrap" },
     { id: "em-dash", label: "Fullwidth" },
   ];
@@ -923,29 +923,70 @@
     return t[0] && t[0].channels[0] ? t[0].channels[0] : { name: "general", voice: false, locked: false };
   }
 
-  /** Style-step mini previews (aligned with content creator naming). */
-  function makePatternPreviewBlock(patternId) {
-    function lab(name, voice) {
-      return formatChannelDemoLabel(patternId, name, voice, 0);
-    }
-    return {
-      newSection: [lab("welcome", false), lab("rules", false), lab("roles", false)],
-      information: [lab("announcements", false), lab("giveaway", false), lab("pick-your-role", false)],
-      generalText: [lab("general", false), lab("off-topic", false), lab("gamer-chat", false)],
-      voice: [lab("Lounge", true), lab("Music", true), lab("AFK", true)],
-    };
-  }
-
+  /**
+   * Style-step sidebar mock: display strings copied from channels-{pattern}.txt
+   * (Content Creator — New / Information / General / Voice Chat, first three text + lounge/music/afk).
+   * When editing naming previews, update the matching channels-*.txt and mirror rows here.
+   */
   var PATTERN_PREVIEW_DATA = {
-    "regular-text": makePatternPreviewBlock("regular-text"),
-    "bar-divider": makePatternPreviewBlock("bar-divider"),
-    "sparkle-dot": makePatternPreviewBlock("sparkle-dot"),
-    "bold-column": makePatternPreviewBlock("bold-column"),
-    chevrons: makePatternPreviewBlock("chevrons"),
-    "corner-brackets": makePatternPreviewBlock("corner-brackets"),
-    "dot-separator": makePatternPreviewBlock("dot-separator"),
-    flourish: makePatternPreviewBlock("flourish"),
-    "em-dash": makePatternPreviewBlock("em-dash"),
+    "regular-text": {
+      newSection: ["welcome", "rules", "roles"],
+      information: ["announcements", "giveaway", "pick-your-role"],
+      generalText: ["general", "off-topic", "gamer-chat"],
+      voice: ["lounge", "music", "afk"],
+    },
+    "bar-divider": {
+      newSection: ["👋┊𝚆𝚎𝚕𝚌𝚘𝚖𝚎", "📜┊𝚁𝚞𝚕𝚎𝚜", "🎭┊𝚁𝚘𝚕𝚎𝚜"],
+      information: ["📢┊𝙰𝚗𝚗𝚘𝚞𝚗𝚌𝚎𝚖𝚎𝚗𝚝𝚜", "🎉┊𝙶𝚒𝚟𝚎𝚊𝚠𝚊𝚢", "🎯┊𝙿𝚒𝚌𝚔-𝚢𝚘𝚞𝚛-𝚛𝚘𝚕𝚎"],
+      generalText: ["💬┊𝙶𝚎𝚗𝚎𝚛𝚊𝚕", "💭┊𝙾𝚏𝚏-𝚝𝚘𝚙𝚒𝚌", "🎮┊𝙶𝚊𝚖𝚎𝚛-𝚌𝚑𝚊𝚝"],
+      voice: ["🛋️┊𝙻𝚘𝚞𝚗𝚐𝚎", "🎵┊𝙼𝚞𝚜𝚒𝚌", "💤┊𝙰𝙵𝙺"],
+    },
+    "sparkle-dot": {
+      newSection: ["『👋』𝐖𝐞𝐥𝐜𝐨𝐦𝐞", "『📜』𝐑𝐮𝐥𝐞𝐬", "『🎭』𝐑𝐨𝐥𝐞𝐬"],
+      information: ["『📢』𝐀𝐧𝐧𝐨𝐮𝐧𝐜𝐞𝐦𝐞𝐧𝐭𝐬", "『🎉』𝐆𝐢𝐯𝐞𝐚𝐰𝐚𝐲", "『🎯』𝐏𝐢𝐜𝐤-𝐘𝐨𝐮𝐫-𝐑𝐨𝐥𝐞"],
+      generalText: ["『💬』𝐆𝐞𝐧𝐞𝐫𝐚𝐥", "『💭』𝐎𝐟𝐟-𝐓𝐨𝐩𝐢𝐜", "『🎮』𝐆𝐚𝐦𝐞𝐫-𝐂𝐡𝐚𝐭"],
+      voice: ["『🛋️』𝐋𝐨𝐮𝐧𝐠𝐞", "『🎵』𝐌𝐮𝐬𝐢𝐜", "『💤』𝐀𝐟𝐤"],
+    },
+    "bold-column": {
+      newSection: ["👋┃𝐖𝐞𝐥𝐜𝐨𝐦𝐞", "📜┃𝐑𝐮𝐥𝐞𝐬", "🎭┃𝐑𝐨𝐥𝐞𝐬"],
+      information: ["📢┃𝐀𝐧𝐧𝐨𝐮𝐧𝐜𝐞𝐦𝐞𝐧𝐭𝐬", "🎉┃𝐆𝐢𝐯𝐞𝐚𝐰𝐚𝐲", "🎯┃𝐏𝐢𝐜𝐤-𝐲𝐨𝐮𝐫-𝐫𝐨𝐥𝐞"],
+      generalText: ["💬┃𝐆𝐞𝐧𝐞𝐫𝐚𝐥", "💭┃𝐎𝐟𝐟-𝐭𝐨𝐩𝐢𝐜", "🎮┃𝐆𝐚𝐦𝐞𝐫-𝐜𝐡𝐚𝐭"],
+      voice: ["🛋️┃𝐋𝐨𝐮𝐧𝐠𝐞", "🎵┃𝐌𝐮𝐬𝐢𝐜", "💤┃𝐀𝐅𝐊"],
+    },
+    chevrons: {
+      newSection: ["《👋》🇼🇪🇱🇨🇴🇲🇪", "《📜》🇷🇺🇱🇪🇸", "《🎭》🇷🇴🇱🇪🇸"],
+      information: [
+        "《📢》🇦🇳🇳🇴🇺🇳🇨🇪🇲🇪🇳🇹🇸",
+        "《🎉》🇬🇮🇻🇪🇦🇼🇦🇾",
+        "《🎯》🇵🇮🇨🇰-🇾🇴🇺🇷-🇷🇴🇱🇪",
+      ],
+      generalText: ["《💬》🇬🇪🇳🇪🇷🇦🇱", "《💭》🇴🇫🇫-🇹🇴🇵🇮🇨", "《🎮》🇬🇦🇲🇪🇷-🇨🇭🇦🇹"],
+      voice: ["《🛋️》🇱🇴🇺🇳🇬🇪", "《🎵》🇲🇺🇸🇮🇨", "《💤》🇦🇫🇰"],
+    },
+    "corner-brackets": {
+      newSection: ["【👋】𝑾𝒆𝒍𝒄𝒐𝒎𝒆", "【📜】𝑹𝒖𝒍𝒆𝒔", "【🎭】𝑹𝒐𝒍𝒆𝒔"],
+      information: ["【📢】𝑨𝒏𝒏𝒐𝒖𝒏𝒄𝒆𝒎𝒆𝒏𝒕𝒔", "【🎉】𝑮𝒊𝒗𝒆𝒂𝒘𝒂𝒚", "【🎯】𝑷𝒊𝒄𝒌-𝒚𝒐𝒖𝒓-𝒓𝒐𝒍𝒆"],
+      generalText: ["【💬】𝑮𝒆𝒏𝒆𝒓𝒂𝒍", "【💭】𝑶𝒇𝒇-𝒕𝒐𝒑𝒊𝒄", "【🎮】𝑮𝒂𝒎𝒆𝒓-𝒄𝒉𝒂𝒕"],
+      voice: ["【🛋️】𝑳𝒐𝒖𝒏𝒈𝒆", "【🎵】𝑴𝒖𝒔𝒊𝒄", "【💤】𝑨𝑭𝑲"],
+    },
+    "dot-separator": {
+      newSection: ["👋⭑ѵєℓ¢σмє", "📜⭑яυℓєѕ", "🎭⭑яσℓєѕ"],
+      information: ["📢⭑αηησυη¢ємєηтѕ", "🎉⭑ɡινєαѵαу", "🎯⭑рι¢κ-уσυя-яσℓє"],
+      generalText: ["💬⭑ɡєηєяαℓ", "💭⭑σƒƒ-тσрι¢", "🎮⭑ɡαмєя-¢һαт"],
+      voice: ["🛋️⭑ℓσυηɡє", "🎵⭑мυѕι¢", "💤⭑αƒκ"],
+    },
+    flourish: {
+      newSection: ["✦𝖂𝖊𝖑𝖈𝖔𝖒𝖊✦", "✦𝕽𝖚𝖑𝖊𝖘✦", "✦𝕽𝖔𝖑𝖊𝖘✦"],
+      information: ["✦𝕬𝖓𝖓𝖔𝖚𝖓𝖈𝖊𝖒𝖊𝖓𝖙𝖘✦", "✦𝕲𝖎𝖛𝖊𝖆𝖜𝖆𝖞✦", "✦𝕻𝖎𝖈𝖐-𝖞𝖔𝖚𝖗-𝖗𝖔𝖑𝖊✦"],
+      generalText: ["✦𝕲𝖊𝖓𝖊𝖗𝖆𝖑✦", "✦𝕺𝖋𝖋-𝖙𝖔𝖕𝖎𝖈✦", "✦𝕲𝖆𝖒𝖊𝖗-𝖈𝖍𝖆𝖙✦"],
+      voice: ["✦𝕷𝖔𝖚𝖓𝖌𝖊✦", "✦𝕸𝖚𝖘𝖎𝖈✦", "✦𝕬𝕱𝕶✦"],
+    },
+    "em-dash": {
+      newSection: ["👋ｗｅｌｃｏｍｅ", "📜ｒｕｌｅｓ", "🎭ｒｏｌｅｓ"],
+      information: ["📢ａｎｎｏｕｎｃｅｍｅｎｔｓ", "🎉ｇｉｖｅａｗａｙ", "🎯ｐｉｃｋ-ｙｏｕｒ-ｒｏｌｅ"],
+      generalText: ["💬ｇｅｎｅｒａｌ", "💭ｏｆｆ-ｔｏｐｉｃ", "🎮ｇａｍｅｒ-ｃｈａｔ"],
+      voice: ["🛋️ｌｏｕｎｇｅ", "🎵ｍｕｓｉｃ", "💤ａｆｋ"],
+    },
   };
 
   /** Global lane index (same order as summary Discord demo) for a channel by category title + name. */
