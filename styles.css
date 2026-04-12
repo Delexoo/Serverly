@@ -7157,6 +7157,29 @@ button.choice-card.choice-card--goal {
   border-radius: 4px;
 }
 
+.thank-you-mono .thank-you-share-feedback {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.thank-you-mono .thank-you-claim-share-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.thank-you-mono .thank-you-share-btn-label {
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  white-space: normal !important;
+  text-align: center;
+}
+
 .thank-you-mono-footnote,
 .thank-you-mono .thank-you-footnote {
   font-size: 14px;

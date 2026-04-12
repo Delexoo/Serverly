@@ -41,7 +41,6 @@
           Payment received
         </p>
         <h1 class="thank-you-title thank-you-mono-title">Thank you for your order</h1>
-        <p class="thank-you-mono-subtitle">You’re all set — claim your layout below or check your email.</p>
       </div>
 
       <section class="thank-you-mono-panel thank-you-claim" id="thank-you-claim" aria-labelledby="claim-product-heading">
@@ -54,6 +53,7 @@
             Your purchase is fulfilled by email: Stripe’s receipt, optional instant download (if we’ve added a link), and your custom Discord layout on your tier timeline. Use the button below to open an instant file or get help if email hasn’t arrived.
           </p>
           <div class="thank-you-claim-actions thank-you-mono-actions" id="thank-you-claim-actions"></div>
+          <p class="thank-you-share-feedback thank-you-mono-hint" id="thank-you-share-feedback" role="status" aria-live="polite" hidden></p>
           <p class="thank-you-claim-hint thank-you-mono-hint" id="thank-you-claim-hint"></p>
         </div>
       </section>
@@ -336,6 +336,88 @@
         window.open(normalized, "_blank", "noopener,noreferrer");
       }
 
+      function isIOSDevice() {
+        var ua = navigator.userAgent || "";
+        if (/iPad|iPhone|iPod/.test(ua)) return true;
+        return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+      }
+
+      function getServerlyInviteSharePayload() {
+        var siteUrl = "https://serverly.store";
+        var title = "Serverly";
+        var fullText =
+          "I used Serverly for my Discord server!\n" +
+          "Worth a look if you need a premium template:\n\n" +
+          siteUrl;
+        return { title: title, fullText: fullText, siteUrl: siteUrl };
+      }
+
+      function showShareCopyFeedback() {
+        var feedback = document.getElementById("thank-you-share-feedback");
+        if (!feedback) return;
+        feedback.hidden = false;
+        feedback.textContent = "Copied — paste anywhere to share.";
+        window.clearTimeout(showShareCopyFeedback._t);
+        showShareCopyFeedback._t = window.setTimeout(function () {
+          feedback.textContent = "";
+          feedback.hidden = true;
+        }, 4500);
+      }
+
+      function fallbackCopyInvite(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+        } catch (e) {}
+        document.body.removeChild(ta);
+        showShareCopyFeedback();
+      }
+
+      function appendShareButton() {
+        if (!claimActions || document.getElementById("thank-you-share-btn")) return;
+        var wrap = document.createElement("div");
+        wrap.className = "thank-you-claim-secondary-wrap thank-you-claim-share-wrap";
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "thank-you-share-btn";
+        btn.className =
+          "btn btn-outline btn-block thank-you-mono-btn-secondary thank-you-share-btn-label";
+        btn.textContent = "Share -> Free Giveaway Entry.";
+        btn.setAttribute(
+          "aria-label",
+          "Share for a free giveaway entry; copies invite on desktop, share sheet on iPhone"
+        );
+        btn.addEventListener("click", function () {
+          var pack = getServerlyInviteSharePayload();
+          var ios = isIOSDevice();
+          if (ios && typeof navigator.share === "function") {
+            navigator
+              .share({
+                title: pack.title,
+                text: pack.fullText,
+              })
+              .catch(function () {});
+            return;
+          }
+          var text = pack.fullText;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(showShareCopyFeedback).catch(function () {
+              fallbackCopyInvite(text);
+            });
+          } else {
+            fallbackCopyInvite(text);
+          }
+        });
+        wrap.appendChild(btn);
+        claimActions.appendChild(wrap);
+      }
+
       function appendLaunchIconSvg() {
         var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.setAttribute("class", "launch-icon");
@@ -373,6 +455,7 @@
         mailA.appendChild(appendLaunchIconSvg());
         claimActions.appendChild(sub);
         sub.appendChild(mailA);
+        appendShareButton();
       }
 
       function appendClaimChrome(primaryHref, primaryLabel, leadText) {
@@ -411,7 +494,7 @@
         if (claimLead) {
           if (hasSessionId && hadApiBase) {
             claimLead.textContent =
-              "Use the button to open your template, or check the email titled \"Serverly: Your Discord server template\" (we also include the link in your order summary email).";
+              "Use the button to open your template, or check your email titled \"Serverly: Your order — Discord template, receipt & summary\" (the template link is at the top).";
           } else if (hasSessionId && !hadApiBase) {
             claimLead.textContent =
               "Use the link in your order email to open your template. You can also add a checkout API URL on this page to load it automatically next time.";
@@ -519,7 +602,7 @@
           appendClaimChrome(
             discordUrl,
             "Claim Discord template",
-            "Your paid Discord server template is ready. Open it while signed into Discord; the same link is in your \"Serverly: Your Discord server template\" email and your order summary."
+            "Your paid Discord server template is ready. Open it while signed into Discord; the same link is at the top of your Serverly order email (subject: Your order — Discord template, receipt & summary)."
           );
           return;
         }
