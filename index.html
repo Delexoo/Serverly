@@ -207,6 +207,19 @@
     </div>
   </main>
 
+  <!-- Fixed to viewport (outside .wizard-page: page transform would break position:fixed while scrolling) -->
+  <div class="issue-speech-bubble-wrap" id="issue-speech-bubble-mount" aria-hidden="false">
+    <a
+      href="issue-feedback.html"
+      class="issue-speech-bubble"
+      id="issue-speech-bubble"
+      title="Tell us what went wrong—we’ll pre-fill an email for you"
+      aria-label="Report an issue—opens a short survey, then your email app"
+    >
+      <span class="issue-speech-bubble-text">Issue?</span>
+    </a>
+  </div>
+
   <div
     class="checkout-sticky-bar"
     id="checkout-sticky-bar"

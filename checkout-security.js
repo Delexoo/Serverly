@@ -14,13 +14,13 @@ const ALLOWED_LAYOUT_TYPES = new Set([
 const ALLOWED_CHANNEL_PATTERNS = new Set([
   "regular-text",
   "bar-divider",
-  "flourish",
-  "bold-column",
-  "corner-brackets",
-  "chevrons",
-  "dot-separator",
-  "em-dash",
   "sparkle-dot",
+  "bold-column",
+  "chevrons",
+  "corner-brackets",
+  "dot-separator",
+  "flourish",
+  "em-dash",
 ]);
 
 function normalizeLayoutType(raw) {

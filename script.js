@@ -75,15 +75,15 @@
 
   /** Naming styles for Advanced summary demo (matches wizard style step). */
   var DEMO_PATTERN_OPTIONS = [
-    { id: "regular-text", label: "Regular text" },
-    { id: "bar-divider", label: "Bar divider" },
-    { id: "flourish", label: "Flourish wrap" },
+    { id: "regular-text", label: "Regular Text" },
+    { id: "bar-divider", label: "Bar Divider" },
+    { id: "sparkle-dot", label: "White Brackets" },
     { id: "bold-column", label: "Column" },
-    { id: "corner-brackets", label: "Corner brackets" },
     { id: "chevrons", label: "Chevrons" },
-    { id: "dot-separator", label: "Dot separator" },
-    { id: "em-dash", label: "Em dash" },
-    { id: "sparkle-dot", label: "Sparkle dot" },
+    { id: "corner-brackets", label: "Corner Brackets" },
+    { id: "dot-separator", label: "Dot Separator" },
+    { id: "flourish", label: "Flourish Wrap" },
+    { id: "em-dash", label: "Fullwidth" },
   ];
 
   function serverModeNote(mode) {
@@ -223,6 +223,11 @@
     syncHeroValueRotator(n);
     syncFinishCheckoutUi();
     if (n === 2) renderLayoutChannelPreviewIfNeeded();
+    var issueBubbleMount = document.getElementById("issue-speech-bubble-mount");
+    if (issueBubbleMount) {
+      issueBubbleMount.removeAttribute("hidden");
+      issueBubbleMount.setAttribute("aria-hidden", "false");
+    }
   }
 
   /** Welcome hero: vertical slide + smooth viewport height (paused off welcome). */
@@ -733,6 +738,78 @@
     });
   }
 
+  /** Mathematical Bold Italic (e.g. 【👋】𝑾𝒆𝒍𝒄𝒐𝒎𝒆) for Corner brackets */
+  function toMathBoldItalic(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z0-9]/g, function (ch) {
+      var code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1d468 + (code - 65));
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1d482 + (code - 97));
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0x1d7ce + (code - 48));
+      return ch;
+    });
+  }
+
+  /** Regional indicator letters (e.g. 《📢》🇦🇳🇳🇴🇺🇳🇨🇪🇲🇪🇳🇹🇸) for Chevrons */
+  function toRegionalIndicatorLetters(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z]/g, function (ch) {
+      var code = ch.toUpperCase().charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1f1e6 + (code - 65));
+      return ch;
+    });
+  }
+
+  /** Greek/Cyrillic homoglyphs for dot separator (e.g. 📢⭑¢σηтєηт-ι∂єαѕ) */
+  var DOT_SEPARATOR_LETTERS = {
+    a: "\u03b1",
+    b: "\u0432",
+    c: "\u00a2",
+    d: "\u2202",
+    e: "\u0454",
+    f: "\u0192",
+    g: "\u0261",
+    h: "\u04bb",
+    i: "\u03b9",
+    j: "\u03f3",
+    k: "\u03ba",
+    l: "\u2113",
+    m: "\u043c",
+    n: "\u03b7",
+    o: "\u03c3",
+    p: "\u0440",
+    q: "\u024b",
+    r: "\u044f",
+    s: "\u0455",
+    t: "\u0442",
+    u: "\u03c5",
+    v: "\u03bd",
+    w: "\u0475",
+    x: "\u0445",
+    y: "\u0443",
+    z: "\u01b6",
+  };
+
+  function toDotSeparatorStylish(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z]/g, function (ch) {
+      var mapped = DOT_SEPARATOR_LETTERS[ch.toLowerCase()];
+      return mapped || ch;
+    });
+  }
+
+  /** Fullwidth Latin lowercase & digits (e.g. 👋ｗｅｌｃｏｍｅ; pattern id em-dash) */
+  function toFullwidthLatinLower(input) {
+    if (!input) return "";
+    return String(input).replace(/[A-Za-z0-9]/g, function (ch) {
+      var code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) code += 32;
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0xff41 + (code - 97));
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0xff10 + (code - 48));
+      return ch;
+    });
+  }
+
   /** Mathematical Sans-Serif Bold Italic (e.g. ✦𝖜𝖊𝖑𝖈𝖔𝖒𝖊✦) for Flourish wrap */
   function toMathSansSerifBoldItalic(input) {
     if (!input) return "";
@@ -765,6 +842,18 @@
     return demoEmojiForName(rawName) + "┊" + toMathMonospace(rawName);
   }
 
+  /** Title-case each hyphen segment (e.g. pick your role → Pick-Your-Role) */
+  function toTitleHyphenatedName(rawName) {
+    return String(rawName)
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .split("-")
+      .map(function (part) {
+        return part ? part.charAt(0).toUpperCase() + part.slice(1) : part;
+      })
+      .join("-");
+  }
+
   function formatChannelDemoLabel(patternId, rawName, isVoice, laneIndex) {
     var n = rawName;
     var e = demoEmojiForName(n);
@@ -782,17 +871,30 @@
       case "flourish":
         return flourishWrapLabel(n);
       case "bold-column":
-        return e + " ┃ " + n;
+        return e + "┃" + toMathBoldText(n);
       case "corner-brackets":
-        return toMathBoldText("【" + e + "】" + n);
+        return "【" + e + "】" + toMathBoldItalic(n);
       case "chevrons":
-        return toMathBoldText("《" + e + "》" + n);
+        return "《" + e + "》" + toRegionalIndicatorLetters(n);
       case "dot-separator":
-        return toMathBoldText(e + "·" + compact);
-      case "em-dash":
-        return toMathBoldText(e + " - " + n);
+        return (
+          e +
+          "\u2b51" +
+          toDotSeparatorStylish(
+            String(n)
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+          )
+        );
+      case "em-dash": {
+        var emSeg = String(n)
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/#/g, "\uff03");
+        return e + toFullwidthLatinLower(emSeg);
+      }
       case "sparkle-dot":
-        return toMathBoldText("✧・" + compact);
+        return "\u300e" + e + "\u300f" + toMathBoldText(toTitleHyphenatedName(n));
       default:
         return toMathBoldText(isVoice ? n : e + " | " + n);
     }
@@ -837,13 +939,13 @@
   var PATTERN_PREVIEW_DATA = {
     "regular-text": makePatternPreviewBlock("regular-text"),
     "bar-divider": makePatternPreviewBlock("bar-divider"),
-    flourish: makePatternPreviewBlock("flourish"),
-    "bold-column": makePatternPreviewBlock("bold-column"),
-    "corner-brackets": makePatternPreviewBlock("corner-brackets"),
-    chevrons: makePatternPreviewBlock("chevrons"),
-    "dot-separator": makePatternPreviewBlock("dot-separator"),
-    "em-dash": makePatternPreviewBlock("em-dash"),
     "sparkle-dot": makePatternPreviewBlock("sparkle-dot"),
+    "bold-column": makePatternPreviewBlock("bold-column"),
+    chevrons: makePatternPreviewBlock("chevrons"),
+    "corner-brackets": makePatternPreviewBlock("corner-brackets"),
+    "dot-separator": makePatternPreviewBlock("dot-separator"),
+    flourish: makePatternPreviewBlock("flourish"),
+    "em-dash": makePatternPreviewBlock("em-dash"),
   };
 
   /** Global lane index (same order as summary Discord demo) for a channel by category title + name. */
@@ -970,7 +1072,7 @@
       o = DEMO_PATTERN_OPTIONS[i];
       if (o.id === id) return o.label;
     }
-    return id ? slugToLabel(id) : "Regular text";
+    return id ? slugToLabel(id) : "Regular Text";
   }
 
   function defaultLaneDisplay(patternId, channelName, isVoice, lane) {

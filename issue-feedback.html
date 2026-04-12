@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" class="wizard-app">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Report an issue with Serverly—quick survey and email." />
+  <meta name="theme-color" content="#5865F2" />
+  <meta name="color-scheme" content="light" />
+  <title>Report an issue — Serverly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="wizard-app issue-feedback-body">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="site-header site-header--wizard site-header--legal lab-header">
+    <div class="site-header-shell lab-header-shell">
+      <div class="site-header-inner lab-header-inner">
+        <div class="site-header-top lab-bar">
+          <a href="index.html" class="logo logo-btn lab-logo-btn" aria-label="Serverly — home">
+            <span class="logo-mark" aria-hidden="true">✎</span>
+            <span class="logo-wordmark">Serverly</span>
+          </a>
+          <div class="site-header-tools">
+            <a href="index.html" class="legal-doc-back">← Back</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wizard-main issue-feedback-main" id="main-content">
+    <div class="issue-feedback-inner">
+      <header class="issue-feedback-hero">
+        <p class="issue-feedback-eyebrow">Report feedback</p>
+        <h1 class="issue-feedback-title">What kind of issue is it?</h1>
+        <p class="issue-feedback-lead">
+          Pick the closest match. Your email app opens with a tailored starter you can edit before you send.
+        </p>
+      </header>
+
+      <div class="issue-feedback-panel">
+        <div class="issue-feedback-form" id="issue-feedback-form">
+          <p id="issue-feedback-type-label" class="issue-feedback-section-label">Issue type &amp; feedback</p>
+          <div class="issue-feedback-options issue-feedback-options-grid" role="group" aria-labelledby="issue-feedback-type-label">
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="typo">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Typo or wording</span>
+                <span class="issue-feedback-option-desc">Something reads wrong on the site or in template copy</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="roles">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Roles</span>
+                <span class="issue-feedback-option-desc">Permissions, role names, or how roles are organized</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="complex">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Too complex</span>
+                <span class="issue-feedback-option-desc">The flow or layout felt overwhelming or hard to follow</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="checkout">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Checkout or email</span>
+                <span class="issue-feedback-option-desc">Payment, Stripe, or delivery / confirmation email</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="broke">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Something broke</span>
+                <span class="issue-feedback-option-desc">A button, preview, or page didn’t work as expected</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="layout">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Layout doesn’t fit</span>
+                <span class="issue-feedback-option-desc">Channels, categories, or structure aren’t right for my server</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="ideas">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Share a new idea</span>
+                <span class="issue-feedback-option-desc">Ideas &amp; website — suggest a feature or improvement</span>
+              </span>
+            </button>
+
+            <button type="button" class="issue-feedback-option-btn" data-issue-mail data-issue-topic="website">
+              <span class="issue-feedback-option-card">
+                <span class="issue-feedback-option-title">Website issue</span>
+                <span class="issue-feedback-option-desc">Ideas &amp; website — pages, navigation, or content on serverly.com</span>
+              </span>
+            </button>
+          </div>
+
+          <div class="issue-feedback-alt">
+            <p class="issue-feedback-something-else">Something else?</p>
+            <button type="button" class="btn btn-outline btn-lg wizard-btn-ghost issue-feedback-email-btn" data-issue-mail data-issue-topic="other">
+              Email us
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="site-fineprint-row" aria-label="Legal notices">
+    <a href="discord-disclaimer.html" class="site-fineprint-link">Not affiliated with Discord Inc.</a>
+    <a href="legal.html" class="site-fineprint-link">Legal</a>
+  </nav>
+
+  <script>
+    (function () {
+      var SUPPORT_EMAIL = "teambrilliantt@hotmail.com";
+      var MAIL_SUBJECT = "Serverly feedback";
+
+      /** Sentence starters after “Hi,”—tied to each button’s data-issue-topic. */
+      var TOPIC_OPENERS = {
+        typo:
+          "While going through Serverly I ran into copy that felt off—either a typo or phrasing that could read clearer. Here's exactly where and what I noticed:\n\n",
+        roles:
+          "I'm looking at the role setup in my layout and wanted to share feedback—whether it's naming, permissions, or how roles fit together for my server:\n\n",
+        complex:
+          "Parts of the flow felt heavier or harder to follow than I expected, and I think a few tweaks could make a big difference. Here's where I got lost or what felt like extra work:\n\n",
+        checkout:
+          "I'm writing about payment (Stripe) or the email I got after checkout—either a question on my end or something that didn't look right. Here's what I need help with:\n\n",
+        broke:
+          "I ran into something that didn't work the way it should—a button, preview, step, or page. Below is what I tried and what happened so you can reproduce it:\n\n",
+        layout:
+          "The channel and category structure is close, but it doesn't quite match how my server runs day to day. Here's the gap between what I got and what I'm aiming for:\n\n",
+        ideas:
+          "I have a feature idea or improvement in mind for Serverly—something new, a tweak to the flow, or a capability that would help people like me. Here's the suggestion:\n\n",
+        website:
+          "I'm writing about the Serverly website itself—pages, navigation, how something looks or loads, or content on serverly.com (outside the wizard if relevant). Here's what I noticed:\n\n",
+        other:
+          "My note doesn't fit the other options neatly, so I'm putting it all here. Here's what I wanted to bring up:\n\n",
+      };
+
+      var form = document.getElementById("issue-feedback-form");
+      var BODY_PLACEHOLDER = "[Insert your issue]";
+
+      function buildBody(topicKey) {
+        var opener =
+          TOPIC_OPENERS[topicKey] != null
+            ? TOPIC_OPENERS[topicKey]
+            : TOPIC_OPENERS.other;
+        return (
+          "Hi,\n\n" +
+          opener +
+          BODY_PLACEHOLDER +
+          "\n\nThanks,\n"
+        );
+      }
+
+      function openMail(ev) {
+        var btn = ev.currentTarget;
+        var topic = btn.getAttribute("data-issue-topic") || "other";
+        var subject = encodeURIComponent(MAIL_SUBJECT);
+        var body = encodeURIComponent(buildBody(topic));
+        window.location.href =
+          "mailto:" + SUPPORT_EMAIL + "?subject=" + subject + "&body=" + body;
+      }
+
+      form.querySelectorAll("[data-issue-mail]").forEach(function (btn) {
+        btn.addEventListener("click", openMail);
+      });
+    })();
+  </script>
+</body>
+</html>

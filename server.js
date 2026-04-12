@@ -245,15 +245,15 @@ const LAYOUT_TYPE_LABELS = {
 
 /** Wizard chip labels (keep in sync with script.js DEMO_PATTERN_OPTIONS). */
 const CHANNEL_PATTERN_LABELS = {
-  "regular-text": "Regular text",
-  "bar-divider": "Bar divider",
-  flourish: "Flourish wrap",
+  "regular-text": "Regular Text",
+  "bar-divider": "Bar Divider",
+  "sparkle-dot": "White Brackets",
   "bold-column": "Column",
-  "corner-brackets": "Corner brackets",
   chevrons: "Chevrons",
-  "dot-separator": "Dot separator",
-  "em-dash": "Em dash",
-  "sparkle-dot": "Sparkle dot",
+  "corner-brackets": "Corner Brackets",
+  "dot-separator": "Dot Separator",
+  flourish: "Flourish Wrap",
+  "em-dash": "Fullwidth",
 };
 
 function slugToLabel(slug) {

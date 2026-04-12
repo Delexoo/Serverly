@@ -34,7 +34,7 @@ const CHANNEL_PATTERN_SUFFIX = {
   "corner-brackets": "CORNER_BRACKETS",
   chevrons: "CHEVRONS",
   "dot-separator": "DOT_SEPARATOR",
-  "em-dash": "EM_DASH",
+  "em-dash": "EM_DASH", // UI: Fullwidth (emoji + fullwidth Latin, no separator)
   "sparkle-dot": "SPARKLE_DOT",
 };
 
