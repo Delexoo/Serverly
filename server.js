@@ -2,7 +2,7 @@
  * Stripe Checkout API for Serverly static site.
  *
  * POST /create-checkout-session: body: { tier, email? (optional; omit for Stripe-hosted email), goal, serverMode, hasFollowers, size, channelPattern, channelPatternLabel }
- * POST /webhook: Stripe webhook (checkout.session.completed) sends receipt + Discord template email + order summary
+ * POST /webhook: Stripe webhook sends one combined receipt+order-summary email, optional separate template-only email
  */
 
 require("dotenv").config();
@@ -363,6 +363,31 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+/** Inner HTML inside <body>…</body> (for merging two standalone HTML emails into one). */
+function extractHtmlBodyInner(html) {
+  const m = String(html || "").match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  return m ? m[1].trim() : "";
+}
+
+/** One HTML document: receipt first, then order summary (fewer SMTP messages → fewer dropped “second” emails). */
+function mergeReceiptAndSummaryHtml(receiptFullHtml, summaryFullHtml) {
+  const inner = extractHtmlBodyInner(summaryFullHtml);
+  if (!inner) return receiptFullHtml;
+  const divider =
+    '<hr style="border:none;border-top:2px solid #e2e8f0;margin:2rem 0" aria-hidden="true" />' +
+    '<p style="margin:0 0 1rem;font-size:0.8rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Order summary &amp; delivery</p>';
+  return String(receiptFullHtml).replace(/<\/body>\s*<\/html>\s*$/i, divider + inner + "</body></html>");
+}
+
+function mergeReceiptAndSummaryText(receiptText, summaryText) {
+  return (
+    receiptText.trim() +
+    "\n\n" +
+    "────────────────────────────────────────\nORDER SUMMARY & DELIVERY\n────────────────────────────────────────\n\n" +
+    summaryText.trim()
+  );
+}
+
 /** Reply-To / support address on Serverly emails and printed on Stripe invoice footer. */
 function getSupportReplyEmail() {
   const a = (process.env.EMAIL_REPLY_TO || "").trim();
@@ -468,8 +493,11 @@ function buildDiscordTemplateFollowUpEmail(meta, customerEmail, extras, template
   return { subject, text, html };
 }
 
-/** Short payment + invoice email (first of three when a template is available). */
-function buildReceiptEmail(meta, customerEmail, extras) {
+/**
+ * Short payment + invoice email.
+ * @param {boolean} [bundledWithSummary] — when true, order summary is appended in the same SMTP message; copy avoids promising a separate summary email.
+ */
+function buildReceiptEmail(meta, customerEmail, extras, bundledWithSummary) {
   extras = extras || {};
   const checkoutSessionId = extras.checkoutSessionId || "";
   const stripeInvoiceUrl = extras.stripeInvoiceUrl || "";
@@ -493,7 +521,18 @@ function buildReceiptEmail(meta, customerEmail, extras) {
     "Checkout reference: " + (checkoutSessionId || "(n/a)"),
     "",
   ];
-  if (hasTemplateFollowUp) {
+  if (bundledWithSummary) {
+    lines.push(
+      "Order summary and delivery details are included below in this same email.",
+      "",
+    );
+    if (hasTemplateFollowUp) {
+      lines.push(
+        'You will also receive a separate short email: "Serverly: Your Discord server template" (template link only).',
+        "",
+      );
+    }
+  } else if (hasTemplateFollowUp) {
     lines.push(
       "Next from Serverly (after this message):",
       '• "Serverly: Your Discord server template" — your template link only (easy to find in your inbox).',
@@ -540,7 +579,14 @@ function buildReceiptEmail(meta, customerEmail, extras) {
     '<p style="margin:0 0 0.75rem"><strong>Checkout reference:</strong> ' +
     escapeHtml(checkoutSessionId || "(n/a)") +
     "</p>";
-  if (hasTemplateFollowUp) {
+  if (bundledWithSummary) {
+    html +=
+      "<p style=\"margin:0 0 0.75rem\">Your <strong>order summary and delivery details</strong> are in this same message below.</p>";
+    if (hasTemplateFollowUp) {
+      html +=
+        "<p style=\"margin:0 0 1rem\">You’ll also get a <strong>separate short email</strong> with only your Discord template link.</p>";
+    }
+  } else if (hasTemplateFollowUp) {
     html +=
       "<p style=\"margin:0 0 1rem\"><strong>Next from Serverly:</strong> (1) <em>Your Discord server template</em> — template link only. (2) <em>Your order summary &amp; delivery details</em> — full recap.</p>";
   } else {
@@ -812,7 +858,7 @@ function getTransporter() {
 
 /** Pause between order emails so providers (e.g. Outlook) are less likely to drop or merge rapid sends. */
 function orderEmailStaggerMs() {
-  const n = parseInt(process.env.ORDER_EMAIL_STAGGER_MS || "750", 10);
+  const n = parseInt(process.env.ORDER_EMAIL_STAGGER_MS || "1200", 10);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
@@ -827,7 +873,7 @@ function isOrderEmailConfigured() {
 }
 
 /**
- * @param {string} mailRole - receipt | template | summary (logging + X-Serverly-Mail-Role for inbox dedup quirks)
+ * @param {string} mailRole - receipt-summary | template | receipt | summary (logging + X-Serverly-Mail-Role)
  */
 async function sendOrderEmail(to, subject, text, html, mailRole) {
   const tx = getTransporter();
@@ -931,24 +977,29 @@ app.post(
           }
         }
         const extras = { checkoutSessionId: session.id, stripeInvoiceUrl };
-        let sentReceipt = false;
+        let sentReceiptSummary = false;
         let sentTemplate = false;
-        let sentSummary = false;
+        const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
         try {
-          const rec = buildReceiptEmail(meta, email, extras);
-          sentReceipt = await sendOrderEmail(
+          const rec = buildReceiptEmail(meta, email, extras, true);
+          const prod = buildProductDeliveryEmail(meta, email, extras, discordResolved);
+          const combinedText = mergeReceiptAndSummaryText(rec.text, prod.text);
+          const combinedHtml = mergeReceiptAndSummaryHtml(rec.html, prod.html);
+          sentReceiptSummary = await sendOrderEmail(
             email,
-            "Serverly: Payment received — receipt & invoice",
-            rec.text,
-            rec.html,
-            "receipt"
+            "Serverly: Payment received + order summary",
+            combinedText,
+            combinedHtml,
+            "receipt-summary"
           );
-        } catch (e1) {
-          console.error("Receipt email failed:", e1);
+        } catch (eBundle) {
+          console.error(
+            "[Serverly] Combined receipt+summary email failed:",
+            eBundle && eBundle.message ? eBundle.message : eBundle
+          );
         }
         await staggerOrderEmails();
-        const discordResolved = resolveDiscordTemplateUrlForOrder(meta);
-        /* Send each follow-up in its own try/catch so one SMTP failure does not block the others. */
+        /* Optional second SMTP message: template link only (same try/catch isolation as before). */
         if (discordResolved) {
           const safeTemplateUrl = safePublicHttpUrl(String(discordResolved).trim());
           if (safeTemplateUrl) {
@@ -965,31 +1016,13 @@ app.post(
             );
           }
         }
-        await staggerOrderEmails();
-        try {
-          const prod = buildProductDeliveryEmail(meta, email, extras, discordResolved);
-          sentSummary = await sendOrderEmail(
-            email,
-            "Serverly: Your order summary & delivery details",
-            prod.text,
-            prod.html,
-            "summary"
-          );
-        } catch (eSummary) {
-          console.error(
-            "[Serverly] Order summary email failed:",
-            eSummary && eSummary.message ? eSummary.message : eSummary
-          );
-        }
         console.log(
           "[Serverly] Checkout email sequence done for",
           session.id,
-          "| receipt:",
-          sentReceipt,
+          "| receipt+summary:",
+          sentReceiptSummary,
           "template:",
           sentTemplate,
-          "summary:",
-          sentSummary,
           "| stagger ms:",
           orderEmailStaggerMs()
         );
@@ -1194,7 +1227,7 @@ app.listen(port, () => {
   console.log(`Stripe return / CORS site base: ${clientUrl}`);
   if (stripe && webhookSecret && !isOrderEmailConfigured()) {
     console.error(
-      "[Serverly] Paid customers will not get Serverly follow-up emails (template + order summary) until SMTP_HOST and EMAIL_FROM are set (see env.example)."
+      "[Serverly] Paid customers will not get Serverly order emails until SMTP_HOST and EMAIL_FROM are set (see env.example)."
     );
   }
   if (stripe && webhookSecret && isOrderEmailConfigured() && !getSupportReplyEmail()) {
