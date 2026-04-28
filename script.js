@@ -32,7 +32,7 @@
   var patternPickLabelEl = document.getElementById("pattern-pick-label");
   var styleTierNoteEl = document.getElementById("style-tier-note");
   var patternSelectButtons = document.querySelectorAll(".pattern-select[data-pattern]");
-  /** Single product: full layout at $20 (Stripe/metadata tier key remains "advanced"). */
+  /** Single product: full layout at $9.99 (Stripe/metadata tier key remains "advanced"). */
   var PRODUCT_TIER_KEY = "advanced";
   var checkoutFlash = document.getElementById("checkout-flash");
   var flashCheckoutTimer = null;
@@ -63,7 +63,7 @@
 
   var PACKAGE_PRICE_HINTS = {
     simple: "$10",
-    advanced: "$20",
+    advanced: "$9.99",
     professional: "$50",
   };
 
@@ -295,7 +295,7 @@
   var HERO_VALUE_ROTATOR_LINES = [
     { k: "Monetize", v: "paid-access ready channels and roles." },
     { k: "Growth", v: "scalable structure without chaos." },
-    { k: "Simple", v: "one price — $20 at checkout." },
+    { k: "Simple", v: "one price — $9.99 at checkout." },
     { k: "Optimal", v: "layouts tuned for engagement." },
     { k: "Easy", v: "quick flow on the website with a live demo." },
   ];
@@ -1560,16 +1560,16 @@
       tagline: "Classes, resources, Q&A, and discussion rhythm",
     },
     {
-      id: "startup",
-      tabLabel: "Startup",
-      title: "Startup workspace",
-      tagline: "Ship fast: ops, standups, and execution channels",
-    },
-    {
       id: "content_creator",
       tabLabel: "Creator",
       title: "Content creator",
       tagline: "Loops, clips, announcements—broadcast-ready structure",
+    },
+    {
+      id: "startup",
+      tabLabel: "Startup",
+      title: "Startup workspace",
+      tagline: "Ship fast: ops, standups, and execution channels",
     },
   ];
 
@@ -1794,6 +1794,23 @@
     return s.replace(/\/$/, "");
   }
 
+  /**
+   * Render / similar hosts often cold-start. Pre-warm the checkout API as soon as
+   * the sticky bar becomes available so the redirect feels instant.
+   */
+  var checkoutApiWarmStarted = false;
+  function warmCheckoutApi() {
+    if (checkoutApiWarmStarted) return;
+    var api = getCheckoutApiBase();
+    if (!api) return;
+    checkoutApiWarmStarted = true;
+    fetch(api + "/health", { method: "GET" })
+      .catch(function () {
+        return fetch(api, { method: "GET" });
+      })
+      .catch(function () {});
+  }
+
   function formatCheckoutFetchError(err) {
     var raw = err && err.message ? String(err.message) : "";
     var isNetFail =
@@ -1902,6 +1919,7 @@
     checkoutStickyBar.removeAttribute("hidden");
     checkoutStickyBar.setAttribute("aria-hidden", "false");
     document.body.classList.add("checkout-sticky-bar-open");
+    warmCheckoutApi();
     syncCheckoutStickyHint();
     syncSummaryOpenCheckoutBtn();
     stickyBarShowTimer = setTimeout(function () {
@@ -1940,7 +1958,7 @@
 
     if (!hasAny) {
       summaryEl.innerHTML =
-        '<p class="summary-placeholder">Complete server setup and layout type above to open the live preview and naming styles.</p>';
+        '<p class="summary-placeholder">An error occurred. Please refresh the page and try again.</p>';
       if (state.step === 3) syncWizardProgress();
       syncFinishCheckoutUi();
       return;
@@ -2119,6 +2137,7 @@
   if (stickyCheckoutEmail) {
     stickyCheckoutEmail.addEventListener("input", syncSummaryOpenCheckoutBtn);
     stickyCheckoutEmail.addEventListener("blur", syncSummaryOpenCheckoutBtn);
+    stickyCheckoutEmail.addEventListener("focus", warmCheckoutApi);
   }
 
   if (summaryEl) {

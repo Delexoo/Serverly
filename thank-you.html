@@ -99,7 +99,7 @@
         advanced: "Discord server layout",
         professional: "Professional",
       };
-      var PACKAGE_PRICE_HINTS = { simple: "$10", advanced: "$20", professional: "$50" };
+      var PACKAGE_PRICE_HINTS = { simple: "$10", advanced: "$9.99", professional: "$50" };
       var SERVER_MODE_LABELS = {
         fresh: "New server template (new or reset server)",
         update: "Fix my current server (coming soon)",
@@ -646,7 +646,7 @@
         var tier = saved.packageTier || "advanced";
         if (tier === "professional") tier = "advanced";
         var tierLabel = PACKAGE_LABELS[tier] || tier;
-        var price = PACKAGE_PRICE_HINTS[tier] || (tier === "advanced" ? "$20" : "");
+        var price = PACKAGE_PRICE_HINTS[tier] || (tier === "advanced" ? "$9.99" : "");
         addRow("Package", tierLabel + (price ? ", " + price + " USD" : ""));
 
         if (saved.layoutType && LAYOUT_TYPE_LABELS[saved.layoutType]) {

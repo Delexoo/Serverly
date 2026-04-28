@@ -209,7 +209,7 @@ const stripe = stripeSecret ? Stripe(stripeSecret) : null;
 
 const TIERS = {
   /** Fallback label only; checkout + emails use checkoutLineItemPresentation when layout/style metadata exists. */
-  advanced: { amount: 2000, name: "Serverly: Discord layout package" },
+  advanced: { amount: 999, name: "Serverly: Discord layout package" },
 };
 
 const GOAL_LABELS = {
